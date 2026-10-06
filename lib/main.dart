@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'config/constants/app_constants.dart';
 import 'config/theme/app_theme.dart';
 import 'core/state/app_state.dart';
-import 'features/navigation/main_nav_screen.dart';
+import 'features/auth/screens/onboarding_screen.dart';
 
 final AppState appState = AppState();
 
@@ -25,7 +25,7 @@ class Hipro extends StatelessWidget {
           theme: AppTheme.lightTheme,
           themeMode: ThemeMode.light,
           debugShowCheckedModeBanner: false,
-          home: const MainNavScreen(),
+          home: const OnboardingScreen(),
         );
       },
     );

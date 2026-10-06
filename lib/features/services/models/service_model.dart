@@ -49,3 +49,23 @@ class ServiceCategory {
     required this.subcategories,
   });
 }
+
+class ServiceItem {
+  final String id;
+  final String name;
+  final String shortDescription;
+  final double startingPrice;
+  final String unit;
+  final String imageUrl;
+  final List<String> includedPoints;
+
+  const ServiceItem({
+    required this.id,
+    required this.name,
+    required this.shortDescription,
+    required this.startingPrice,
+    this.unit = 'visit',
+    required this.imageUrl,
+    this.includedPoints = const [],
+  });
+}

@@ -1,652 +1,678 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
-import '../../../config/theme/app_colors.dart';
 import '../../../main.dart';
 import '../models/service_model.dart';
+import 'inspection_success_screen.dart';
 
 class CreateInspectionScreen extends StatefulWidget {
   const CreateInspectionScreen({
     super.key,
-    this.preselectedCategory,
-    this.preselectedSubService,
+    this.preselectedService,
   });
 
-  final ServiceCategory? preselectedCategory;
-  final SubService? preselectedSubService;
+  final ServiceItem? preselectedService;
 
   @override
   State<CreateInspectionScreen> createState() => _CreateInspectionScreenState();
 }
 
 class _CreateInspectionScreenState extends State<CreateInspectionScreen> {
-  static const int _maxImages = 5;
+  int _currentStep = 1;
 
-  final _formKey = GlobalKey<FormState>();
-  final _picker = ImagePicker();
-  final List<XFile> _selectedImages = [];
-  final Set<String> _selectedSymptoms = {};
+  // Form Fields
+  String _selectedCategory = 'Plumbing';
+  String _selectedSubService = 'Leakage Inspection';
+  final TextEditingController _descriptionController = TextEditingController();
+  String _propertyType = 'Residential Villa';
+  final TextEditingController _areaController =
+      TextEditingController(text: '1500');
+  final TextEditingController _addressController =
+      TextEditingController(text: 'Plot 42, Subhash Nagar, Bhilwara');
+  final TextEditingController _cityController =
+      TextEditingController(text: 'Bhilwara, Rajasthan');
+  String _preferredTime = 'Morning (09:00 AM - 12:00 PM)';
 
-  late final TextEditingController _descriptionController;
-  late final TextEditingController _addressController;
-  late ServiceCategory _selectedCategory;
-  SubService? _selectedSubService;
-  String _propertyType = 'House / Villa';
-  bool _isSubmitting = false;
-
-  static const List<({String label, IconData icon})> _propertyTypes = [
-    (label: 'House / Villa', icon: Icons.home_rounded),
-    (label: 'Apartment / Flat', icon: Icons.apartment_rounded),
-    (label: 'Commercial Office', icon: Icons.business_rounded),
-    (label: 'Factory / Warehouse', icon: Icons.factory_rounded),
+  final List<String> _categories = [
+    'Plumbing',
+    'Civil Construction',
+    'Architectural Design',
+    'Survey & Mapping',
+    'Waterproofing',
+    'Maintenance',
   ];
+
+  final Map<String, List<String>> _subServices = {
+    'Plumbing': [
+      'Leakage Inspection',
+      'Pipe Replacement',
+      'Sanitary Fitting',
+      'Drainage Assessment',
+    ],
+    'Civil Construction': [
+      'Foundation Check',
+      'Structure Audit',
+      'Renovation Planning',
+      'Concrete Assessment',
+    ],
+    'Architectural Design': [
+      '2D Layout Planning',
+      '3D Elevation Design',
+      'Interior Space Plan',
+    ],
+    'Survey & Mapping': [
+      'Land Boundary Survey',
+      'Topographical Mapping',
+      'GIS Assessment',
+    ],
+    'Waterproofing': [
+      'Roof Seepage Inspection',
+      'Basement Dampness Test',
+      'Wall Crack Injections',
+    ],
+    'Maintenance': [
+      'Annual Maintenance Visit',
+      'Plumbing & Electric Check',
+      'Paint & Polish Audit',
+    ],
+  };
 
   @override
   void initState() {
     super.initState();
-    _selectedCategory =
-        widget.preselectedCategory ??
-        (appState.categories.isNotEmpty
-            ? appState.categories.first
-            : _fallbackCategory());
-    _selectedSubService =
-        widget.preselectedSubService ??
-        (_selectedCategory.subcategories.isNotEmpty
-            ? _selectedCategory.subcategories.first
-            : null);
-    _descriptionController = TextEditingController(
-      text: _selectedSubService?.defaultNotes ?? '',
-    );
-    _addressController = TextEditingController();
+    if (widget.preselectedService != null) {
+      if (_categories.contains(widget.preselectedService!.name)) {
+        _selectedCategory = widget.preselectedService!.name;
+      }
+    }
   }
 
   @override
   void dispose() {
     _descriptionController.dispose();
+    _areaController.dispose();
     _addressController.dispose();
+    _cityController.dispose();
     super.dispose();
   }
 
-  ServiceCategory _fallbackCategory() {
-    return const ServiceCategory(
-      id: 'cat_general',
-      title: 'General Inspection',
-      shortTitle: 'General',
-      subtitle: 'Damage inspection',
-      icon: Icons.build_rounded,
-      color: AppColors.primary,
-      bg: AppColors.surface,
-      subcategories: [],
-    );
-  }
-
-  void _changeCategory(ServiceCategory category) {
-    final firstSubService = category.subcategories.isEmpty
-        ? null
-        : category.subcategories.first;
-    setState(() {
-      _selectedCategory = category;
-      _selectedSubService = firstSubService;
-      _selectedSymptoms.clear();
-      _descriptionController.text = firstSubService?.defaultNotes ?? '';
-    });
-  }
-
-  void _changeSubService(SubService? subService) {
-    setState(() {
-      _selectedSubService = subService;
-      _selectedSymptoms.clear();
-      _descriptionController.text = subService?.defaultNotes ?? '';
-    });
-  }
-
-  Future<void> _pickImage(ImageSource source) async {
-    if (_selectedImages.length >= _maxImages) {
-      _showMessage('You can upload up to $_maxImages images.');
-      return;
-    }
-
-    try {
-      final image = await _picker.pickImage(
-        source: source,
-        imageQuality: 85,
-        maxWidth: 1600,
-      );
-      if (image != null && mounted) {
-        setState(() => _selectedImages.add(image));
-      }
-    } catch (_) {
-      _showMessage('Unable to access the selected image.');
-    }
-  }
-
-  Future<void> _pickMultipleImages() async {
-    final remaining = _maxImages - _selectedImages.length;
-    if (remaining <= 0) {
-      _showMessage('You can upload up to $_maxImages images.');
-      return;
-    }
-
-    try {
-      final images = await _picker.pickMultiImage(
-        imageQuality: 85,
-        maxWidth: 1600,
-        limit: remaining,
-      );
-      if (images.isNotEmpty && mounted) {
-        setState(() => _selectedImages.addAll(images.take(remaining)));
-      }
-    } catch (_) {
-      _showMessage('Unable to access the selected images.');
-    }
-  }
-
-  void _showMessage(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  void _toggleSymptom(String symptom) {
-    setState(() {
-      if (!_selectedSymptoms.add(symptom)) {
-        _selectedSymptoms.remove(symptom);
-      }
-    });
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-
-    setState(() => _isSubmitting = true);
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
-
-    final symptomText = _selectedSymptoms.isEmpty
-        ? ''
-        : '\nObserved: ${_selectedSymptoms.join(', ')}';
-
-    appState.submitRequest(
-      categoryId: _selectedCategory.id,
-      categoryName: _selectedCategory.title,
-      subServiceName: _selectedSubService?.name ?? _selectedCategory.title,
-      issueDescription: '${_descriptionController.text.trim()}$symptomText',
-      photos: _selectedImages.map((image) => image.path).toList(),
-      propertyType: _propertyType,
-      address: _addressController.text.trim(),
-    );
-
-    setState(() => _isSubmitting = false);
-    await _showSuccessDialog();
-  }
-
-  Future<void> _showSuccessDialog() {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: AppColors.success),
-            SizedBox(width: 10),
-            Expanded(child: Text('Inspection submitted')),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Your details and photos were received with ₹0 upfront payment.',
-              style: TextStyle(color: AppColors.textSecondary, height: 1.4),
-            ),
-            const SizedBox(height: 16),
-            _dialogInfoRow(
-              Icons.category_rounded,
-              'Category',
-              _selectedCategory.shortTitle,
-            ),
-            const SizedBox(height: 8),
-            _dialogInfoRow(
-              Icons.build_circle_rounded,
-              'Service',
-              _selectedSubService?.name ?? 'General inspection',
-            ),
-            const SizedBox(height: 8),
-            _dialogInfoRow(
-              Icons.photo_library_rounded,
-              'Photos',
-              _selectedImages.length.toString(),
-            ),
-          ],
-        ),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                Navigator.of(context).pop();
-              },
-              child: const Text('View all requests'),
-            ),
-          ),
+  void _onNext() {
+    if (_currentStep < 4) {
+      setState(() => _currentStep++);
+    } else {
+      // Submit and redirect to success
+      appState.submitRequest(
+        categoryId: 'cat_${_selectedCategory.toLowerCase()}',
+        categoryName: _selectedCategory,
+        subServiceName: _selectedSubService,
+        issueDescription: _descriptionController.text.isNotEmpty
+            ? _descriptionController.text
+            : 'Inspection required for $_selectedSubService.',
+        photos: [
+          'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80',
         ],
-      ),
-    );
-  }
+        propertyType: _propertyType,
+        address: '${_addressController.text}, ${_cityController.text}',
+      );
 
-  Widget _dialogInfoRow(IconData icon, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: AppColors.primaryLight),
-        const SizedBox(width: 8),
-        Text('$label: ', style: const TextStyle(color: AppColors.textMuted)),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w500),
-          ),
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const InspectionSuccessScreen(),
         ),
-      ],
-    );
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final subServices = _selectedCategory.subcategories;
-    final symptoms = _selectedSubService?.checklist ?? const <String>[];
-
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          color: const Color(0xFF0F172A),
+          onPressed: () {
+            if (_currentStep > 1) {
+              setState(() => _currentStep--);
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+        title: const Text(
+          'Create Inspection',
+          style: TextStyle(
+            color: Color(0xFF0F172A),
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        centerTitle: false,
+      ),
+      body: SafeArea(
+        child: Column(
           children: [
-            Text('Request inspection'),
-            Text(
-              'Free expert assessment',
-              style: TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
+            // Top Step Progress Indicator
+            _buildStepper(),
+
+            const Divider(color: Color(0xFFF1F5F9), height: 1),
+
+            // Form Content per Step
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 20,
+                ),
+                child: _buildCurrentStepView(),
+              ),
+            ),
+
+            // Bottom Action Bar
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: Color(0xFFF1F5F9)),
+                ),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _onNext,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1864E8),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    _currentStep == 4 ? 'Submit Request' : 'Next',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
         ),
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(18, 6, 18, 32),
-          children: [
-            const _InspectionIntro(),
-            const SizedBox(height: 24),
-            const _SectionLabel('Select Service Category'),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<ServiceCategory>(
-              initialValue: _selectedCategory,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.category_rounded),
-              ),
-              items: appState.categories
-                  .map(
-                    (category) => DropdownMenuItem(
-                      value: category,
-                      child: Text(category.shortTitle),
+    );
+  }
+
+  Widget _buildStepper() {
+    final steps = ['Service', 'Details', 'Photos', 'Location'];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(steps.length, (index) {
+          final stepNum = index + 1;
+          final isActive = stepNum <= _currentStep;
+          final isCurrent = stepNum == _currentStep;
+
+          return Row(
+            children: [
+              Column(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? const Color(0xFF1864E8)
+                          : const Color(0xFFF1F5F9),
+                      shape: BoxShape.circle,
                     ),
-                  )
-                  .toList(),
-              onChanged: (category) {
-                if (category != null) _changeCategory(category);
-              },
-            ),
-            if (subServices.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionLabel('Select Required Service'),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<SubService>(
-                key: ValueKey(_selectedCategory.id),
-                initialValue: _selectedSubService,
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.build_rounded),
-                ),
-                isExpanded: true,
-                items: subServices
-                    .map(
-                      (service) => DropdownMenuItem(
-                        value: service,
-                        child: Text(
-                          service.name,
-                          overflow: TextOverflow.ellipsis,
+                    child: Center(
+                      child: Text(
+                        '$stepNum',
+                        style: TextStyle(
+                          color: isActive ? Colors.white : const Color(0xFF94A3B8),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                    )
-                    .toList(),
-                onChanged: _changeSubService,
-              ),
-            ],
-            if (symptoms.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              const _SectionLabel('Work or Symptoms Observed'),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: symptoms
-                    .map(
-                      (symptom) => FilterChip(
-                        label: Text(symptom),
-                        selected: _selectedSymptoms.contains(symptom),
-                        onSelected: (_) => _toggleSymptom(symptom),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-            const SizedBox(height: 18),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const _SectionLabel('Damage Photos'),
-                Text(
-                  '${_selectedImages.length}/$_maxImages',
-                  style: const TextStyle(color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _AddPhotoButton(
-                  icon: Icons.camera_alt_rounded,
-                  label: 'Camera',
-                  onTap: () => _pickImage(ImageSource.camera),
-                ),
-                _AddPhotoButton(
-                  icon: Icons.photo_library_rounded,
-                  label: 'Gallery',
-                  onTap: _pickMultipleImages,
-                ),
-                ..._selectedImages.map(_imagePreview),
-              ],
-            ),
-            const SizedBox(height: 18),
-            const _SectionLabel('Describe the Damage & Area'),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _descriptionController,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                hintText: 'Example: Roof leaking above the ceiling fan...',
-              ),
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Please describe the damage.'
-                  : null,
-            ),
-            const SizedBox(height: 18),
-            const _SectionLabel('Property Type'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _propertyTypes
-                  .map(
-                    (type) => ChoiceChip(
-                      avatar: Icon(type.icon, size: 18),
-                      label: Text(type.label),
-                      selected: _propertyType == type.label,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() => _propertyType = type.label);
-                        }
-                      },
                     ),
-                  )
-                  .toList(),
-            ),
-            const SizedBox(height: 18),
-            const _SectionLabel('Site / Inspection Address'),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _addressController,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(
-                  Icons.location_on_rounded,
-                  color: AppColors.accent,
-                ),
-                hintText: 'Enter the complete site address',
-              ),
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Please enter the inspection address.'
-                  : null,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _isSubmitting ? null : _submit,
-              child: _isSubmitting
-                  ? const SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.verified_rounded, size: 19),
-                        SizedBox(width: 8),
-                        Text('Submit inspection · ₹0 upfront'),
-                      ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    steps[index],
+                    style: TextStyle(
+                      color: isCurrent
+                          ? const Color(0xFF0F172A)
+                          : const Color(0xFF94A3B8),
+                      fontSize: 11.5,
+                      fontWeight:
+                          isCurrent ? FontWeight.w700 : FontWeight.w500,
                     ),
-            ),
-            const SizedBox(height: 12),
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.lock_outline_rounded,
-                  color: AppColors.textMuted,
-                  size: 13,
+                  ),
+                ],
+              ),
+              if (index < steps.length - 1)
+                Container(
+                  width: MediaQuery.of(context).size.width * 0.12,
+                  height: 2,
+                  margin: const EdgeInsets.only(bottom: 20, left: 6, right: 6),
+                  color: stepNum < _currentStep
+                      ? const Color(0xFF1864E8)
+                      : const Color(0xFFE2E8F0),
                 ),
-                SizedBox(width: 5),
-                Text(
-                  'Your details are private and secure',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 10),
-                ),
-              ],
-            ),
-          ],
-        ),
+            ],
+          );
+        }),
       ),
     );
   }
 
-  Widget _imagePreview(XFile image) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: FutureBuilder(
-            future: image.readAsBytes(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const SizedBox.square(
-                  dimension: 88,
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              return Image.memory(
-                snapshot.data!,
-                width: 88,
-                height: 88,
-                fit: BoxFit.cover,
-              );
-            },
-          ),
-        ),
-        Positioned(
-          right: -8,
-          top: -8,
-          child: IconButton.filled(
-            visualDensity: VisualDensity.compact,
-            iconSize: 16,
-            onPressed: () => setState(() => _selectedImages.remove(image)),
-            icon: const Icon(Icons.close),
-          ),
-        ),
-      ],
-    );
+  Widget _buildCurrentStepView() {
+    switch (_currentStep) {
+      case 1:
+        return _buildStep1Service();
+      case 2:
+        return _buildStep2Details();
+      case 3:
+        return _buildStep3Photos();
+      case 4:
+        return _buildStep4Location();
+      default:
+        return const SizedBox.shrink();
+    }
   }
-}
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
+  Widget _buildStep1Service() {
+    final subList = _subServices[_selectedCategory] ?? ['General Assessment'];
 
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Text(
+          'Select Service Category',
+          style: TextStyle(
+            color: Color(0xFF334155),
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
         Container(
-          width: 4,
-          height: 16,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(4),
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              isExpanded: true,
+              value: _selectedCategory,
+              icon: const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: Color(0xFF64748B),
+              ),
+              items: _categories.map((cat) {
+                return DropdownMenuItem(
+                  value: cat,
+                  child: Text(
+                    cat,
+                    style: const TextStyle(
+                      color: Color(0xFF0F172A),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                );
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() {
+                    _selectedCategory = val;
+                    _selectedSubService =
+                        (_subServices[val] ?? ['General Assessment']).first;
+                  });
+                }
+              },
+            ),
           ),
         ),
-        const SizedBox(width: 9),
-        Text(
-          text,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+
+        const SizedBox(height: 20),
+
+        const Text(
+          'Select Sub Service',
+          style: TextStyle(
+            color: Color(0xFF334155),
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      ],
-    );
-  }
-}
-
-class _InspectionIntro extends StatelessWidget {
-  const _InspectionIntro();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: AppColors.brandGradient,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.auto_awesome_rounded,
-                color: AppColors.accent,
-                size: 18,
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              isExpanded: true,
+              value: subList.contains(_selectedSubService)
+                  ? _selectedSubService
+                  : subList.first,
+              icon: const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: Color(0xFF64748B),
               ),
-              SizedBox(width: 8),
-              Text(
-                'FAST, TRANSPARENT ESTIMATE',
-                style: TextStyle(
-                  color: AppColors.accentLight,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.7,
+              items: subList.map((sub) {
+                return DropdownMenuItem(
+                  value: sub,
+                  child: Text(
+                    sub,
+                    style: const TextStyle(
+                      color: Color(0xFF0F172A),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                );
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() => _selectedSubService = val);
+                }
+              },
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        const Text(
+          'Description',
+          style: TextStyle(
+            color: Color(0xFF334155),
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 140,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _descriptionController,
+                  maxLines: null,
+                  maxLength: 500,
+                  buildCounter: (
+                    context, {
+                    required currentLength,
+                    required isFocused,
+                    maxLength,
+                  }) {
+                    return Align(
+                      alignment: Alignment.bottomRight,
+                      child: Text(
+                        '$currentLength/$maxLength',
+                        style: const TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    );
+                  },
+                  decoration: const InputDecoration(
+                    hintText: 'Describe the issue or work required...',
+                    hintStyle: TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 13.5,
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
               ),
             ],
           ),
-          SizedBox(height: 12),
-          Text(
-            'Tell us what needs attention',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          SizedBox(height: 6),
-          Text(
-            'Add clear photos and a short description. Our estimator will prepare an itemized quotation.',
-            style: TextStyle(
-              color: Color(0xFFCCFBF1),
-              fontSize: 11,
-              height: 1.45,
-            ),
-          ),
-          SizedBox(height: 15),
-          ClipRRect(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-            child: LinearProgressIndicator(
-              value: 0.25,
-              minHeight: 5,
-              backgroundColor: Color(0x3344E4D2),
-              color: AppColors.accent,
-            ),
-          ),
-          SizedBox(height: 7),
-          Text(
-            'Step 1 of 4 · Service details',
-            style: TextStyle(color: Color(0xFF99F6E4), fontSize: 9),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
-}
 
-class _AddPhotoButton extends StatelessWidget {
-  const _AddPhotoButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+  Widget _buildStep2Details() {
+    final types = ['Residential Villa', 'Commercial Building', 'Apartment', 'Industrial Plot'];
 
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 92,
-        height: 92,
-        decoration: BoxDecoration(
-          color: AppColors.backgroundSoft,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Property Type',
+          style: TextStyle(
+            color: Color(0xFF334155),
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              isExpanded: true,
+              value: _propertyType,
+              items: types.map((t) {
+                return DropdownMenuItem(
+                  value: t,
+                  child: Text(t, style: const TextStyle(fontWeight: FontWeight.w600)),
+                );
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _propertyType = val);
+              },
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        const Text(
+          'Estimated Area (sq.ft)',
+          style: TextStyle(
+            color: Color(0xFF334155),
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: TextField(
+            controller: _areaController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              hintText: 'e.g. 1500',
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep3Photos() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Upload Photos / Site Evidence',
+          style: TextStyle(
+            color: Color(0xFF0F172A),
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Add clear photos of the damage, seepage, or work site.',
+          style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+        ),
+        const SizedBox(height: 20),
+        Container(
+          width: double.infinity,
+          height: 160,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: const Color(0xFF1864E8).withValues(alpha: 0.4),
+              style: BorderStyle.solid,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(
+                Icons.cloud_upload_outlined,
+                color: Color(0xFF1864E8),
+                size: 38,
               ),
-              child: Icon(icon, color: AppColors.primaryLight, size: 19),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
-            ),
-          ],
+              SizedBox(height: 10),
+              Text(
+                'Tap to browse or take photos',
+                style: TextStyle(
+                  color: Color(0xFF1864E8),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Supports JPG, PNG up to 10MB',
+                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildStep4Location() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Site Address',
+          style: TextStyle(
+            color: Color(0xFF334155),
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: TextField(
+            controller: _addressController,
+            decoration: const InputDecoration(
+              hintText: 'Plot/Street address',
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'City / State',
+          style: TextStyle(
+            color: Color(0xFF334155),
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: TextField(
+            controller: _cityController,
+            decoration: const InputDecoration(
+              hintText: 'City, State, Pincode',
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Preferred Slot',
+          style: TextStyle(
+            color: Color(0xFF334155),
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              isExpanded: true,
+              value: _preferredTime,
+              items: [
+                'Morning (09:00 AM - 12:00 PM)',
+                'Afternoon (01:00 PM - 04:00 PM)',
+                'Evening (04:00 PM - 07:00 PM)',
+              ].map((s) {
+                return DropdownMenuItem(value: s, child: Text(s));
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _preferredTime = val);
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,335 +1,311 @@
 import 'package:flutter/material.dart';
 
-import '../../../config/theme/app_colors.dart';
-import '../../../core/utils/currency_formatter.dart';
-import '../../../core/widgets/app_ui.dart';
-import '../../../main.dart';
 import '../models/quotation_model.dart';
+import 'quotation_details_screen.dart';
 
-class QuotationScreen extends StatelessWidget {
+class QuotationDisplayItem {
+  final String id;
+  final String quoteNumber;
+  final String title;
+  final String location;
+  final double amount;
+  final String date;
+  final QuoteDecision status;
+
+  const QuotationDisplayItem({
+    required this.id,
+    required this.quoteNumber,
+    required this.title,
+    required this.location,
+    required this.amount,
+    required this.date,
+    required this.status,
+  });
+}
+
+class QuotationScreen extends StatefulWidget {
   const QuotationScreen({super.key});
 
   @override
+  State<QuotationScreen> createState() => _QuotationScreenState();
+}
+
+class _QuotationScreenState extends State<QuotationScreen> {
+  String _selectedFilter = 'All';
+
+  final List<QuotationDisplayItem> _quotations = [
+    const QuotationDisplayItem(
+      id: 'q1',
+      quoteNumber: '#Q-001',
+      title: 'Civil Work - Residential Villa',
+      location: 'Bhilwara, Rajasthan',
+      amount: 45000,
+      date: '12 Apr 2025',
+      status: QuoteDecision.pending,
+    ),
+    const QuotationDisplayItem(
+      id: 'q2',
+      quoteNumber: '#Q-002',
+      title: 'Plumbing Work',
+      location: 'Jaipur, Rajasthan',
+      amount: 18500,
+      date: '10 Apr 2025',
+      status: QuoteDecision.accepted,
+    ),
+    const QuotationDisplayItem(
+      id: 'q3',
+      quoteNumber: '#Q-003',
+      title: 'Electrical Work',
+      location: 'Udaipur, Rajasthan',
+      amount: 22000,
+      date: '08 Apr 2025',
+      status: QuoteDecision.pending,
+    ),
+    const QuotationDisplayItem(
+      id: 'q4',
+      quoteNumber: '#Q-004',
+      title: 'Interior Work',
+      location: 'Kota, Rajasthan',
+      amount: 75000,
+      date: '02 Apr 2025',
+      status: QuoteDecision.rejected,
+    ),
+  ];
+
+  @override
   Widget build(BuildContext context) {
-    final quotations = appState.quotations;
+    final filtered = _quotations.where((item) {
+      if (_selectedFilter == 'All') return true;
+      if (_selectedFilter == 'Pending') {
+        return item.status == QuoteDecision.pending;
+      }
+      if (_selectedFilter == 'Accepted') {
+        return item.status == QuoteDecision.accepted;
+      }
+      if (_selectedFilter == 'Rejected') {
+        return item.status == QuoteDecision.rejected;
+      }
+      return true;
+    }).toList();
 
     return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-              child: Row(
-                children: [
-                  Expanded(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: const Text(
+          'Quotations',
+          style: TextStyle(
+            color: Color(0xFF0F172A),
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        centerTitle: false,
+      ),
+      body: Column(
+        children: [
+          // Filter Tabs
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+            child: Row(
+              children: ['All', 'Pending', 'Accepted', 'Rejected'].map((filter) {
+                final isSelected = filter == _selectedFilter;
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedFilter = filter),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF1864E8)
+                            : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        filter,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF64748B),
+                          fontSize: 12.5,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          // Quotations List
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+              itemCount: filtered.length,
+              separatorBuilder: (_, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final item = filtered[index];
+                return GestureDetector(
+                  onTap: () {
+                    final quoteModel = QuotationModel(
+                      id: item.id,
+                      quoteNumber: item.quoteNumber,
+                      requestId: 'req_demo',
+                      lineItems: [
+                        QuotationLineItem(
+                          item: item.title,
+                          qty: 1,
+                          unit: 'job',
+                          rate: item.amount,
+                          amount: item.amount,
+                        ),
+                      ],
+                      materialCost: item.amount * 0.7,
+                      laborCost: item.amount * 0.3,
+                      subtotal: item.amount,
+                      taxGst: item.amount * 0.18,
+                      grandTotal: item.amount * 1.18,
+                      timeline: '3-5 days',
+                      terms: 'Standard terms',
+                      status: item.status,
+                      createdAt: DateTime.now(),
+                    );
+
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => QuotationDetailsScreen(
+                          quotation: quoteModel,
+                          projectName: item.title,
+                          location: item.location,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              const Color(0xFF0F172A).withValues(alpha: 0.02),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Your quotations',
-                          style: Theme.of(context).textTheme.headlineSmall,
+                        // Row 1: Quote # and Status Badge
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              item.quoteNumber,
+                              style: const TextStyle(
+                                color: Color(0xFF0F172A),
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            _buildBadge(item.status),
+                          ],
                         ),
-                        const SizedBox(height: 3),
-                        const Text(
-                          'Transparent pricing. No hidden surprises.',
-                          style: TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 12,
+                        const SizedBox(height: 6),
+
+                        // Title
+                        Text(
+                          item.title,
+                          style: const TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 13,
                           ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Row 2: Price and Date
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '₹ ${item.amount.toInt()}',
+                              style: const TextStyle(
+                                color: Color(0xFF0F172A),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            Text(
+                              item.date,
+                              style: const TextStyle(
+                                color: Color(0xFF94A3B8),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                  AppIconButton(
-                    icon: Icons.help_outline_rounded,
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Call support if you need help with a quote.',
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
-            Expanded(
-              child: quotations.isEmpty
-                  ? const EmptyState(
-                      icon: Icons.receipt_long_rounded,
-                      title: 'No quotations yet',
-                      message:
-                          'Approved estimates from our team will appear here.',
-                    )
-                  : ListView.separated(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(18, 4, 18, 118),
-                      itemCount: quotations.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 16),
-                      itemBuilder: (_, index) =>
-                          _QuotationCard(quotation: quotations[index]),
-                    ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
-}
 
-class _QuotationCard extends StatelessWidget {
-  const _QuotationCard({required this.quotation});
+  Widget _buildBadge(QuoteDecision status) {
+    Color bg;
+    Color fg;
+    String label;
 
-  final QuotationModel quotation;
-
-  @override
-  Widget build(BuildContext context) {
-    final (statusLabel, statusColor) = switch (quotation.status) {
-      QuoteDecision.pending => ('ACTION REQUIRED', AppColors.warning),
-      QuoteDecision.accepted => ('ACCEPTED', AppColors.success),
-      QuoteDecision.rejected => ('DECLINED', AppColors.error),
-    };
+    switch (status) {
+      case QuoteDecision.accepted:
+        bg = const Color(0xFFECFDF5);
+        fg = const Color(0xFF10B981);
+        label = 'Accepted';
+        break;
+      case QuoteDecision.rejected:
+        bg = const Color(0xFFFEF2F2);
+        fg = const Color(0xFFEF4444);
+        label = 'Rejected';
+        break;
+      case QuoteDecision.pending:
+        bg = const Color(0xFFFEF3C7);
+        fg = const Color(0xFFD97706);
+        label = 'Pending';
+        break;
+    }
 
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderSubtle),
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: const BoxDecoration(gradient: AppColors.brandGradient),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: const Icon(
-                    Icons.description_outlined,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        quotation.quoteNumber,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Valid estimate · ${quotation.timeline}',
-                        style: const TextStyle(
-                          color: Color(0xFFCCFBF1),
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                StatusPill(label: statusLabel, color: statusColor),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'COST BREAKDOWN',
-                  style: TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                ...quotation.lineItems.map((item) => _LineItem(item: item)),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 5),
-                  child: Divider(),
-                ),
-                _amountRow('Materials', quotation.materialCost),
-                const SizedBox(height: 7),
-                _amountRow('Professional labour', quotation.laborCost),
-                const SizedBox(height: 7),
-                _amountRow('GST', quotation.taxGst),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(15),
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundSoft,
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: AppColors.borderSubtle),
-                  ),
-                  child: Row(
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'Grand total',
-                          style: TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                      ),
-                      Text(
-                        CurrencyFormatter.format(quotation.grandTotal),
-                        style: const TextStyle(
-                          color: AppColors.accent,
-                          fontSize: 21,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.shield_outlined,
-                      color: AppColors.success,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 7),
-                    Expanded(
-                      child: Text(
-                        quotation.terms,
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 10,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (quotation.status == QuoteDecision.pending) ...[
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _confirmAcceptance(context),
-                      icon: const Icon(
-                        Icons.check_circle_outline_rounded,
-                        size: 19,
-                      ),
-                      label: const Text('Accept quotation'),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _amountRow(String label, num amount) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-          ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: fg,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
         ),
-        Text(
-          CurrencyFormatter.format(amount),
-          style: const TextStyle(fontSize: 12),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _confirmAcceptance(BuildContext context) async {
-    final accepted = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Accept this quotation?'),
-        content: Text(
-          'You are approving work worth ${CurrencyFormatter.format(quotation.grandTotal)}. Payment can be completed in the next step.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Not now'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Accept'),
-          ),
-        ],
-      ),
-    );
-
-    if (accepted ?? false) appState.acceptQuotation(quotation.id);
-  }
-}
-
-class _LineItem extends StatelessWidget {
-  const _LineItem({required this.item});
-
-  final QuotationLineItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            margin: const EdgeInsets.only(top: 6),
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.item,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${item.qty} ${item.unit} × ${CurrencyFormatter.format(item.rate)}',
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 10,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            CurrencyFormatter.format(item.amount),
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-          ),
-        ],
       ),
     );
   }

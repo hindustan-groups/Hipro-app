@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/app_drawer.dart';
 import '../home/screens/home_screen.dart';
 import '../profile/screens/profile_screen.dart';
 import '../projects/screens/projects_screen.dart';
@@ -7,22 +8,32 @@ import '../quotations/screens/quotation_screen.dart';
 import '../services/screens/service_screen.dart';
 
 class MainNavScreen extends StatefulWidget {
-  const MainNavScreen({super.key});
+  const MainNavScreen({super.key, this.initialTab = 0});
+
+  final int initialTab;
+
+  static void switchTab(BuildContext context, int tabIndex) {
+    final state = context.findAncestorStateOfType<_MainNavScreenState>();
+    state?.setTab(tabIndex);
+  }
 
   @override
   State<MainNavScreen> createState() => _MainNavScreenState();
 }
 
 class _MainNavScreenState extends State<MainNavScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  static const List<Widget> _screens = [
-    HomeScreen(),
-    ServicesScreen(),
-    ProjectsScreen(),
-    QuotationScreen(),
-    ProfileScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialTab;
+  }
+
+  void setTab(int index) {
+    setState(() => _currentIndex = index);
+  }
 
   static const List<_NavigationItem> _items = [
     _NavigationItem(
@@ -54,29 +65,37 @@ class _MainNavScreenState extends State<MainNavScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screens = [
+      HomeScreen(
+        onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer(),
+        onSwitchTab: setTab,
+      ),
+      const ServicesScreen(),
+      const ProjectsScreen(),
+      const QuotationScreen(),
+      ProfileScreen(onSwitchTab: setTab),
+    ];
+
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: AppDrawer(onSelectTab: setTab),
       extendBody: true,
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(index: _currentIndex, children: screens),
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(28, 0, 28, 12),
+        minimum: const EdgeInsets.fromLTRB(24, 0, 24, 12),
         child: Container(
           height: 58,
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(29),
-            border: Border.all(color: Colors.white, width: 1.5),
+            border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF17223B).withValues(alpha: 0.12),
+                color: const Color(0xFF0F172A).withValues(alpha: 0.08),
                 blurRadius: 24,
                 spreadRadius: 1,
-                offset: const Offset(0, 10),
-              ),
-              BoxShadow(
-                color: Colors.white.withValues(alpha: 0.95),
-                blurRadius: 3,
-                offset: const Offset(0, -1),
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -93,7 +112,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
                     child: _NavigationButton(
                       item: _items[index],
                       selected: selected,
-                      onTap: () => setState(() => _currentIndex = index),
+                      onTap: () => setTab(index),
                     ),
                   );
                 }),
@@ -137,7 +156,9 @@ class _NavigationButton extends StatelessWidget {
               height: 48,
               padding: EdgeInsets.symmetric(horizontal: selected ? 8 : 2),
               decoration: BoxDecoration(
-                color: selected ? const Color(0xFFF0F1F4) : Colors.transparent,
+                color: selected
+                    ? const Color(0xFFEBF2FE)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Row(
@@ -150,8 +171,8 @@ class _NavigationButton extends StatelessWidget {
                       key: ValueKey(selected),
                       size: 20,
                       color: selected
-                          ? const Color(0xFF111318)
-                          : const Color(0xFFADB1B8),
+                          ? const Color(0xFF1864E8)
+                          : const Color(0xFF94A3B8),
                     ),
                   ),
                   if (selected) ...[
@@ -163,8 +184,8 @@ class _NavigationButton extends StatelessWidget {
                         overflow: TextOverflow.fade,
                         softWrap: false,
                         style: const TextStyle(
-                          color: Color(0xFF111318),
-                          fontSize: 11.5,
+                          color: Color(0xFF1864E8),
+                          fontSize: 12,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.1,
                         ),

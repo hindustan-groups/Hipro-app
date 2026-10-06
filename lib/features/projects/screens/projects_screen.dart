@@ -1,200 +1,302 @@
 import 'package:flutter/material.dart';
 
-import '../../../config/theme/app_colors.dart';
-import '../../../core/widgets/app_ui.dart';
-import '../../../main.dart';
-import '../../inspections/models/request_model.dart';
+class ProjectItem {
+  final String id;
+  final String title;
+  final String location;
+  final String status;
+  final String date;
+  final String imageUrl;
 
-class ProjectsScreen extends StatelessWidget {
+  const ProjectItem({
+    required this.id,
+    required this.title,
+    required this.location,
+    required this.status,
+    required this.date,
+    required this.imageUrl,
+  });
+}
+
+class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final requests = appState.requests;
-
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'My projects',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                        const SizedBox(height: 3),
-                        const Text(
-                          'Every request, clearly tracked',
-                          style: TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const StatusPill(
-                    label: 'LIVE UPDATES',
-                    color: AppColors.success,
-                    icon: Icons.bolt_rounded,
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: requests.isEmpty
-                  ? const EmptyState(
-                      icon: Icons.construction_rounded,
-                      title: 'No projects yet',
-                      message: 'Your inspection requests will appear here.',
-                    )
-                  : ListView.separated(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(18, 4, 18, 118),
-                      itemCount: requests.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 14),
-                      itemBuilder: (_, index) =>
-                          _ProjectCard(request: requests[index]),
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  State<ProjectsScreen> createState() => _ProjectsScreenState();
 }
 
-class _ProjectCard extends StatelessWidget {
-  const _ProjectCard({required this.request});
+class _ProjectsScreenState extends State<ProjectsScreen> {
+  String _selectedTab = 'Active';
+  String _searchQuery = '';
 
-  final ServiceRequestModel request;
+  static const List<ProjectItem> _allProjects = [
+    ProjectItem(
+      id: 'p1',
+      title: 'Residential Villa',
+      location: 'Bhilwara, Rajasthan',
+      status: 'In Progress',
+      date: '12 Apr 2025',
+      imageUrl:
+          'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=80',
+    ),
+    ProjectItem(
+      id: 'p2',
+      title: 'Commercial Building',
+      location: 'Jaipur, Rajasthan',
+      status: 'In Progress',
+      date: '28 Mar 2025',
+      imageUrl:
+          'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=400&q=80',
+    ),
+    ProjectItem(
+      id: 'p3',
+      title: 'Office Renovation',
+      location: 'Udaipur, Rajasthan',
+      status: 'Completed',
+      date: '15 Feb 2025',
+      imageUrl:
+          'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=400&q=80',
+    ),
+    ProjectItem(
+      id: 'p4',
+      title: 'Farm House',
+      location: 'Kota, Rajasthan',
+      status: 'Completed',
+      date: '10 Jan 2025',
+      imageUrl:
+          'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=400&q=80',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final (label, color, progress) = _status(request.status);
+    final filtered = _allProjects.where((p) {
+      final matchesTab = _selectedTab == 'All' ||
+          (_selectedTab == 'Active' && p.status == 'In Progress') ||
+          (_selectedTab == 'Completed' && p.status == 'Completed');
+      final matchesSearch = _searchQuery.isEmpty ||
+          p.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          p.location.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchesTab && matchesSearch;
+    }).toList();
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.borderSubtle),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: const Text(
+          'Projects',
+          style: TextStyle(
+            color: Color(0xFF0F172A),
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.tune_rounded,
+              color: Color(0xFF0F172A),
+              size: 22,
+            ),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Filter options opened.')),
+              );
+            },
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: Column(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(11),
-                decoration: BoxDecoration(
-                  gradient: AppColors.brandGradient,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.construction_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      request.requestNumber,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      request.categoryName,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 11,
+          // Search & Filter Header
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+            child: Column(
+              children: [
+                // Search Input
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: TextField(
+                    onChanged: (val) => setState(() => _searchQuery = val),
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        color: Color(0xFF94A3B8),
+                        size: 20,
+                      ),
+                      hintText: 'Search projects...',
+                      hintStyle: TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 13.5,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              StatusPill(label: label, color: color),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Text(
-            request.subServiceName,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 7),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.location_on_outlined,
-                color: AppColors.textMuted,
-                size: 16,
-              ),
-              const SizedBox(width: 5),
-              Expanded(
-                child: Text(
-                  request.address,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 11,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Project progress',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
-              ),
-              Text(
-                '${(progress * 100).round()}%',
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 11,
+
+                const SizedBox(height: 14),
+
+                // Segmented Tabs: Active | Completed | All
+                Row(
+                  children: ['Active', 'Completed', 'All'].map((tab) {
+                    final isSelected = tab == _selectedTab;
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedTab = tab),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFF1864E8)
+                                : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            tab,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : const Color(0xFF64748B),
+                              fontSize: 13,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 7,
-              backgroundColor: AppColors.surfaceElevated,
-              color: color,
+
+          // Projects List
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+              itemCount: filtered.length,
+              separatorBuilder: (_, index) => const SizedBox(height: 14),
+              itemBuilder: (context, index) {
+                final item = filtered[index];
+                final isInProgress = item.status == 'In Progress';
+
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color:
+                            const Color(0xFF0F172A).withValues(alpha: 0.02),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // Thumbnail
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          item.imageUrl,
+                          width: 58,
+                          height: 58,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+
+                      // Title & Location
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.title,
+                              style: const TextStyle(
+                                color: Color(0xFF0F172A),
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              item.location,
+                              style: const TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 12.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Status Badge & Date
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isInProgress
+                                  ? const Color(0xFFECFDF5)
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              item.status,
+                              style: TextStyle(
+                                color: isInProgress
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFF64748B),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            item.date,
+                            style: const TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],
       ),
     );
-  }
-
-  (String, Color, double) _status(RequestStatus status) {
-    return switch (status) {
-      RequestStatus.submitted => ('Submitted', AppColors.info, 0.12),
-      RequestStatus.estimating => ('Estimating', AppColors.warning, 0.3),
-      RequestStatus.quoted => ('Quote ready', AppColors.accent, 0.5),
-      RequestStatus.paid => ('Approved', AppColors.success, 0.65),
-      RequestStatus.inProgress => ('In progress', AppColors.primaryLight, 0.82),
-      RequestStatus.completed => ('Completed', AppColors.success, 1),
-      RequestStatus.cancelled => ('Cancelled', AppColors.error, 0),
-    };
   }
 }
