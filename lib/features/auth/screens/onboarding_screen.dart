@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/construction_illustration.dart';
 import '../../../core/widgets/hipro_logo.dart';
 import 'login_screen.dart';
 
@@ -57,115 +58,52 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF1358D8), Color(0xFF0D43A8)],
+          colors: [Color(0xFF1565D8), Color(0xFF0E439B)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
       ),
-      child: Stack(
+      child: Column(
         children: [
-          // Background subtle building outline
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 60,
-            child: Opacity(
-              opacity: 0.15,
-              child: Icon(
-                Icons.location_city_rounded,
-                size: 320,
-                color: Colors.white,
-              ),
+          const SizedBox(height: 16),
+          // Top Architectural Construction Illustration
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: ConstructionIllustration(height: 220, isDark: true),
+          ),
+
+          const Spacer(flex: 1),
+
+          // Center Brand Logo & Taglines
+          const HiproLogo(size: 46, isLight: true, fontSize: 26),
+          const SizedBox(height: 18),
+          const Text(
+            'Your Construction &\nService Partner',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              height: 1.25,
+              letterSpacing: -0.4,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Spacer(flex: 2),
-                // Center construction crane/building illustration card
-                Container(
-                  width: 260,
-                  height: 240,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.25),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 30,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(26),
-                    child: Stack(
-                      children: [
-                        Image.network(
-                          'https://images.unsplash.com/photo-1541888946425-d0fbb18015f6?auto=format&fit=crop&w=800&q=80',
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.transparent,
-                                const Color(0xFF0F172A).withValues(alpha: 0.75),
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 16,
-                          left: 16,
-                          right: 16,
-                          child: Row(
-                            children: const [
-                              HiproLogo(size: 36, isLight: true, fontSize: 22),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 36),
-                const Text(
-                  'Your Construction &\nService Partner',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    height: 1.25,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                const Text(
-                  'Inspect  •  Plan  •  Build  •  Grow',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFF93C5FD),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-                const Spacer(flex: 3),
-              ],
+          const SizedBox(height: 12),
+          const Text(
+            'Inspect  •  Plan  •  Build  •  Grow',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFF93C5FD),
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
             ),
           ),
+
+          const Spacer(flex: 2),
+
+          // Bottom City Skyline Silhouette
+          const CitySkylineIllustration(height: 90, isDark: true),
         ],
       ),
     );
@@ -174,79 +112,81 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _buildSecondSlide() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
       child: Column(
         children: [
           const SizedBox(height: 16),
-          const HiproLogo(size: 44, fontSize: 26),
+          // Top Hipro Brand Logo
+          const HiproLogo(size: 46, isLight: false, fontSize: 26),
           const SizedBox(height: 16),
           const Text(
             'Professional Services\nfor a Better Tomorrow',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFF0F172A),
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.w800,
               height: 1.3,
               letterSpacing: -0.4,
             ),
           ),
-          const SizedBox(height: 32),
-          // 4 Key Value Pillars
-          Row(
-            children: [
-              Expanded(
-                child: _buildFeatureCard(
-                  icon: Icons.groups_rounded,
-                  title: 'Expert\nTeam',
-                  bgColor: const Color(0xFFEBF2FE),
-                  iconColor: const Color(0xFF1864E8),
+          const SizedBox(height: 24),
+
+          // 4 Key Value Pillars (2x2 Grid)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildFeatureCard(
+                        icon: Icons.groups_rounded,
+                        title: 'Expert\nTeam',
+                        bgColor: const Color(0xFFEBF2FE),
+                        iconColor: const Color(0xFF1864E8),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: _buildFeatureCard(
+                        icon: Icons.verified_rounded,
+                        title: 'Quality\nWork',
+                        bgColor: const Color(0xFFE6FAF5),
+                        iconColor: const Color(0xFF0D9488),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _buildFeatureCard(
-                  icon: Icons.verified_rounded,
-                  title: 'Quality\nWork',
-                  bgColor: const Color(0xFFE6FAF5),
-                  iconColor: const Color(0xFF0D9488),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildFeatureCard(
+                        icon: Icons.schedule_rounded,
+                        title: 'On-Time\nDelivery',
+                        bgColor: const Color(0xFFFEF5E7),
+                        iconColor: const Color(0xFFF59E0B),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: _buildFeatureCard(
+                        icon: Icons.handshake_rounded,
+                        title: 'Trusted\nPartner',
+                        bgColor: const Color(0xFFF8EEFE),
+                        iconColor: const Color(0xFF8B5CF6),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _buildFeatureCard(
-                  icon: Icons.schedule_rounded,
-                  title: 'On-Time\nDelivery',
-                  bgColor: const Color(0xFFFEF5E7),
-                  iconColor: const Color(0xFFF59E0B),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _buildFeatureCard(
-                  icon: Icons.handshake_rounded,
-                  title: 'Trusted\nPartner',
-                  bgColor: const Color(0xFFF8EEFE),
-                  iconColor: const Color(0xFF8B5CF6),
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          // Skyline artwork illustration
-          Opacity(
-            opacity: 0.35,
-            child: Image.network(
-              'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80',
-              height: 110,
-              width: double.infinity,
-              fit: BoxFit.cover,
+              ],
             ),
           ),
+
+          const Spacer(),
+
+          // Bottom Vector City Skyline with Crane
+          const CitySkylineIllustration(height: 110, isDark: false),
         ],
       ),
     );
@@ -259,23 +199,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     required Color iconColor,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: bgColor.withValues(alpha: 0.8)),
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: const BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: iconColor, size: 24),
+            child: Icon(icon, color: iconColor, size: 22),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             title,
             textAlign: TextAlign.center,
@@ -294,8 +234,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _buildBottomBar() {
     final isDark = _currentPage == 0;
     return Container(
-      padding: const EdgeInsets.fromLTRB(28, 12, 28, 32),
-      color: isDark ? const Color(0xFF0D43A8) : Colors.white,
+      padding: const EdgeInsets.fromLTRB(28, 8, 28, 28),
+      color: isDark ? const Color(0xFF0E439B) : Colors.white,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

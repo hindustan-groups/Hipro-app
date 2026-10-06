@@ -193,6 +193,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Image.network(
                             'https://images.unsplash.com/photo-1541888946425-d0fbb18015f6?auto=format&fit=crop&w=400&q=80',
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: const Color(0xFF1E293B),
+                                child: const Icon(
+                                  Icons.apartment_rounded,
+                                  color: Color(0xFF60A5FA),
+                                  size: 40,
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),

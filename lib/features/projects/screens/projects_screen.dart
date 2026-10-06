@@ -223,6 +223,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           width: 58,
                           height: 58,
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 58,
+                              height: 58,
+                              color: const Color(0xFFEBF2FE),
+                              child: const Icon(
+                                Icons.apartment_rounded,
+                                color: Color(0xFF1864E8),
+                                size: 28,
+                              ),
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(width: 14),

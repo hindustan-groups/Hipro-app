@@ -30,6 +30,18 @@ class ServiceDetailsScreen extends StatelessWidget {
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: const Color(0xFF1E3A8A),
+                      child: const Center(
+                        child: Icon(
+                          Icons.apartment_rounded,
+                          color: Colors.white,
+                          size: 64,
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 Container(
                   decoration: BoxDecoration(
