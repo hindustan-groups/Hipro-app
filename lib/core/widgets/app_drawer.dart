@@ -23,10 +23,20 @@ class AppDrawer extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 16, 16, 20),
               child: Row(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 24,
-                    backgroundImage: NetworkImage(
+                    backgroundColor: const Color(0xFF1864E8),
+                    foregroundImage: const NetworkImage(
                       'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80',
+                    ),
+                    onForegroundImageError: (exception, stackTrace) {},
+                    child: const Text(
+                      'PK',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
