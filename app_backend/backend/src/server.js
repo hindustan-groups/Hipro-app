@@ -26,6 +26,7 @@ app.use('/api/v1/requests', require('./routes/requests'));
 app.use('/api/v1/quotations', require('./routes/quations'));
 app.use('/api/v1/admin', require('./routes/admin'));
 app.use('/api/v1/upload', require('./routes/upload'));
+app.use('/api/v1/auth', require('./routes/auth'));
 
 // Root endpoint - API Status
 app.get('/', (req, res) => {

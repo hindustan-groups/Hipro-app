@@ -13,6 +13,8 @@ model Service {
     name        String
     description String
     icon        String
+    iconImage   String?
+    imageUrl    String?
     rating      Float
     subServices SubService[]
     created_at  DateTime     @default(now())
@@ -33,8 +35,12 @@ model user {
     id String @id @default(uuid())
     name String
     address UserAddress[]
-    phoneNumber String @unique
-    password String
+    phoneNumber String? @unique
+    email String? @unique
+    password String?
+    googleId String? @unique
+    photoUrl String?
+    authProvider String? @default("local")
     requests ServiceRequest[]
     created_at DateTime @default(now())
 }

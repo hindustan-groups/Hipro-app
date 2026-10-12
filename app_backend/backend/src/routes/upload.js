@@ -1,5 +1,6 @@
 const express = require('express');
 const router =  express.Router();
+const path = require('path');
 
 const multer = require('multer');
 const {uploadToImageKit,GetAuthenticationParameters} = require('../services/imagekit');
@@ -8,7 +9,20 @@ const {uploadToImageKit,GetAuthenticationParameters} = require('../services/imag
 const storage = multer.memoryStorage();
 const upload = multer({
     storage,
-    limits:{fileSize:10*1024*1024}
+    limits:{fileSize:60*1024*1024},
+    fileFilter:(req,file,cb)=>{
+        const mime = file.mimetype || '';
+        if (mime.startsWith('image/') ||
+        mime.startsWith('video/') ||
+        mime.startsWith('audio/') ||
+        file.originalname.match(/\.(jpg|jpeg|png|gif|mp4|mov|mpeg|mp3|wav|m4a|aac)$/i)
+    ) {
+            cb(null,true);
+        }
+        else{
+            cb(new Error('Unsupported file type. Please upload an image, short video, or audio file.'),false);
+        }
+    }
 });
 
 
@@ -21,6 +35,15 @@ router.post('/',upload.single('file'),async (req,res)=>{
             });
         }
         const folder = req.body.folder || '/inspections';
+        let mediatype = 'IMAGE';
+        const mime = req.file.mimetype || '';
+        if (mime.startsWith('video/') || req.file.originalname.match(/\.(mp4|mov|mpeg)$/i) ) {
+            mediatype = 'VIDEO';
+        } else if (mime.startsWith('audio/') || req.file.originalname.match(/\.(mp3|wav|m4a)$/i)){
+            mediatype = 'AUDIO';
+        }
+        const ext = path.extname(req.file.originalname) || (mediatype === 'VIDEO' ? '.mp4' :mediatype === 'AUDIO' ? '.m4a':'.jpg'
+        );
         const fileName = req.file.originalname || `image_${Date.now()}.jpg`;
         const result = await uploadToImageKit(req.file.buffer,fileName,folder);
         res.json({

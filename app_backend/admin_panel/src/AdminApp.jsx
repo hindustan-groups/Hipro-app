@@ -269,7 +269,7 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
   const selectedBuilderReq = requests.find(r => r.id === builderRequestId);
 
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-800 font-sans text-[13.5px] font-[450]">
+    <div className="min-h-screen flex bg-slate-50 text-slate-900 font-sans text-[14.5px] font-medium leading-normal antialiased">
 
       {/* SIDEBAR NAVIGATION */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 shadow-xs`}>
@@ -279,85 +279,85 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <div className="font-heading font-semibold text-base tracking-wide text-slate-800 leading-none">HIPRO</div>
-              <div className="text-[10px] font-medium tracking-wider text-slate-400 uppercase mt-0.5">Admin Desk</div>
+              <div className="font-heading font-bold text-lg tracking-wide text-slate-900 leading-none">HIPRO</div>
+              <div className="text-[11px] font-bold tracking-wider text-slate-500 uppercase mt-0.5">Admin Desk</div>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-medium">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>Live</span>
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto text-xs">
-          <div className="px-3 pb-1.5 text-[10.5px] font-medium text-slate-400 uppercase tracking-wider">Main Desk</div>
+        <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto text-[13.5px]">
+          <div className="px-3 pb-1 text-xs font-bold text-slate-400 uppercase tracking-wider">Main Desk</div>
 
-          <button onClick={() => { setActiveTab('overview'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'overview' ? 'bg-brand-50 text-brand-600 font-semibold shadow-xs' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`}>
+          <button onClick={() => { setActiveTab('overview'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'overview' ? 'bg-brand-50 text-brand-600 shadow-xs' : 'text-slate-700 hover:text-brand-600 hover:bg-slate-50'}`}>
             <div className="flex items-center gap-2.5">
-              <LayoutDashboard className="w-4 h-4" />
+              <LayoutDashboard className="w-4.5 h-4.5" />
               <span>Overview</span>
             </div>
           </button>
 
-          <button onClick={() => { setActiveTab('requests'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'requests' ? 'bg-brand-50 text-brand-600 font-semibold shadow-xs' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`}>
+          <button onClick={() => { setActiveTab('requests'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'requests' ? 'bg-brand-50 text-brand-600 shadow-xs' : 'text-slate-700 hover:text-brand-600 hover:bg-slate-50'}`}>
             <div className="flex items-center gap-2.5">
-              <ClipboardList className="w-4 h-4" />
+              <ClipboardList className="w-4.5 h-4.5" />
               <span>Inspection Requests</span>
             </div>
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
               {stats ? (stats.statusCounts.SUBMITTED + stats.statusCounts.ESTIMATING) : 0}
             </span>
           </button>
 
-          <button onClick={() => { setActiveTab('quotations'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'quotations' ? 'bg-brand-50 text-brand-600 font-semibold shadow-xs' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`}>
+          <button onClick={() => { setActiveTab('quotations'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'quotations' ? 'bg-brand-50 text-brand-600 shadow-xs' : 'text-slate-700 hover:text-brand-600 hover:bg-slate-50'}`}>
             <div className="flex items-center gap-2.5">
-              <Receipt className="w-4 h-4" />
+              <Receipt className="w-4.5 h-4.5" />
               <span>Quotations Desk</span>
             </div>
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-brand-100 text-brand-700 border border-brand-200">
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-brand-100 text-brand-700 border border-brand-200">
               {quotations.length}
             </span>
           </button>
 
-          <button onClick={() => { setActiveTab('builder'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'builder' ? 'bg-brand-50 text-brand-600 font-semibold shadow-xs' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`}>
+          <button onClick={() => { setActiveTab('builder'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'builder' ? 'bg-brand-50 text-brand-600 shadow-xs' : 'text-slate-700 hover:text-brand-600 hover:bg-slate-50'}`}>
             <div className="flex items-center gap-2.5">
-              <Calculator className="w-4 h-4" />
+              <Calculator className="w-4.5 h-4.5" />
               <span>Create Quotation</span>
             </div>
-            <span className="text-[9px] uppercase font-medium text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200">Dynamic</span>
+            <span className="text-[10px] uppercase font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Dynamic</span>
           </button>
 
-          <div className="px-3 pt-5 pb-1.5 text-[10.5px] font-medium text-slate-400 uppercase tracking-wider">Catalog & Users</div>
+          <div className="px-3 pt-4 pb-1 text-xs font-bold text-slate-400 uppercase tracking-wider">Catalog & Users</div>
 
-          <button onClick={() => { setActiveTab('services'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'services' ? 'bg-brand-50 text-brand-600 font-semibold shadow-xs' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`}>
+          <button onClick={() => { setActiveTab('services'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'services' ? 'bg-brand-50 text-brand-600 shadow-xs' : 'text-slate-700 hover:text-brand-600 hover:bg-slate-50'}`}>
             <div className="flex items-center gap-2.5">
-              <Wrench className="w-4 h-4" />
+              <Wrench className="w-4.5 h-4.5" />
               <span>Services Catalog</span>
             </div>
           </button>
 
-          <button onClick={() => { setActiveTab('users'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'users' ? 'bg-brand-50 text-brand-600 font-semibold shadow-xs' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`}>
+          <button onClick={() => { setActiveTab('users'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'users' ? 'bg-brand-50 text-brand-600 shadow-xs' : 'text-slate-700 hover:text-brand-600 hover:bg-slate-50'}`}>
             <div className="flex items-center gap-2.5">
-              <Users className="w-4 h-4" />
+              <Users className="w-4.5 h-4.5" />
               <span>Customer Directory</span>
             </div>
           </button>
 
-          <button onClick={() => { setActiveTab('diagnostics'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'diagnostics' ? 'bg-brand-50 text-brand-600 font-semibold shadow-xs' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`}>
+          <button onClick={() => { setActiveTab('diagnostics'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'diagnostics' ? 'bg-brand-50 text-brand-600 shadow-xs' : 'text-slate-700 hover:text-brand-600 hover:bg-slate-50'}`}>
             <div className="flex items-center gap-2.5">
-              <Activity className="w-4 h-4" />
+              <Activity className="w-4.5 h-4.5" />
               <span>System & API</span>
             </div>
           </button>
         </nav>
 
         <div className="p-3.5 border-t border-slate-100 bg-slate-50/50 flex items-center gap-2.5 text-xs">
-          <div className="w-7 h-7 rounded-full bg-brand-600 text-white flex items-center justify-center font-medium text-[11px]">
+          <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
             AD
           </div>
           <div>
-            <div className="font-semibold text-slate-700 leading-tight">Admin Estimator</div>
-            <div className="text-[10px] text-slate-400">Aiven PostgreSQL</div>
+            <div className="font-bold text-slate-800 text-[13px] leading-tight">Admin Estimator</div>
+            <div className="text-[11px] font-medium text-slate-500">Aiven PostgreSQL</div>
           </div>
         </div>
       </aside>
@@ -372,7 +372,7 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
               <Menu className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="font-heading font-semibold text-lg text-slate-800 capitalize leading-tight">
+              <h1 className="font-heading font-bold text-xl sm:text-2xl text-slate-900 capitalize leading-tight">
                 {activeTab === 'overview' ? 'Dashboard Overview' :
                   activeTab === 'requests' ? 'Inspection Requests' :
                     activeTab === 'quotations' ? 'Quotations Desk' :
@@ -380,24 +380,24 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                         activeTab === 'services' ? 'Services Catalog' :
                           activeTab === 'users' ? 'Customer Directory' : 'System Diagnostics'}
               </h1>
-              <p className="text-[11px] text-slate-400 hidden sm:block">Hind Building Solutions — Technical Operations Portal</p>
+              <p className="text-xs sm:text-[13px] font-semibold text-slate-500 hidden sm:block mt-0.5">Hind Building Solutions — Technical Operations Portal</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <div className="relative hidden sm:block w-64">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="flex items-center gap-3">
+            <div className="relative hidden sm:block w-72">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={globalSearch}
                 onChange={(e) => setGlobalSearch(e.target.value)}
                 placeholder="Search requests, quotes..."
-                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 focus:bg-white text-xs text-slate-700 placeholder-slate-400 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-normal"
+                className="w-full pl-9 pr-3.5 py-2 bg-slate-50 focus:bg-white text-[13.5px] font-medium text-slate-800 placeholder-slate-400 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
               />
             </div>
 
-            <button onClick={() => fetchAllData(true)} title="Sync live database" className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all shadow-xs">
-              <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+            <button onClick={() => fetchAllData(true)} title="Sync live database" className="inline-flex items-center gap-2 px-3.5 py-2 text-[13px] font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all shadow-xs">
+              <RefreshCw className="w-4 h-4 text-slate-600" />
               <span className="hidden sm:inline">Sync</span>
             </button>
 
@@ -405,97 +405,97 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
               <button
                 onClick={onSwitchToCustomerApp}
                 title="Switch to Mobile Customer Demo"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-all shadow-xs"
+                className="inline-flex items-center gap-2 px-3.5 py-2 text-[13px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-all shadow-xs"
               >
-                <ArrowRight className="w-3.5 h-3.5 text-slate-600" />
+                <ArrowRight className="w-4 h-4 text-slate-600" />
                 <span className="hidden sm:inline">Customer App</span>
               </button>
             )}
 
-            <button onClick={() => setActiveTab('builder')} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-xs transition-all">
-              <PlusCircle className="w-3.5 h-3.5" />
+            <button onClick={() => setActiveTab('builder')} className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-xs transition-all">
+              <PlusCircle className="w-4 h-4" />
               <span>New Quote</span>
             </button>
           </div>
         </header>
 
         {/* DYNAMIC TAB BODY */}
-        <main className="flex-1 p-6 space-y-5 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
 
           {/* OVERVIEW TAB */}
           {activeTab === 'overview' && (
-            <div className="space-y-5">
+            <div className="space-y-6">
               {/* Banner */}
-              <div className="bg-gradient-to-r from-brand-600 to-indigo-700 rounded-xl p-5 sm:p-6 text-white shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div className="space-y-1 max-w-xl">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-medium bg-white/15 text-white backdrop-blur-sm border border-white/20">
-                    <Sparkles className="w-3 h-3" /> Operations Hub
+              <div className="bg-gradient-to-r from-brand-600 to-indigo-700 rounded-xl p-6 sm:p-7 text-white shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+                <div className="space-y-1.5 max-w-xl">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/15 text-white backdrop-blur-sm border border-white/20">
+                    <Sparkles className="w-3.5 h-3.5" /> Operations Hub
                   </span>
-                  <h2 className="font-heading text-xl sm:text-2xl font-semibold tracking-tight">Dynamic Quotation & Dispatch Desk</h2>
-                  <p className="text-white/80 text-xs sm:text-sm font-light leading-relaxed">Review photo damage inspections from customers, estimate repair scopes with dynamic BOQ, and dispatch digital quotations.</p>
+                  <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight">Dynamic Quotation & Dispatch Desk</h2>
+                  <p className="text-white/90 text-sm sm:text-[15px] font-normal leading-relaxed">Review photo damage inspections from customers, estimate repair scopes with dynamic BOQ, and dispatch digital quotations.</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/20 text-white min-w-[200px]">
-                  <div className="text-[10px] font-medium uppercase text-white/70 tracking-wider">Customer Support Hotline</div>
-                  <div className="font-mono text-base font-semibold mt-0.5 text-white flex items-center gap-1.5">
-                    <PhoneCall className="w-4 h-4 text-emerald-300" /> +91 94628 77757
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 text-white min-w-[220px]">
+                  <div className="text-[11px] font-bold uppercase text-white/80 tracking-wider">Customer Support Hotline</div>
+                  <div className="font-mono text-lg font-bold mt-1 text-white flex items-center gap-2">
+                    <PhoneCall className="w-5 h-5 text-emerald-300" /> +91 94628 77757
                   </div>
                 </div>
               </div>
 
               {/* KPI Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs hover:shadow-sm transition-all">
+                <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Total Requests</span>
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
-                      <Inbox className="w-4 h-4" />
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Requests</span>
+                    <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
+                      <Inbox className="w-4.5 h-4.5" />
                     </div>
                   </div>
-                  <div className="font-heading font-semibold text-2xl text-slate-800 mt-2">{stats?.totalRequests || 0}</div>
-                  <div className="flex items-center gap-1.5 mt-2 text-[11px] text-slate-400">
-                    <span className="text-emerald-600 font-medium flex items-center"><Check className="w-3 h-3 mr-0.5" /> Active</span>
+                  <div className="font-heading font-extrabold text-3xl text-slate-900 mt-2">{stats?.totalRequests || 0}</div>
+                  <div className="flex items-center gap-1.5 mt-2 text-xs font-semibold text-slate-500">
+                    <span className="text-emerald-600 font-bold flex items-center"><Check className="w-3.5 h-3.5 mr-0.5" /> Active</span>
                     <span>Submitted tasks</span>
                   </div>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-amber-200 bg-amber-50/20 shadow-xs hover:shadow-sm transition-all">
+                <div className="bg-white p-5 rounded-xl border border-amber-200 bg-amber-50/20 shadow-xs hover:shadow-md transition-all">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium text-amber-700 uppercase tracking-wider">Pending Estimations</span>
-                    <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center border border-amber-200">
-                      <Clock className="w-4 h-4" />
+                    <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Pending Estimations</span>
+                    <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center border border-amber-200">
+                      <Clock className="w-4.5 h-4.5" />
                     </div>
                   </div>
-                  <div className="font-heading font-semibold text-2xl text-amber-900 mt-2">
+                  <div className="font-heading font-extrabold text-3xl text-amber-950 mt-2">
                     {stats ? (stats.statusCounts.SUBMITTED + stats.statusCounts.ESTIMATING) : 0}
                   </div>
-                  <div className="flex items-center gap-1.5 mt-2 text-[11px]">
-                    <span className="px-1.5 py-0.5 rounded-full font-medium bg-amber-100 text-amber-800 border border-amber-200 text-[10px]">Needs Action</span>
-                    <span className="text-slate-400">Pending quote</span>
+                  <div className="flex items-center gap-1.5 mt-2 text-xs">
+                    <span className="px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 border border-amber-200 text-xs">Needs Action</span>
+                    <span className="text-slate-500 font-semibold">Pending quote</span>
                   </div>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs hover:shadow-sm transition-all">
+                <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Quotations Issued</span>
-                    <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
-                      <FileCheck2 className="w-4 h-4" />
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Quotations Issued</span>
+                    <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
+                      <FileCheck2 className="w-4.5 h-4.5" />
                     </div>
                   </div>
-                  <div className="font-heading font-semibold text-2xl text-slate-800 mt-2">{stats?.totalQuotes || 0}</div>
-                  <div className="flex items-center gap-1.5 mt-2 text-[11px] font-mono text-slate-500">
+                  <div className="font-heading font-extrabold text-3xl text-slate-900 mt-2">{stats?.totalQuotes || 0}</div>
+                  <div className="flex items-center gap-1.5 mt-2 text-xs font-mono font-bold text-slate-600">
                     ₹{(stats?.totalQuotedValue || 0).toLocaleString('en-IN')} Quoted
                   </div>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-xs hover:shadow-sm transition-all">
+                <div className="bg-white p-5 rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-xs hover:shadow-md transition-all">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium text-emerald-700 uppercase tracking-wider">Accepted & Active</span>
-                    <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center border border-emerald-200">
-                      <CheckCircle2 className="w-4 h-4" />
+                    <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Accepted & Active</span>
+                    <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center border border-emerald-200">
+                      <CheckCircle2 className="w-4.5 h-4.5" />
                     </div>
                   </div>
-                  <div className="font-heading font-semibold text-2xl text-emerald-800 mt-2">{stats?.acceptedQuotesCount || 0}</div>
-                  <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-emerald-600 font-mono">
+                  <div className="font-heading font-extrabold text-3xl text-emerald-950 mt-2">{stats?.acceptedQuotesCount || 0}</div>
+                  <div className="flex items-center gap-1.5 mt-2 text-xs font-bold text-emerald-700 font-mono">
                     ₹{(stats?.acceptedValue || 0).toLocaleString('en-IN')} Revenue
                   </div>
                 </div>
@@ -503,13 +503,13 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
 
               {/* Grid 2 */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+                <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-md bg-indigo-50 text-brand-600">
-                        <GitPullRequest className="w-4 h-4" />
+                        <GitPullRequest className="w-4.5 h-4.5" />
                       </div>
-                      <h3 className="font-heading font-medium text-sm text-slate-800">Request Lifecycle Status</h3>
+                      <h3 className="font-heading font-bold text-[15px] text-slate-900">Request Lifecycle Status</h3>
                     </div>
                   </div>
                   <div className="space-y-3 pt-1">
@@ -524,11 +524,11 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                       const pct = Math.round((st.count / total) * 100);
                       return (
                         <div key={st.key} className="space-y-1">
-                          <div className="flex justify-between text-xs font-normal text-slate-500">
+                          <div className="flex justify-between text-[13px] font-semibold text-slate-700">
                             <span>{st.label}</span>
-                            <span className="font-mono text-slate-700">{st.count} ({pct}%)</span>
+                            <span className="font-mono font-bold text-slate-900">{st.count} ({pct}%)</span>
                           </div>
-                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                             <div className={`h-full ${st.color} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }}></div>
                           </div>
                         </div>
@@ -547,44 +547,44 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                    <button onClick={() => setActiveTab('builder')} className="p-3 rounded-lg border border-slate-200 hover:border-brand-500 hover:bg-brand-50/20 text-left transition-all group flex items-start gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <button onClick={() => setActiveTab('builder')} className="p-3.5 rounded-lg border border-slate-200 hover:border-brand-500 hover:bg-brand-50/30 text-left transition-all group flex items-start gap-3">
                       <div className="p-2 rounded-md bg-brand-50 text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-all">
-                        <Calculator className="w-4 h-4" />
+                        <Calculator className="w-4.5 h-4.5" />
                       </div>
                       <div>
-                        <div className="font-medium text-xs text-slate-800 group-hover:text-brand-600">Build Quotation</div>
-                        <div className="text-[10.5px] text-slate-400 mt-0.5">Itemized BOQ & pricing</div>
+                        <div className="font-bold text-[13.5px] text-slate-900 group-hover:text-brand-600">Build Quotation</div>
+                        <div className="text-xs font-semibold text-slate-500 mt-0.5">Itemized BOQ & pricing</div>
                       </div>
                     </button>
 
-                    <button onClick={() => setActiveTab('requests')} className="p-3 rounded-lg border border-slate-200 hover:border-brand-500 hover:bg-brand-50/20 text-left transition-all group flex items-start gap-2.5">
+                    <button onClick={() => setActiveTab('requests')} className="p-3.5 rounded-lg border border-slate-200 hover:border-brand-500 hover:bg-brand-50/30 text-left transition-all group flex items-start gap-3">
                       <div className="p-2 rounded-md bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                        <Camera className="w-4 h-4" />
+                        <Camera className="w-4.5 h-4.5" />
                       </div>
                       <div>
-                        <div className="font-medium text-xs text-slate-800 group-hover:text-brand-600">Inspect Photos</div>
-                        <div className="text-[10.5px] text-slate-400 mt-0.5">Review damaged areas</div>
+                        <div className="font-bold text-[13.5px] text-slate-900 group-hover:text-brand-600">Inspect Photos</div>
+                        <div className="text-xs font-semibold text-slate-500 mt-0.5">Review damaged areas</div>
                       </div>
                     </button>
 
-                    <button onClick={() => { setActiveTab('services'); setAddServiceModalOpen(true); }} className="p-3 rounded-lg border border-slate-200 hover:border-brand-500 hover:bg-brand-50/20 text-left transition-all group flex items-start gap-2.5">
+                    <button onClick={() => { setActiveTab('services'); setAddServiceModalOpen(true); }} className="p-3.5 rounded-lg border border-slate-200 hover:border-brand-500 hover:bg-brand-50/30 text-left transition-all group flex items-start gap-3">
                       <div className="p-2 rounded-md bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-4.5 h-4.5" />
                       </div>
                       <div>
-                        <div className="font-medium text-xs text-slate-800 group-hover:text-brand-600">Catalog Service</div>
-                        <div className="text-[10.5px] text-slate-400 mt-0.5">Add repair service</div>
+                        <div className="font-bold text-[13.5px] text-slate-900 group-hover:text-brand-600">Catalog Service</div>
+                        <div className="text-xs font-semibold text-slate-500 mt-0.5">Add repair service</div>
                       </div>
                     </button>
 
-                    <button onClick={() => setActiveTab('diagnostics')} className="p-3 rounded-lg border border-slate-200 hover:border-brand-500 hover:bg-brand-50/20 text-left transition-all group flex items-start gap-2.5">
+                    <button onClick={() => setActiveTab('diagnostics')} className="p-3.5 rounded-lg border border-slate-200 hover:border-brand-500 hover:bg-brand-50/30 text-left transition-all group flex items-start gap-3">
                       <div className="p-2 rounded-md bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all">
-                        <Activity className="w-4 h-4" />
+                        <Activity className="w-4.5 h-4.5" />
                       </div>
                       <div>
-                        <div className="font-medium text-xs text-slate-800 group-hover:text-brand-600">Test API Health</div>
-                        <div className="text-[10.5px] text-slate-400 mt-0.5">PostgreSQL & routes</div>
+                        <div className="font-bold text-[13.5px] text-slate-900 group-hover:text-brand-600">Test API Health</div>
+                        <div className="text-xs font-semibold text-slate-500 mt-0.5">PostgreSQL & routes</div>
                       </div>
                     </button>
                   </div>
@@ -593,51 +593,51 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
 
               {/* Grid 3: Recent Activity */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+                <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h3 className="font-heading font-medium text-sm text-slate-800">Recent Customer Requests</h3>
-                    <button onClick={() => setActiveTab('requests')} className="text-[11px] font-medium text-brand-600 hover:text-brand-700 flex items-center gap-1">
-                      View All <ArrowRight className="w-3 h-3" />
+                    <h3 className="font-heading font-bold text-[15px] text-slate-900">Recent Customer Requests</h3>
+                    <button onClick={() => setActiveTab('requests')} className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1">
+                      View All <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                   <div className="space-y-2">
                     {requests.slice(0, 4).map(req => (
-                      <div key={req.id} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50/60 border border-slate-100 hover:border-slate-200 transition-all">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-md bg-white border border-slate-200 text-brand-600 flex items-center justify-center text-xs">
-                            <ClipboardList className="w-3.5 h-3.5" />
+                      <div key={req.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 hover:border-slate-300 transition-all">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-md bg-white border border-slate-200 text-brand-600 flex items-center justify-center text-xs">
+                            <ClipboardList className="w-4 h-4" />
                           </div>
                           <div>
-                            <div className="font-medium text-xs text-slate-800">{req.requestNumber} — {req.servicecode}</div>
-                            <div className="text-[10.5px] text-slate-400">{req.user?.name || 'Customer'} • {req.propertyType || 'House'}</div>
+                            <div className="font-bold text-[13px] text-slate-900">{req.requestNumber} — {req.servicecode}</div>
+                            <div className="text-xs font-medium text-slate-500">{req.user?.name || 'Customer'} • {req.propertyType || 'House'}</div>
                           </div>
                         </div>
-                        <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-medium border ${getStatusBadge(req.status)}`}>{req.status}</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusBadge(req.status)}`}>{req.status}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+                <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h3 className="font-heading font-medium text-sm text-slate-800">Latest Quotations Issued</h3>
-                    <button onClick={() => setActiveTab('quotations')} className="text-[11px] font-medium text-brand-600 hover:text-brand-700 flex items-center gap-1">
-                      View All <ArrowRight className="w-3 h-3" />
+                    <h3 className="font-heading font-bold text-[15px] text-slate-900">Latest Quotations Issued</h3>
+                    <button onClick={() => setActiveTab('quotations')} className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1">
+                      View All <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                   <div className="space-y-2">
                     {quotations.slice(0, 4).map(q => (
-                      <div key={q.id} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50/60 border border-slate-100 hover:border-slate-200 transition-all">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-md bg-white border border-slate-200 text-emerald-600 flex items-center justify-center text-xs">
-                            <Receipt className="w-3.5 h-3.5" />
+                      <div key={q.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 hover:border-slate-300 transition-all">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-md bg-white border border-slate-200 text-emerald-600 flex items-center justify-center text-xs">
+                            <Receipt className="w-4 h-4" />
                           </div>
                           <div>
-                            <div className="font-medium text-xs text-slate-800">{q.quoteNumber} — ₹{(q.grandtotal || 0).toLocaleString('en-IN')}</div>
-                            <div className="text-[10.5px] text-slate-400">{q.estimatedTimeline || '1-2 Days'}</div>
+                            <div className="font-bold text-[13px] text-slate-900">{q.quoteNumber} — ₹{(q.grandtotal || 0).toLocaleString('en-IN')}</div>
+                            <div className="text-xs font-medium text-slate-500">{q.estimatedTimeline || '1-2 Days'}</div>
                           </div>
                         </div>
-                        <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-medium border ${getStatusBadge(q.status)}`}>{q.status}</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusBadge(q.status)}`}>{q.status}</span>
                       </div>
                     ))}
                   </div>
@@ -648,11 +648,11 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
 
           {/* REQUESTS TAB */}
           {activeTab === 'requests' && (
-            <div className="space-y-5">
-              <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="space-y-6">
+              <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-heading font-semibold text-base text-slate-800">Inspection Requests & Photo Damage Reviews</h2>
-                  <p className="text-[11px] text-slate-400">Examine damage severity uploaded by customers and dispatch itemized quotations.</p>
+                  <h2 className="font-heading font-bold text-lg sm:text-xl text-slate-900">Inspection Requests & Photo Damage Reviews</h2>
+                  <p className="text-xs sm:text-[13px] font-semibold text-slate-500 mt-0.5">Examine damage severity uploaded by customers and dispatch itemized quotations.</p>
                 </div>
               </div>
 
@@ -661,51 +661,51 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                   const media = Array.isArray(req.mediaUrl) ? req.mediaUrl : [];
                   const isUrgent = req.urgency === 'URGENT';
                   return (
-                    <div key={req.id} className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs hover:shadow-sm transition-all flex flex-col justify-between space-y-3">
-                      <div className="space-y-2.5">
+                    <div key={req.id} className="bg-white rounded-xl border border-slate-200/90 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono font-medium text-xs text-brand-600">{req.requestNumber}</span>
-                            <span className={`px-1.5 py-0.5 rounded text-[9.5px] font-medium uppercase ${isUrgent ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-[14px] text-brand-600">{req.requestNumber}</span>
+                            <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${isUrgent ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
                               {req.urgency || 'NORMAL'}
                             </span>
                           </div>
-                          <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-medium border ${getStatusBadge(req.status)}`}>{req.status}</span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusBadge(req.status)}`}>{req.status}</span>
                         </div>
 
                         <div>
-                          <h3 className="font-heading font-medium text-sm text-slate-800">{req.servicecode}</h3>
-                          {req.subServiceCode && <p className="text-[11px] font-medium text-brand-600">{req.subServiceCode}</p>}
+                          <h3 className="font-heading font-bold text-base text-slate-900">{req.servicecode}</h3>
+                          {req.subServiceCode && <p className="text-xs font-bold text-brand-600 mt-0.5">{req.subServiceCode}</p>}
                         </div>
 
-                        <div className="p-2.5 bg-slate-50 rounded-lg text-xs text-slate-600 leading-relaxed border border-slate-100 font-light">
-                          <span className="font-medium text-slate-800">Issue:</span> {req.issueDescription || 'No description'}
+                        <div className="p-3.5 bg-slate-50/90 rounded-lg text-[13.5px] text-slate-700 leading-relaxed border border-slate-200/80 font-normal">
+                          <span className="font-bold text-slate-900">Issue:</span> {req.issueDescription || 'No description'}
                         </div>
 
                         {media.length > 0 ? (
-                          <div className="flex gap-2 overflow-x-auto pb-1">
+                          <div className="flex gap-2.5 overflow-x-auto pb-1">
                             {media.map((imgUrl, i) => (
-                              <div key={i} onClick={() => setActivePhotoModal({ photos: media, index: i, title: `${req.requestNumber} Photo Review` })} className="w-14 h-14 rounded-lg overflow-hidden border border-slate-200 cursor-pointer relative group flex-shrink-0 hover:border-brand-500 transition-all">
+                              <div key={i} onClick={() => setActivePhotoModal({ photos: media, index: i, title: `${req.requestNumber} Photo Review` })} className="w-16 h-16 rounded-lg overflow-hidden border border-slate-200 cursor-pointer relative group flex-shrink-0 hover:border-brand-500 transition-all shadow-2xs">
                                 <img src={imgUrl} alt="Damage" className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=300&q=80'; }} />
-                                <span className="absolute bottom-0 inset-x-0 bg-slate-900/60 text-white text-[8.5px] font-normal text-center py-0.5">#{i + 1}</span>
+                                <span className="absolute bottom-0 inset-x-0 bg-slate-900/70 text-white text-[9.5px] font-bold text-center py-0.5">#{i + 1}</span>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <div className="text-[10.5px] text-slate-400 italic">No photos uploaded</div>
+                          <div className="text-xs font-semibold text-slate-400 italic">No media uploaded</div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-1.5 text-[11px] pt-2 border-t border-slate-100 text-slate-500">
-                          <div className="flex items-center gap-1"><User className="w-3 h-3 text-slate-400" /> <span className="font-medium text-slate-700">{req.user?.name || 'Customer'}</span></div>
-                          <div className="flex items-center gap-1 font-mono"><Phone className="w-3 h-3 text-slate-400" /> {req.user?.phoneNumber || 'N/A'}</div>
-                          <div className="flex items-center gap-1"><Home className="w-3 h-3 text-slate-400" /> {req.propertyType || 'House'} ({req.propertySize || 'Standard'})</div>
-                          <div className="flex items-center gap-1"><Calendar className="w-3 h-3 text-slate-400" /> {req.preferredDate || 'Flexible'}</div>
-                          <div className="col-span-2 flex items-center gap-1"><MapPin className="w-3 h-3 text-slate-400" /> <span className="truncate">{req.addressline || 'Main Residence'} {req.location && `• ${req.location}`}</span></div>
+                        <div className="grid grid-cols-2 gap-2 text-xs pt-3 border-t border-slate-100 text-slate-600 font-semibold">
+                          <div className="flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-slate-400" /> <span className="font-bold text-slate-900">{req.user?.name || 'Customer'}</span></div>
+                          <div className="flex items-center gap-1.5 font-mono"><Phone className="w-3.5 h-3.5 text-slate-400" /> <span className="font-bold text-slate-900">{req.user?.phoneNumber || 'N/A'}</span></div>
+                          <div className="flex items-center gap-1.5"><Home className="w-3.5 h-3.5 text-slate-400" /> <span>{req.propertyType || 'House'} ({req.propertySize || 'Standard'})</span></div>
+                          <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-slate-400" /> <span>{req.preferredDate || 'Flexible'}</span></div>
+                          <div className="col-span-2 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400" /> <span className="truncate">{req.addressline || 'Main Residence'} {req.location && `• ${req.location}`}</span></div>
                         </div>
                       </div>
 
-                      <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <select value={req.status} onChange={(e) => handleUpdateStatus(req.id, e.target.value)} className="text-[11px] font-medium px-2 py-1 bg-slate-50 border border-slate-200 rounded-md text-slate-600 focus:outline-none">
+                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <select value={req.status} onChange={(e) => handleUpdateStatus(req.id, e.target.value)} className="text-xs font-bold px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:outline-none">
                           <option value="SUBMITTED">SUBMITTED</option>
                           <option value="ESTIMATING">ESTIMATING</option>
                           <option value="QUOTED">QUOTED</option>
@@ -715,12 +715,12 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                           <option value="REJECTED">REJECTED</option>
                         </select>
 
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => handleStartQuote(req)} className="px-2.5 py-1 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-xs flex items-center gap-1 transition-all">
-                            <Calculator className="w-3 h-3" /> Build Quote
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => handleStartQuote(req)} className="px-3.5 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs flex items-center gap-1.5 transition-all">
+                            <Calculator className="w-3.5 h-3.5" /> Build Quote
                           </button>
-                          <button onClick={() => handleDeleteRequest(req.id)} title="Delete request" className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all">
-                            <Trash2 className="w-3.5 h-3.5" />
+                          <button onClick={() => handleDeleteRequest(req.id)} title="Delete request" className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -733,14 +733,14 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
 
           {/* QUOTATIONS TAB */}
           {activeTab === 'quotations' && (
-            <div className="space-y-5">
-              <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-6">
+              <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-heading font-semibold text-base text-slate-800">Quotations Desk & Commercial BOQ</h2>
-                  <p className="text-[11px] text-slate-400">Track issued estimates, customer decisions, and print official PDF receipts.</p>
+                  <h2 className="font-heading font-bold text-lg sm:text-xl text-slate-900">Quotations Desk & Commercial BOQ</h2>
+                  <p className="text-xs sm:text-[13px] font-semibold text-slate-500 mt-0.5">Track issued estimates, customer decisions, and print official PDF receipts.</p>
                 </div>
-                <button onClick={() => setActiveTab('builder')} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-xs transition-all">
-                  <Calculator className="w-3.5 h-3.5" />
+                <button onClick={() => setActiveTab('builder')} className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-xs transition-all">
+                  <Calculator className="w-4 h-4" />
                   <span>Create New Quote</span>
                 </button>
               </div>
@@ -750,44 +750,44 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                   const lineItemsArray = Array.isArray(q.lineItem) ? q.lineItem : [];
                   const grandTotalFormatted = (q.grandtotal || 0).toLocaleString('en-IN');
                   return (
-                    <div key={q.id} className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs hover:shadow-sm transition-all flex flex-col justify-between space-y-3">
-                      <div className="space-y-2.5">
+                    <div key={q.id} className="bg-white rounded-xl border border-slate-200/90 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="font-mono font-medium text-xs text-brand-600">{q.quoteNumber}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-medium border ${getStatusBadge(q.status)}`}>{q.status}</span>
+                          <span className="font-mono font-bold text-[14px] text-brand-600">{q.quoteNumber}</span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusBadge(q.status)}`}>{q.status}</span>
                         </div>
 
                         <div className="flex items-baseline justify-between">
                           <div>
-                            <h3 className="font-heading font-medium text-sm text-slate-800">{q.request?.servicecode || 'Repair Quotation'}</h3>
-                            <div className="text-[11px] text-slate-400 font-mono">{q.request?.requestNumber || ''}</div>
+                            <h3 className="font-heading font-bold text-base text-slate-900">{q.request?.servicecode || 'Repair Quotation'}</h3>
+                            <div className="text-xs text-slate-500 font-mono mt-0.5">{q.request?.requestNumber || ''}</div>
                           </div>
-                          <div className="font-heading font-semibold text-lg text-emerald-600 font-mono">₹{grandTotalFormatted}</div>
+                          <div className="font-heading font-extrabold text-xl text-emerald-600 font-mono">₹{grandTotalFormatted}</div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-1.5 text-[11px] p-2.5 bg-slate-50 rounded-lg border border-slate-100 text-slate-600">
-                          <div><strong>Client:</strong> {q.request?.user?.name || 'Customer'}</div>
+                        <div className="grid grid-cols-2 gap-2 text-xs p-3 bg-slate-50/90 rounded-lg border border-slate-200/80 text-slate-700 font-semibold">
+                          <div><strong className="text-slate-900">Client:</strong> {q.request?.user?.name || 'Customer'}</div>
                           <div className="font-mono">{q.request?.user?.phoneNumber || 'N/A'}</div>
-                          <div><strong>Timeline:</strong> {q.estimatedTimeline || '1-2 Days'}</div>
-                          <div><strong>Warranty:</strong> {q.warranty_coverage ? q.warranty_coverage.slice(0, 18) + '...' : '1 Year'}</div>
+                          <div><strong className="text-slate-900">Timeline:</strong> {q.estimatedTimeline || '1-2 Days'}</div>
+                          <div><strong className="text-slate-900">Warranty:</strong> {q.warranty_coverage ? q.warranty_coverage.slice(0, 18) + '...' : '1 Year'}</div>
                         </div>
 
-                        <div className="text-[10.5px] text-slate-400 font-light">
-                          <strong>Scope ({lineItemsArray.length}):</strong> {lineItemsArray.map(li => li.item || li.description).slice(0, 2).join(', ')}{lineItemsArray.length > 2 ? '...' : ''}
+                        <div className="text-xs text-slate-600 font-medium leading-relaxed">
+                          <strong className="text-slate-800">Scope ({lineItemsArray.length}):</strong> {lineItemsArray.map(li => li.item || li.description).slice(0, 2).join(', ')}{lineItemsArray.length > 2 ? '...' : ''}
                         </div>
                       </div>
 
-                      <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <button onClick={() => setActiveQuoteModal(q)} className="px-2.5 py-1 text-xs font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-md flex items-center gap-1 transition-all">
-                            <Printer className="w-3 h-3" /> View & Print
+                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => setActiveQuoteModal(q)} className="px-3 py-1.5 text-xs font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-lg flex items-center gap-1.5 transition-all">
+                            <Printer className="w-3.5 h-3.5" /> View & Print
                           </button>
-                          <button onClick={() => handleQuoteDecision(q.id, 'ACCEPTED')} className="px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md flex items-center gap-1 transition-all">
-                            <Check className="w-3 h-3" /> Accept
+                          <button onClick={() => handleQuoteDecision(q.id, 'ACCEPTED')} className="px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex items-center gap-1.5 transition-all">
+                            <Check className="w-3.5 h-3.5" /> Accept
                           </button>
                         </div>
-                        <button onClick={() => handleDeleteQuotation(q.id)} className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all">
-                          <Trash2 className="w-3.5 h-3.5" />
+                        <button onClick={() => handleDeleteQuotation(q.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -799,21 +799,21 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
 
           {/* QUOTATION BUILDER TAB */}
           {activeTab === 'builder' && (
-            <div className="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-5">
+            <div className="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/90 shadow-xs space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-2">
                 <div>
-                  <h2 className="font-heading font-semibold text-lg text-slate-800">Dynamic Itemized Quotation Generator</h2>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Hind Building Solutions — Material & Labor Custom Scope Pricing Engine</p>
+                  <h2 className="font-heading font-bold text-xl text-slate-900">Dynamic Itemized Quotation Generator</h2>
+                  <p className="text-xs font-semibold text-slate-500 mt-0.5">Hind Building Solutions — Material & Labor Custom Scope Pricing Engine</p>
                 </div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono font-medium text-slate-600">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-xs font-mono font-bold text-slate-700">
                   <span>QTE-2026-AUTO</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="md:col-span-2 space-y-1">
-                  <label className="block text-[11px] font-medium text-slate-500 uppercase tracking-wider">Select Associated Service Request *</label>
-                  <select value={builderRequestId} onChange={(e) => setBuilderRequestId(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-normal text-slate-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2 space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Select Associated Service Request *</label>
+                  <select value={builderRequestId} onChange={(e) => setBuilderRequestId(e.target.value)} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
                     <option value="">-- Choose a pending customer request --</option>
                     {requests.map(r => (
                       <option key={r.id} value={r.id}>{r.requestNumber} — {r.servicecode} ({r.user?.name || 'Customer'} • {r.status})</option>
@@ -821,66 +821,66 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                   </select>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-medium text-slate-500 uppercase tracking-wider">Created By (Estimator Desk)</label>
-                  <input type="text" value={builderEstimator} onChange={(e) => setBuilderEstimator(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-normal text-slate-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-500/20 focus:border-brand-500 transition-all" />
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Created By (Estimator Desk)</label>
+                  <input type="text" value={builderEstimator} onChange={(e) => setBuilderEstimator(e.target.value)} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all" />
                 </div>
               </div>
 
               {selectedBuilderReq && (
-                <div className="p-3.5 rounded-lg bg-brand-50/40 border border-brand-200 text-slate-700 space-y-1.5 text-xs">
+                <div className="p-4 rounded-xl bg-brand-50/60 border border-brand-200 text-slate-800 space-y-2 text-xs font-medium">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 font-medium text-brand-800">
-                      <Info className="w-3.5 h-3.5 text-brand-600" />
+                    <div className="flex items-center gap-2 font-bold text-brand-900 text-sm">
+                      <Info className="w-4 h-4 text-brand-600" />
                       <span>{selectedBuilderReq.requestNumber} — {selectedBuilderReq.servicecode}</span>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white text-brand-700 border border-brand-200">{selectedBuilderReq.status}</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white text-brand-700 border border-brand-300 shadow-2xs">{selectedBuilderReq.status}</span>
                   </div>
-                  <div className="text-[11.5px] text-slate-600 leading-relaxed font-light">
-                    <strong>Client:</strong> {selectedBuilderReq.user?.name} ({selectedBuilderReq.user?.phoneNumber}) &nbsp;|&nbsp;
-                    <strong>Property:</strong> {selectedBuilderReq.propertyType || 'House'} ({selectedBuilderReq.propertySize || 'Standard Area'}) &nbsp;|&nbsp;
-                    <strong>Address:</strong> {selectedBuilderReq.addressline || 'Main Residence'} <br />
-                    <strong>Issue:</strong> "{selectedBuilderReq.issueDescription}"
+                  <div className="text-xs text-slate-700 leading-relaxed font-medium">
+                    <strong className="text-slate-900">Client:</strong> {selectedBuilderReq.user?.name} ({selectedBuilderReq.user?.phoneNumber}) &nbsp;|&nbsp;
+                    <strong className="text-slate-900">Property:</strong> {selectedBuilderReq.propertyType || 'House'} ({selectedBuilderReq.propertySize || 'Standard Area'}) &nbsp;|&nbsp;
+                    <strong className="text-slate-900">Address:</strong> {selectedBuilderReq.addressline || 'Main Residence'} <br />
+                    <strong className="text-slate-900">Issue:</strong> "{selectedBuilderReq.issueDescription}"
                   </div>
                 </div>
               )}
 
               {/* Line Items Table */}
-              <div className="space-y-2.5 pt-1">
+              <div className="space-y-3 pt-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-heading font-medium text-sm text-slate-800">Itemized Scope & Bill of Quantities (BOQ)</h3>
-                  <button type="button" onClick={() => setLineItems([...lineItems, { item: '', qty: 1, unit: 'Sq Ft', rate: 0 }])} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-lg transition-all">
-                    <Plus className="w-3 h-3" /> Add Line Item
+                  <h3 className="font-heading font-bold text-base text-slate-900">Itemized Scope & Bill of Quantities (BOQ)</h3>
+                  <button type="button" onClick={() => setLineItems([...lineItems, { item: '', qty: 1, unit: 'Sq Ft', rate: 0 }])} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-300 rounded-lg transition-all shadow-2xs">
+                    <Plus className="w-3.5 h-3.5" /> Add Line Item
                   </button>
                 </div>
 
-                <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <div className="overflow-x-auto border border-slate-200/90 rounded-xl shadow-2xs">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-400 text-[10.5px] font-medium uppercase tracking-wider border-b border-slate-200">
+                    <thead className="bg-slate-50 text-slate-600 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
                       <tr>
-                        <th className="p-2.5 w-8 text-center">#</th>
-                        <th className="p-2.5 min-w-[220px]">Item Description & Scope</th>
-                        <th className="p-2.5 w-24">Qty</th>
-                        <th className="p-2.5 w-32">Unit</th>
-                        <th className="p-2.5 w-32">Rate (₹)</th>
-                        <th className="p-2.5 w-32 text-right">Amount (₹)</th>
-                        <th className="p-2.5 w-10 text-center"></th>
+                        <th className="p-3 w-10 text-center">#</th>
+                        <th className="p-3 min-w-[220px]">Item Description & Scope</th>
+                        <th className="p-3 w-24">Qty</th>
+                        <th className="p-3 w-36">Unit</th>
+                        <th className="p-3 w-36">Rate (₹)</th>
+                        <th className="p-3 w-36 text-right">Amount (₹)</th>
+                        <th className="p-3 w-12 text-center"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
                       {lineItems.map((li, idx) => {
                         const lineAmt = ((parseFloat(li.qty) || 0) * (parseFloat(li.rate) || 0)).toFixed(2);
                         return (
-                          <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="p-2.5 text-center text-xs font-medium text-slate-400">{idx + 1}</td>
-                            <td className="p-1.5">
-                              <input type="text" value={li.item} onChange={(e) => { const updated = [...lineItems]; updated[idx].item = e.target.value; setLineItems(updated); }} placeholder="Scope description" className="w-full px-2 py-1 text-xs bg-slate-50 border border-slate-200 rounded-md text-slate-800 focus:bg-white focus:outline-none font-normal" />
+                          <tr key={idx} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="p-3 text-center text-xs font-bold text-slate-400">{idx + 1}</td>
+                            <td className="p-2">
+                              <input type="text" value={li.item} onChange={(e) => { const updated = [...lineItems]; updated[idx].item = e.target.value; setLineItems(updated); }} placeholder="Scope description" className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md text-slate-800 focus:bg-white focus:outline-none font-medium" />
                             </td>
-                            <td className="p-1.5">
-                              <input type="number" value={li.qty} onChange={(e) => { const updated = [...lineItems]; updated[idx].qty = e.target.value; setLineItems(updated); }} className="w-full px-2 py-1 text-xs bg-slate-50 border border-slate-200 rounded-md text-slate-800 focus:bg-white focus:outline-none font-normal" />
+                            <td className="p-2">
+                              <input type="number" value={li.qty} onChange={(e) => { const updated = [...lineItems]; updated[idx].qty = e.target.value; setLineItems(updated); }} className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md text-slate-800 focus:bg-white focus:outline-none font-medium" />
                             </td>
-                            <td className="p-1.5">
-                              <select value={li.unit} onChange={(e) => { const updated = [...lineItems]; updated[idx].unit = e.target.value; setLineItems(updated); }} className="w-full px-2 py-1 text-xs bg-slate-50 border border-slate-200 rounded-md text-slate-800 focus:bg-white focus:outline-none font-normal">
+                            <td className="p-2">
+                              <select value={li.unit} onChange={(e) => { const updated = [...lineItems]; updated[idx].unit = e.target.value; setLineItems(updated); }} className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md text-slate-800 focus:bg-white focus:outline-none font-medium">
                                 <option value="Sq Ft">Sq Ft</option>
                                 <option value="Running Ft">Running Ft</option>
                                 <option value="Lumpsum">Lumpsum</option>
@@ -889,15 +889,15 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                                 <option value="Points">Points</option>
                               </select>
                             </td>
-                            <td className="p-1.5">
-                              <input type="number" value={li.rate} onChange={(e) => { const updated = [...lineItems]; updated[idx].rate = e.target.value; setLineItems(updated); }} className="w-full px-2 py-1 text-xs bg-slate-50 border border-slate-200 rounded-md text-slate-800 focus:bg-white focus:outline-none font-normal" />
+                            <td className="p-2">
+                              <input type="number" value={li.rate} onChange={(e) => { const updated = [...lineItems]; updated[idx].rate = e.target.value; setLineItems(updated); }} className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md text-slate-800 focus:bg-white focus:outline-none font-medium" />
                             </td>
-                            <td className="p-2.5 text-right font-mono font-medium text-xs text-emerald-600">
+                            <td className="p-3 text-right font-mono font-bold text-xs text-emerald-600">
                               ₹{Number(lineAmt).toLocaleString('en-IN')}
                             </td>
-                            <td className="p-1.5 text-center">
-                              <button type="button" onClick={() => setLineItems(lineItems.filter((_, i) => i !== idx))} className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md">
-                                <X className="w-3 h-3" />
+                            <td className="p-2 text-center">
+                              <button type="button" onClick={() => setLineItems(lineItems.filter((_, i) => i !== idx))} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
+                                <X className="w-3.5 h-3.5" />
                               </button>
                             </td>
                           </tr>
@@ -909,12 +909,12 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
               </div>
 
               {/* Commercials Form */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-3 border-t border-slate-100 text-xs">
-                <div className="lg:col-span-7 space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="block text-[10.5px] font-medium text-slate-400 uppercase">Estimated Timeline</label>
-                      <select value={builderTimeline} onChange={(e) => setBuilderTimeline(e.target.value)} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-normal text-slate-700">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-3 border-t border-slate-100 text-xs">
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-600 uppercase">Estimated Timeline</label>
+                      <select value={builderTimeline} onChange={(e) => setBuilderTimeline(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800">
                         <option value="1-2 Working Days">1-2 Working Days</option>
                         <option value="2-3 Working Days">2-3 Working Days</option>
                         <option value="3-5 Working Days">3-5 Working Days</option>
@@ -923,9 +923,9 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                       </select>
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="block text-[10.5px] font-medium text-slate-400 uppercase">Digital Warranty</label>
-                      <select value={builderWarranty} onChange={(e) => setBuilderWarranty(e.target.value)} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-normal text-slate-700">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-600 uppercase">Digital Warranty</label>
+                      <select value={builderWarranty} onChange={(e) => setBuilderWarranty(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800">
                         <option value="1 Year Anti-Leakage & Workmanship Warranty">1 Year Anti-Leakage & Workmanship Warranty</option>
                         <option value="2 Years Comprehensive Waterproofing Warranty">2 Years Comprehensive Waterproofing Warranty</option>
                         <option value="3 Years Structural Patchwork Warranty">3 Years Structural Patchwork Warranty</option>
@@ -934,38 +934,38 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="block text-[10.5px] font-medium text-slate-400 uppercase">Terms & Conditions</label>
-                    <textarea rows="2" value={builderTerms} onChange={(e) => setBuilderTerms(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-light text-slate-700 leading-relaxed"></textarea>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-600 uppercase">Terms & Conditions</label>
+                    <textarea rows="3" value={builderTerms} onChange={(e) => setBuilderTerms(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 leading-relaxed"></textarea>
                   </div>
                 </div>
 
-                <div className="lg:col-span-5 bg-slate-50/70 p-4 rounded-xl border border-slate-200 space-y-2.5">
-                  <h4 className="font-heading font-medium text-xs text-slate-800 pb-1.5 border-b border-slate-200">Commercial Summary</h4>
+                <div className="lg:col-span-5 bg-slate-50/90 p-4 sm:p-5 rounded-xl border border-slate-200 space-y-3">
+                  <h4 className="font-heading font-bold text-sm text-slate-900 pb-2 border-b border-slate-200">Commercial Summary</h4>
 
-                  <div className="flex items-center justify-between text-slate-500">
+                  <div className="flex items-center justify-between text-slate-700 font-medium">
                     <span>Material Cost (₹):</span>
-                    <input type="number" value={effectiveMatCost} onChange={(e) => setMatCost(parseFloat(e.target.value) || 0)} className="w-28 px-2 py-1 text-right bg-white border border-slate-200 rounded-md text-xs font-mono font-medium text-slate-800" />
+                    <input type="number" value={effectiveMatCost} onChange={(e) => setMatCost(parseFloat(e.target.value) || 0)} className="w-32 px-2.5 py-1.5 text-right bg-white border border-slate-200 rounded-md text-xs font-mono font-bold text-slate-900" />
                   </div>
 
-                  <div className="flex items-center justify-between text-slate-500">
+                  <div className="flex items-center justify-between text-slate-700 font-medium">
                     <span>Labor & Application (₹):</span>
-                    <input type="number" value={effectiveLabCost} onChange={(e) => setLabCost(parseFloat(e.target.value) || 0)} className="w-28 px-2 py-1 text-right bg-white border border-slate-200 rounded-md text-xs font-mono font-medium text-slate-800" />
+                    <input type="number" value={effectiveLabCost} onChange={(e) => setLabCost(parseFloat(e.target.value) || 0)} className="w-32 px-2.5 py-1.5 text-right bg-white border border-slate-200 rounded-md text-xs font-mono font-bold text-slate-900" />
                   </div>
 
-                  <div className="flex items-center justify-between font-medium text-slate-800 pt-0.5">
+                  <div className="flex items-center justify-between font-bold text-slate-900 pt-1">
                     <span>Subtotal (₹):</span>
-                    <span className="font-mono">₹{subtotal.toLocaleString('en-IN')}</span>
+                    <span className="font-mono text-sm">₹{subtotal.toLocaleString('en-IN')}</span>
                   </div>
 
-                  <div className="flex items-center justify-between text-slate-500">
+                  <div className="flex items-center justify-between text-slate-700 font-medium">
                     <span>Discount (₹):</span>
-                    <input type="number" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} className="w-28 px-2 py-1 text-right bg-white border border-slate-200 rounded-md text-xs font-mono font-medium text-slate-800" />
+                    <input type="number" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} className="w-32 px-2.5 py-1.5 text-right bg-white border border-slate-200 rounded-md text-xs font-mono font-bold text-slate-900" />
                   </div>
 
-                  <div className="flex items-center justify-between text-slate-500">
+                  <div className="flex items-center justify-between text-slate-700 font-medium">
                     <span>GST Tax Rate (%):</span>
-                    <select value={taxRate} onChange={(e) => setTaxRate(parseFloat(e.target.value) || 18)} className="w-28 px-2 py-1 text-right bg-white border border-slate-200 rounded-md text-xs font-normal text-slate-800">
+                    <select value={taxRate} onChange={(e) => setTaxRate(parseFloat(e.target.value) || 18)} className="w-32 px-2.5 py-1.5 text-right bg-white border border-slate-200 rounded-md text-xs font-semibold text-slate-800">
                       <option value="18">18% GST (Standard)</option>
                       <option value="12">12% GST</option>
                       <option value="5">5% GST</option>
@@ -973,22 +973,22 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                     </select>
                   </div>
 
-                  <div className="flex items-center justify-between text-slate-400">
+                  <div className="flex items-center justify-between text-slate-600 font-medium">
                     <span>GST Amount:</span>
-                    <span className="font-mono">₹{gstAmount.toLocaleString('en-IN')}</span>
+                    <span className="font-mono font-bold text-slate-800">₹{gstAmount.toLocaleString('en-IN')}</span>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
-                    <span className="font-heading font-medium text-sm text-slate-800">Grand Total:</span>
-                    <span className="font-heading font-semibold text-xl text-emerald-600 font-mono">₹{grandTotal.toLocaleString('en-IN')}</span>
+                  <div className="pt-2.5 border-t border-slate-200 flex items-center justify-between">
+                    <span className="font-heading font-bold text-base text-slate-900">Grand Total:</span>
+                    <span className="font-heading font-extrabold text-2xl text-emerald-600 font-mono">₹{grandTotal.toLocaleString('en-IN')}</span>
                   </div>
 
                   <div className="pt-3 flex items-center gap-2">
-                    <button type="button" onClick={() => { setBuilderRequestId(''); setLineItems([{ item: '', qty: 1, unit: 'Sq Ft', rate: 0 }]); }} className="flex-1 px-3 py-2 text-xs font-medium text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-all">
+                    <button type="button" onClick={() => { setBuilderRequestId(''); setLineItems([{ item: '', qty: 1, unit: 'Sq Ft', rate: 0 }]); }} className="flex-1 px-3 py-2 text-xs font-bold text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-all">
                       Reset
                     </button>
-                    <button type="button" onClick={handleIssueQuotation} className="flex-2 px-3.5 py-2 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-all flex items-center justify-center gap-1.5">
-                      <Send className="w-3.5 h-3.5" /> Issue Quotation
+                    <button type="button" onClick={handleIssueQuotation} className="flex-2 px-4 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5">
+                      <Send className="w-4 h-4" /> Issue Quotation
                     </button>
                   </div>
                 </div>

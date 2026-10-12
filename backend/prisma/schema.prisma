@@ -13,6 +13,8 @@ model Service {
     name        String
     description String
     icon        String
+    iconImage   String?
+    imageUrl    String?
     rating      Float
     subServices SubService[]
     created_at  DateTime     @default(now())
