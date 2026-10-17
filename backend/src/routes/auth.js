@@ -9,6 +9,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_here';
 router.post('/google', async (req, res) => {
   try {
     const { name, email, googleId, photoUrl } = req.body;
+
+    if (!email || !googleId) {
+      return res.status(400).json({
+        success:false,
+        message:'Email and Google ID are required'
+      })
+      
+    }
     
     // Check if user already exists by email or googleId
     let user = await prisma.user.findFirst({
@@ -53,7 +61,15 @@ router.post('/google', async (req, res) => {
     res.status(200).json({
       success: true,
       token,
-      user
+      user :{
+        id: user.id,
+        name: user.name,
+        email:user.email,
+        phoneNumber:user.phoneNumber,
+        photoUrl:user.photoUrl,
+        authProvider: user.authProvider,
+        
+      }
     });
 
   } catch (error) {
@@ -66,31 +82,40 @@ router.post('/google', async (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, phoneNumber } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Email and password are required' });
+   
+
+    if (!email || !password || !phoneNumber) {
+      return res.status(400).json({ success: false, message: 'Email and password and phone number are required' });
     }
 
     // Check if user already exists
-    const existing = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: email },
-          ...(phoneNumber ? [{ phoneNumber: phoneNumber }] : [])
-        ]
-      }
+    const existingemail = await prisma.user.findUnique({
+      where: 
+          { 
+            email: email,
+           
+           },
     });
-
-    if (existing) {
+    if (existingemail) {
       return res.status(400).json({ success: false, message: 'An account with this email already exists. Please login.' });
     }
-
+  const existingnum = await prisma.user.findUnique({
+      where: 
+          { 
+            phoneNumber: phoneNumber,
+           
+           },
+    });
+    if (existingnum) {
+      return res.status(400).json({ success: false, message: 'An account with this phonenumber already exists. Please login.' });
+    }
+  
     const newUser = await prisma.user.create({
       data: {
-        name: name || 'Customer',
+        name: name ,
         email,
         password,
-        phoneNumber: phoneNumber || null,
+        phoneNumber: phoneNumber ,
         authProvider: 'email'
       }
     });

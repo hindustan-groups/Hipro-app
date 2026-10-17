@@ -2,6 +2,7 @@ services:
   - type: web
     name: hipro-backend
     runtime: node
+    rootDir: backend
     plan: free
     region: singapore
     buildCommand: npm install && npx prisma generate

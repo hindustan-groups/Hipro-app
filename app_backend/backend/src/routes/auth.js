@@ -62,6 +62,55 @@ router.post('/google', async (req, res) => {
   }
 });
 
+// POST /api/v1/auth/register (Standard Name/Email/Password Signup)
+router.post('/register', async (req, res) => {
+  try {
+    const { name, email, password, phoneNumber } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required' });
+    }
+
+    // Check if user already exists
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: email },
+          ...(phoneNumber ? [{ phoneNumber: phoneNumber }] : [])
+        ]
+      }
+    });
+
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'An account with this email already exists. Please login.' });
+    }
+
+    const newUser = await prisma.user.create({
+      data: {
+        name: name || 'Customer',
+        email,
+        password,
+        phoneNumber: phoneNumber || null,
+        authProvider: 'email'
+      }
+    });
+
+    const token = jwt.sign({ id: newUser.id }, JWT_SECRET, {
+      expiresIn: '30d'
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully',
+      token,
+      user: newUser
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({ success: false, message: 'Registration failed', error: error.message });
+  }
+});
+
 // POST /api/v1/auth/login (Standard Email/Password)
 router.post('/login', async (req, res) => {
   try {

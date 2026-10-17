@@ -3,7 +3,39 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const jwt = require('jsonwebtoken');
 const prisma = require('../prisma');
+const JWT_SECRET = process.env.JWT_SECRET;
+
+function authenticateUser(req,res,next) {
+  try {
+    
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    
+    if(!token || !JWT_SECRET)  {
+      return res.status(401).json({
+        success:false,
+        message:'please login to continue'
+      });
+    }
+    const decoded  = jwt.verify(token,JWT_SECRET);
+    
+    if (!decoded) {
+      return res.status(401).json({
+        success:false,
+        message:'Invalid token'
+      });
+    }
+    req.userId  = decoded.id;
+    next();
+  } catch (error) {
+     return res.status(401).json({
+      success: false,
+      message: 'Session expired. Please login again'
+    });
+  }
+}
 
 const uploadDir = path.join(__dirname, '../../uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -24,8 +56,31 @@ const upload = multer({
 });
 
 // POST /api/v1/requests - Create a service request
-router.post('/', upload.array('damageImages', 10), async (req, res) => {
+router.post('/', authenticateUser,
+  upload.array('damageImages', 10), async (req, res) => {
   try {
+    const user = await prisma.user.findUnique({
+      where:{id:req.userId},
+      select: {
+        id:true,
+        name:true,
+        phoneNumber:true,
+      }
+    })
+    if (!user) {
+        return res.status(404).json({
+        success:false,
+        message:'user not found'
+      });
+      
+    }
+    if (!user.phoneNumber) {
+      return res.status(400).json({
+        success:false,
+        message:'please provide phone number'
+      });
+    }
+
     const {
       servicecode,
       subServiceCode,
@@ -65,29 +120,29 @@ router.post('/', upload.array('damageImages', 10), async (req, res) => {
       mediaList = req.files.map(file => `${baseURL}/uploads/${file.filename}`);
     }
 
-    const phone = customerPhone || phoneNumber || "9461877701";
-    const name = customerName || "Customer App User";
+    // const phone = customerPhone || phoneNumber ;
+    // const name = customerName;
 
-    let targetUser = await prisma.user.findFirst({
-      where: { phoneNumber: phone }
-    });
+    // let targetUser = await prisma.user.findFirst({
+    //   where: { phoneNumber: phone }
+    // });
 
-    if (!targetUser) {
-      targetUser = await prisma.user.create({
-        data: {
-          name,
-          phoneNumber: phone,
-          password: "demopassword"
-        }
-      });
-    }
+    // if (!targetUser) {
+    //   targetUser = await prisma.user.create({
+    //     data: {
+    //       name,
+    //       phoneNumber: phone,
+    //       password: "demopassword"
+    //     }
+    //   });
+    // }
 
-    const requestNumber = `REQ-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    const requestNumber = `REQ-${(Date.now())+ Math.floor(1000 + Math.random() * 9000)}`;
 
     const newRequest = await prisma.serviceRequest.create({
       data: {
         requestNumber,
-        userId: targetUser.id,
+        userId: user.id,
         servicecode: servicecode || req.body.categoryName || req.body.categoryId || 'General Service',
         subServiceCode: subServiceCode || req.body.subServiceName || 'Site Inspection',
         issueDescription: issueDescription || 'General site inspection requested.',
@@ -110,7 +165,12 @@ router.post('/', upload.array('damageImages', 10), async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Request Created Successfully',
-      data: newRequest
+      data: {
+        id: newRequest.id,
+        requestNumber:newRequest.requestNumber,
+        status:newRequest.status,
+        createdAt:newRequest.created_at
+      }
     });
   } catch (error) {
     console.error('Request creation error:', error);
@@ -120,7 +180,55 @@ router.post('/', upload.array('damageImages', 10), async (req, res) => {
     });
   }
 });
+ 
 
+router.patch('/phone', authenticateUser, async (req, res) => {
+  try {
+    const phoneNumber = String(
+      req.body.phoneNumber || ''
+    ).trim();
+    
+    if (!/^[6-9]\d{9}$/.test(phoneNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Enter a valid 10-digit Indian mobile number'
+      });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { phoneNumber },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phoneNumber: true
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Mobile number saved successfully',
+      user
+    });
+
+  } catch (error) {
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        success: false,
+        message: 'This mobile number is already registered'
+      });
+    }
+
+    console.error('Save phone error:', error);
+           
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save mobile number',
+      error: error.message
+    });
+  }
+})
 // GET /api/v1/requests - Get all requests with quotations and user info
 router.get('/', async (req, res) => {
   try {

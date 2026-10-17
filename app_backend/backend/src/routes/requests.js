@@ -36,18 +36,34 @@ router.post('/', upload.array('damageImages', 10), async (req, res) => {
       preferredDate,
       preferredTime,
       addressline,
-      status
+      status,
+      customerName,
+      customerPhone,
+      phoneNumber
     } = req.body;
 
     const baseURL = process.env.BASE_URL || 'http://localhost:5000';
-    const uploadedMedia = (req.files || []).map(file => `${baseURL}/uploads/${file.filename}`);
+    let mediaList = [];
+    if (req.body.mediaUrls) {
+      mediaList = Array.isArray(req.body.mediaUrls) ? req.body.mediaUrls : [req.body.mediaUrls];
+    } else if (req.body.photos) {
+      mediaList = Array.isArray(req.body.photos) ? req.body.photos : [req.body.photos];
+    } else if (req.files && req.files.length > 0) {
+      mediaList = req.files.map(file => `${baseURL}/uploads/${file.filename}`);
+    }
 
-    let defaultUser = await prisma.user.findFirst();
-    if (!defaultUser) {
-      defaultUser = await prisma.user.create({
+    const phone = customerPhone || phoneNumber || "9461877701";
+    const name = customerName || "Customer App User";
+
+    let targetUser = await prisma.user.findFirst({
+      where: { phoneNumber: phone }
+    });
+
+    if (!targetUser) {
+      targetUser = await prisma.user.create({
         data: {
-          name: "HINDUSTAN PROJECTS Customer",
-          phoneNumber: "9461877701",
+          name,
+          phoneNumber: phone,
           password: "demopassword"
         }
       });
@@ -58,21 +74,25 @@ router.post('/', upload.array('damageImages', 10), async (req, res) => {
     const newRequest = await prisma.serviceRequest.create({
       data: {
         requestNumber,
-        userId: defaultUser.id,
-        servicecode: servicecode ,
-        subServiceCode: subServiceCode ,
-        issueDescription: issueDescription ,
+        userId: targetUser.id,
+        servicecode: servicecode || req.body.categoryName || req.body.categoryId || 'General Service',
+        subServiceCode: subServiceCode || req.body.subServiceName || 'Site Inspection',
+        issueDescription: issueDescription || 'General site inspection requested.',
         urgency: 'NORMAL',
-        status:status ||'SUBMITTED',
-        mediaUrl: uploadedMedia.length > 0 ? uploadedMedia : [
+        status: status || 'SUBMITTED',
+        mediaUrl: mediaList.length > 0 ? mediaList : [
           'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80'
         ],
-        propertyType: propertyType ,
-        propertySize: propertySize ,
-        location: location ,
-        preferredDate: preferredDate ,
-        preferredTime: preferredTime ,
-        addressline: addressline
+        propertyType: propertyType || 'Residential',
+        propertySize: propertySize || 'Standard Area',
+        location: location || addressline || req.body.address || 'Bhilwara, Rajasthan',
+        preferredDate: preferredDate || new Date().toISOString().split('T')[0],
+        preferredTime: preferredTime || 'Morning (09:00 AM - 12:00 PM)',
+        addressline: addressline || req.body.address || 'Site Address'
+      },
+      include: {
+        user: true,
+        quotations: true
       }
     });
 

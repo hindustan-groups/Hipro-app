@@ -23,6 +23,7 @@ app.use('/uploads', express.static(uploadDir));
 // API Routes
 app.use('/api/v1/services', require('./routes/services'));
 app.use('/api/v1/requests', require('./routes/requests'));
+app.use('/api/v1/inspections', require('./routes/requests'));
 app.use('/api/v1/quotations', require('./routes/quations'));
 app.use('/api/v1/admin', require('./routes/admin'));
 app.use('/api/v1/upload', require('./routes/upload'));
