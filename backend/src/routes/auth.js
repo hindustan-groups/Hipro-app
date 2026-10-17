@@ -173,4 +173,77 @@ router.post('/login', async (req, res) => {
   }
 });
 
+function authenticateUser(req, res, next) {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+    if (!token || !JWT_SECRET) {
+      return res.status(401).json({
+        success: false,
+        message: 'Please login to continue'
+      });
+    }
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (!decoded) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token'
+      });
+    }
+    req.userId = decoded.id;
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: 'Session expired. Please login again'
+    });
+  }
+}
+
+// PATCH /api/v1/auth/phone - Save or update user phone number
+router.patch('/phone', authenticateUser, async (req, res) => {
+  try {
+    const phoneNumber = String(req.body.phoneNumber || '').trim();
+
+    if (!/^[6-9]\d{9}$/.test(phoneNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Enter a valid 10-digit Indian mobile number'
+      });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { phoneNumber },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phoneNumber: true
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Mobile number saved successfully',
+      user
+    });
+  } catch (error) {
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        success: false,
+        message: 'This mobile number is already registered'
+      });
+    }
+
+    console.error('Save phone error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save mobile number',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
