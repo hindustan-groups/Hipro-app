@@ -1,5 +1,5 @@
 /* Hindustan Projects - Exact UI Matching Design Showcase */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -18,12 +18,12 @@
   --hp-bg: #F8FAFC;
   --hp-card: #FFFFFF;
   --hp-text: #0F172A;
-  --hp-text-muted: #64748B;
+  --hp-text-muted: #475569;
   --hp-border: #E2E8F0;
   --hp-border-light: #F1F5F9;
 
   --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
@@ -40,7 +40,7 @@
 
 body {
   font-family: var(--font-body);
-  font-weight: 450;
+  font-weight: 500;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: #0B192C;

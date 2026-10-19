@@ -579,7 +579,7 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
   const selectedBuilderReq = requests.find(r => r.id === builderRequestId);
 
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-800 font-sans text-[13.5px] font-[450]">
+    <div className="min-h-screen flex bg-slate-50 text-slate-900 font-sans text-[14px] font-[500] antialiased tracking-[-0.01em]">
 
       {/* SIDEBAR NAVIGATION */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 shadow-xs`}>
@@ -764,7 +764,7 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                     <Sparkles className="w-3 h-3" /> Operations Hub
                   </span>
                   <h2 className="font-heading text-xl sm:text-2xl font-semibold tracking-tight">Dynamic Quotation & Dispatch Desk</h2>
-                  <p className="text-white/80 text-xs sm:text-sm font-light leading-relaxed">Review photo damage inspections from customers, estimate repair scopes with dynamic BOQ, and dispatch digital quotations.</p>
+                  <p className="text-white/80 text-xs sm:text-sm font-normal leading-relaxed">Review photo damage inspections from customers, estimate repair scopes with dynamic BOQ, and dispatch digital quotations.</p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/20 text-white min-w-[200px]">
                   <div className="text-[10px] font-medium uppercase text-white/70 tracking-wider">Customer Support Hotline</div>
@@ -1010,7 +1010,7 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                           {req.subServiceCode && <p className="text-[11px] font-medium text-brand-600">{req.subServiceCode}</p>}
                         </div>
 
-                        <div className="p-2.5 bg-slate-50 rounded-lg text-xs text-slate-600 leading-relaxed border border-slate-100 font-light">
+                        <div className="p-2.5 bg-slate-50 rounded-lg text-xs text-slate-600 leading-relaxed border border-slate-100 font-normal">
                           <span className="font-medium text-slate-800">Issue:</span> {req.issueDescription || 'No description'}
                         </div>
 
@@ -1104,7 +1104,7 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                           <div><strong>Warranty:</strong> {q.warranty_coverage ? q.warranty_coverage.slice(0, 18) + '...' : '1 Year'}</div>
                         </div>
 
-                        <div className="text-[10.5px] text-slate-400 font-light">
+                        <div className="text-[10.5px] text-slate-400 font-normal">
                           <strong>Scope ({lineItemsArray.length}):</strong> {lineItemsArray.map(li => li.item || li.description).slice(0, 2).join(', ')}{lineItemsArray.length > 2 ? '...' : ''}
                         </div>
                       </div>
@@ -1168,7 +1168,7 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                     </div>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white text-brand-700 border border-brand-200">{selectedBuilderReq.status}</span>
                   </div>
-                  <div className="text-[11.5px] text-slate-600 leading-relaxed font-light">
+                  <div className="text-[11.5px] text-slate-600 leading-relaxed font-normal">
                     <strong>Client:</strong> {selectedBuilderReq.user?.name} ({selectedBuilderReq.user?.phoneNumber}) &nbsp;|&nbsp;
                     <strong>Property:</strong> {selectedBuilderReq.propertyType || 'House'} ({selectedBuilderReq.propertySize || 'Standard Area'}) &nbsp;|&nbsp;
                     <strong>Address:</strong> {selectedBuilderReq.addressline || 'Main Residence'} <br />
@@ -1268,7 +1268,7 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
 
                   <div className="space-y-1">
                     <label className="block text-[10.5px] font-medium text-slate-400 uppercase">Terms & Conditions</label>
-                    <textarea rows="2" value={builderTerms} onChange={(e) => setBuilderTerms(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-light text-slate-700 leading-relaxed"></textarea>
+                    <textarea rows="2" value={builderTerms} onChange={(e) => setBuilderTerms(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-normal text-slate-700 leading-relaxed"></textarea>
                   </div>
                 </div>
 
@@ -1371,9 +1371,9 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                         <div key={sub.id} className="p-3 rounded-lg bg-slate-50 border border-slate-200/70 space-y-1.5">
                           <div className="font-medium text-xs text-slate-800">{sub.titleEn}</div>
                           {sub.titleHi && <div className="text-[10.5px] font-medium text-brand-600">{sub.titleHi}</div>}
-                          <div className="text-[10.5px] text-slate-500 font-light">{sub.desc}</div>
+                          <div className="text-[10.5px] text-slate-500 font-normal">{sub.desc}</div>
                           {sub.checklist && sub.checklist.length > 0 && (
-                            <div className="text-[10px] text-slate-400 pt-1 border-t border-slate-200/60 font-light">
+                            <div className="text-[10px] text-slate-400 pt-1 border-t border-slate-200/60 font-normal">
                               <span className="font-medium text-slate-600">Checklist:</span>
                               <ul className="list-disc list-inside mt-0.5 space-y-0.5">
                                 {sub.checklist.map((ch, i) => <li key={i}>{ch}</li>)}
@@ -1414,13 +1414,13 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                         <tr key={u.id} className="hover:bg-slate-50/50">
                           <td className="p-3 font-medium text-slate-800">{u.name}</td>
                           <td className="p-3 font-mono font-medium text-emerald-600">{u.phoneNumber}</td>
-                          <td className="p-3 text-slate-500 font-light leading-tight">
+                          <td className="p-3 text-slate-500 font-normal leading-tight">
                             {(u.address || []).map(a => `${a.type.toUpperCase()}: ${a.address}, ${a.city}`).join(' | ') || 'Default Residence'}
                           </td>
                           <td className="p-3">
                             <span className="px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-700 border border-blue-200 text-[10px]">{(u.requests || []).length} Requests</span>
                           </td>
-                          <td className="p-3 text-slate-400 font-light">{new Date(u.created_at).toLocaleDateString('en-IN')}</td>
+                          <td className="p-3 text-slate-400 font-normal">{new Date(u.created_at).toLocaleDateString('en-IN')}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1435,25 +1435,25 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
             <div className="space-y-5">
               <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-heading font-semibold text-base text-slate-800 flex items-center gap-2">
+                  <h2 className="font-heading font-bold text-base text-slate-900 flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-brand-600" />
                     <span>App Carousel Slides & Dynamic In-App Routing</span>
                   </h2>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
+                  <p className="text-xs text-slate-600 font-medium mt-0.5">
                     Configure promotional carousel slides displayed on the mobile home screen and set which in-app screen or service opens when tapped.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={fetchSlides}
-                    className="p-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-all"
+                    className="p-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-100 transition-all font-semibold"
                     title="Refresh Slides"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={handleOpenAddSlide}
-                    className="px-3.5 py-1.5 text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-xs flex items-center gap-1.5 transition-all"
+                    className="px-3.5 py-1.5 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-xs flex items-center gap-1.5 transition-all"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add New Slide</span>
@@ -1582,7 +1582,7 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                               {slide.title}
                             </div>
                             {slide.subtitle && (
-                              <div className="text-[10.5px] text-slate-200 font-light drop-shadow-xs line-clamp-1 mt-0.5">
+                              <div className="text-[10.5px] text-slate-200 font-normal drop-shadow-xs line-clamp-1 mt-0.5">
                                 {slide.subtitle}
                               </div>
                             )}
@@ -2019,8 +2019,8 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
               <div className="flex justify-between items-start border-b border-slate-200 pb-4">
                 <div>
                   <h2 className="font-heading font-semibold text-xl text-slate-900 tracking-tight">HIND BUILDING SOLUTIONS</h2>
-                  <p className="text-[11px] text-slate-500 font-light">Technical Waterproofing, Surface Repair & Restoration</p>
-                  <p className="text-[11px] text-slate-500 font-light">Support Hotline: +91 94628 77757 | support@hindbuilding.com</p>
+                  <p className="text-[11px] text-slate-500 font-normal">Technical Waterproofing, Surface Repair & Restoration</p>
+                  <p className="text-[11px] text-slate-500 font-normal">Support Hotline: +91 94628 77757 | support@hindbuilding.com</p>
                 </div>
                 <div className="text-right">
                   <div className="font-mono font-semibold text-base text-brand-600">{activeQuoteModal.quoteNumber}</div>
@@ -2062,9 +2062,9 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                       <tr key={idx}>
                         <td className="p-2 font-medium text-slate-400">{idx + 1}</td>
                         <td className="p-2 text-slate-800 font-normal">{li.item || li.description}</td>
-                        <td className="p-2 font-light">{li.qty}</td>
-                        <td className="p-2 font-light">{li.unit || 'Unit'}</td>
-                        <td className="p-2 font-light">₹{(li.rate || 0).toLocaleString('en-IN')}</td>
+                        <td className="p-2 font-normal">{li.qty}</td>
+                        <td className="p-2 font-normal">{li.unit || 'Unit'}</td>
+                        <td className="p-2 font-normal">₹{(li.rate || 0).toLocaleString('en-IN')}</td>
                         <td className="p-2 text-right font-medium text-slate-900">₹{Number(amt).toLocaleString('en-IN')}</td>
                       </tr>
                     );
@@ -2074,11 +2074,11 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
 
               <div className="flex justify-end pt-1">
                 <div className="w-64 space-y-1.5 text-xs border-t border-slate-200 pt-2.5">
-                  <div className="flex justify-between text-slate-500 font-light">
+                  <div className="flex justify-between text-slate-500 font-normal">
                     <span>Material Cost:</span>
                     <span>₹{(activeQuoteModal.materialCost || 0).toLocaleString('en-IN')}</span>
                   </div>
-                  <div className="flex justify-between text-slate-500 font-light">
+                  <div className="flex justify-between text-slate-500 font-normal">
                     <span>Labor & Application:</span>
                     <span>₹{(activeQuoteModal.laborCost || 0).toLocaleString('en-IN')}</span>
                   </div>
@@ -2086,7 +2086,7 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                     <span>Subtotal:</span>
                     <span>₹{(activeQuoteModal.subtotal || 0).toLocaleString('en-IN')}</span>
                   </div>
-                  <div className="flex justify-between text-slate-400 font-light">
+                  <div className="flex justify-between text-slate-400 font-normal">
                     <span>GST ({activeQuoteModal.taxRate || 18}%):</span>
                     <span>₹{(activeQuoteModal.taxGST || 0).toLocaleString('en-IN')}</span>
                   </div>
@@ -2097,7 +2097,7 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-slate-50 border border-dashed border-slate-300 text-[10.5px] text-slate-500 space-y-0.5 font-light">
+              <div className="p-3 rounded-lg bg-slate-50 border border-dashed border-slate-300 text-[10.5px] text-slate-500 space-y-0.5 font-normal">
                 <div><strong>Warranty Terms:</strong> {activeQuoteModal.warranty_coverage || '1 Year Service Warranty'}</div>
                 <div><strong>Commercial Terms:</strong> {activeQuoteModal.termsAndConditions || 'Standard payment terms apply.'}</div>
               </div>
