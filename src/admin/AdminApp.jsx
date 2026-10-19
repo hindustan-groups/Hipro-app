@@ -6,10 +6,11 @@ import {
   Check, PhoneCall, Sparkles, Inbox, Clock, FileCheck2,
   CheckCircle2, GitPullRequest, Zap, ArrowRight, MapPin,
   Calendar, Home, User, Phone, Info, Send, RotateCcw,
-  Server, Database, AlertCircle, Droplets
+  Server, Database, AlertCircle, Droplets, Image, Layers,
+  ExternalLink, Link2, Eye, EyeOff, Upload, Tag, Percent, Ticket
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'https://app.hindustanprojects.in');
 
 export default function AdminApp({ onSwitchToCustomerApp }) {
   const [activeTab, setActiveTab] = useState('overview');
@@ -18,9 +19,46 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
   const [quotations, setQuotations] = useState([]);
   const [services, setServices] = useState([]);
   const [users, setUsers] = useState([]);
+  const [slides, setSlides] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
   const [toast, setToast] = useState(null);
+
+  // Slides State
+  const [slideModalOpen, setSlideModalOpen] = useState(false);
+  const [editingSlide, setEditingSlide] = useState(null);
+  const [slideForm, setSlideForm] = useState({
+    title: '',
+    subtitle: '',
+    imageUrl: '',
+    targetRoute: 'create_inspection',
+    badgeText: 'LIMITED OFFER',
+    order: 1,
+    isActive: true,
+  });
+  const [uploadingSlideImg, setUploadingSlideImg] = useState(false);
+
+  // Offers State
+  const [offers, setOffers] = useState([]);
+  const [offerModalOpen, setOfferModalOpen] = useState(false);
+  const [editingOffer, setEditingOffer] = useState(null);
+  const [offerCategoryFilter, setOfferCategoryFilter] = useState('ALL');
+  const [offerForm, setOfferForm] = useState({
+    title: '',
+    subtitle: '',
+    category: 'Trending',
+    discount: '20% OFF',
+    code: '',
+    badge: 'POPULAR',
+    imageUrl: '',
+    minAmount: 1500,
+    validTill: '31 Dec 2026',
+    targetRoute: 'create_inspection',
+    terms: 'Applicable on residential and commercial inspections.',
+    order: 1,
+    isActive: true,
+  });
+  const [uploadingOfferImg, setUploadingOfferImg] = useState(false);
 
   // Modals state
   const [activePhotoModal, setActivePhotoModal] = useState(null); // { photos: [], index: 0, title: '' }
@@ -63,11 +101,283 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
         fetchRequests(),
         fetchQuotations(),
         fetchServices(),
-        fetchUsers()
+        fetchUsers(),
+        fetchSlides(),
+        fetchOffers()
       ]);
       if (showFeedback) showToastMsg('Database synced successfully', 'success');
     } catch (err) {
       if (showFeedback) showToastMsg('Failed to sync with API', 'error');
+    }
+  };
+
+  const fetchOffers = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/offers/admin`);
+      const data = await res.json();
+      if (data.success) setOffers(data.offers || []);
+    } catch (e) { console.error('fetchOffers error:', e); }
+  };
+
+  const handleOpenAddOffer = () => {
+    setEditingOffer(null);
+    setOfferForm({
+      title: '',
+      subtitle: '',
+      category: 'Trending',
+      discount: '20% OFF',
+      code: '',
+      badge: 'LIMITED TIME',
+      imageUrl: '',
+      minAmount: 1500,
+      validTill: '31 Dec 2026',
+      targetRoute: 'create_inspection',
+      terms: 'Applicable on residential and commercial inspections.',
+      order: offers.length + 1,
+      isActive: true,
+    });
+    setOfferModalOpen(true);
+  };
+
+  const handleOpenEditOffer = (offer) => {
+    setEditingOffer(offer);
+    setOfferForm({
+      title: offer.title || '',
+      subtitle: offer.subtitle || '',
+      category: offer.category || 'Trending',
+      discount: offer.discount || '',
+      code: offer.code || '',
+      badge: offer.badge || '',
+      imageUrl: offer.imageUrl || '',
+      minAmount: offer.minAmount || 0,
+      validTill: offer.validTill || '',
+      targetRoute: offer.targetRoute || 'create_inspection',
+      terms: offer.terms || '',
+      order: offer.order || 1,
+      isActive: offer.isActive !== false,
+    });
+    setOfferModalOpen(true);
+  };
+
+  const handleSaveOffer = async (e) => {
+    if (e) e.preventDefault();
+    if (!offerForm.title || !offerForm.code) {
+      showToastMsg('Offer Title and Coupon Code are required', 'error');
+      return;
+    }
+
+    try {
+      const url = editingOffer
+        ? `${API_BASE}/api/v1/offers/admin/${editingOffer.id}`
+        : `${API_BASE}/api/v1/offers/admin`;
+      const method = editingOffer ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(offerForm),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        showToastMsg(editingOffer ? 'Offer updated successfully!' : 'Offer created successfully!', 'success');
+        setOfferModalOpen(false);
+        fetchOffers();
+      } else {
+        showToastMsg(data.message || 'Failed to save offer', 'error');
+      }
+    } catch (err) {
+      showToastMsg('Network error saving offer', 'error');
+    }
+  };
+
+  const handleToggleOfferActive = async (offer) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/offers/admin/${offer.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !offer.isActive }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToastMsg(`Offer marked ${!offer.isActive ? 'Active' : 'Inactive'}`, 'success');
+        fetchOffers();
+      }
+    } catch (err) {
+      showToastMsg('Failed to toggle offer status', 'error');
+    }
+  };
+
+  const handleDeleteOffer = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this offer?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/offers/admin/${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToastMsg('Offer deleted successfully', 'success');
+        fetchOffers();
+      }
+    } catch (err) {
+      showToastMsg('Failed to delete offer', 'error');
+    }
+  };
+
+  const handleOfferImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingOfferImg(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', '/offers');
+
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        setOfferForm(prev => ({ ...prev, imageUrl: data.url }));
+        showToastMsg('Offer image uploaded successfully!', 'success');
+      } else {
+        showToastMsg(data.message || 'Image upload failed', 'error');
+      }
+    } catch (err) {
+      showToastMsg('Error uploading image', 'error');
+    } finally {
+      setUploadingOfferImg(false);
+    }
+  };
+
+  const fetchSlides = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/slides/admin`);
+      const data = await res.json();
+      if (data.success) setSlides(data.data || []);
+    } catch (e) { console.error('fetchSlides error:', e); }
+  };
+
+  const handleOpenAddSlide = () => {
+    setEditingSlide(null);
+    setSlideForm({
+      title: '',
+      subtitle: '',
+      imageUrl: '',
+      targetRoute: 'create_inspection',
+      badgeText: 'LIMITED OFFER',
+      order: slides.length + 1,
+      isActive: true,
+    });
+    setSlideModalOpen(true);
+  };
+
+  const handleOpenEditSlide = (slide) => {
+    setEditingSlide(slide);
+    setSlideForm({
+      title: slide.title || '',
+      subtitle: slide.subtitle || '',
+      imageUrl: slide.imageUrl || '',
+      targetRoute: slide.targetRoute || 'create_inspection',
+      badgeText: slide.badgeText || '',
+      order: slide.order || 1,
+      isActive: slide.isActive !== false,
+    });
+    setSlideModalOpen(true);
+  };
+
+  const handleSaveSlide = async (e) => {
+    if (e) e.preventDefault();
+    if (!slideForm.title || !slideForm.imageUrl) {
+      showToastMsg('Title and Image URL are required', 'error');
+      return;
+    }
+
+    try {
+      const url = editingSlide
+        ? `${API_BASE}/api/v1/slides/admin/${editingSlide.id}`
+        : `${API_BASE}/api/v1/slides/admin`;
+      const method = editingSlide ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(slideForm),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        showToastMsg(editingSlide ? 'Slide updated successfully!' : 'Slide created successfully!', 'success');
+        setSlideModalOpen(false);
+        fetchSlides();
+      } else {
+        showToastMsg(data.message || 'Failed to save slide', 'error');
+      }
+    } catch (err) {
+      showToastMsg('Network error saving slide', 'error');
+    }
+  };
+
+  const handleToggleSlideActive = async (slide) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/slides/admin/${slide.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !slide.isActive }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToastMsg(`Slide marked ${!slide.isActive ? 'Active' : 'Inactive'}`, 'success');
+        fetchSlides();
+      }
+    } catch (err) {
+      showToastMsg('Failed to toggle slide status', 'error');
+    }
+  };
+
+  const handleDeleteSlide = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this slide?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/slides/admin/${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToastMsg('Slide deleted successfully', 'success');
+        fetchSlides();
+      }
+    } catch (err) {
+      showToastMsg('Failed to delete slide', 'error');
+    }
+  };
+
+  const handleImageFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingSlideImg(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', '/slides');
+
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        setSlideForm(prev => ({ ...prev, imageUrl: data.url }));
+        showToastMsg('Image uploaded successfully!', 'success');
+      } else {
+        showToastMsg(data.message || 'Image upload failed', 'error');
+      }
+    } catch (err) {
+      showToastMsg('Error uploading image', 'error');
+    } finally {
+      setUploadingSlideImg(false);
     }
   };
 
@@ -336,6 +646,26 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
             </div>
           </button>
 
+          <button onClick={() => { setActiveTab('slides'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'slides' ? 'bg-brand-50 text-brand-600 font-semibold shadow-xs' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`}>
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 text-brand-600" />
+              <span>App Slides & Banners</span>
+            </div>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+              {slides.length}
+            </span>
+          </button>
+
+          <button onClick={() => { setActiveTab('offers'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'offers' ? 'bg-brand-50 text-brand-600 font-semibold shadow-xs' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`}>
+            <div className="flex items-center gap-2.5">
+              <Tag className="w-4 h-4 text-emerald-600" />
+              <span>App Offers & Deals</span>
+            </div>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              {offers.length}
+            </span>
+          </button>
+
           <button onClick={() => { setActiveTab('users'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'users' ? 'bg-brand-50 text-brand-600 font-semibold shadow-xs' : 'text-slate-600 hover:text-brand-600 hover:bg-slate-50'}`}>
             <div className="flex items-center gap-2.5">
               <Users className="w-4 h-4" />
@@ -378,7 +708,9 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                     activeTab === 'quotations' ? 'Quotations Desk' :
                       activeTab === 'builder' ? 'Quotation Generator' :
                         activeTab === 'services' ? 'Services Catalog' :
-                          activeTab === 'users' ? 'Customer Directory' : 'System Diagnostics'}
+                          activeTab === 'slides' ? 'App Slides & Banners' :
+                            activeTab === 'offers' ? 'App Offers & Coupon Deals' :
+                              activeTab === 'users' ? 'Customer Directory' : 'System Diagnostics'}
               </h1>
               <p className="text-[11px] text-slate-400 hidden sm:block">Hind Building Solutions — Technical Operations Portal</p>
             </div>
@@ -1098,6 +1430,473 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
             </div>
           )}
 
+          {/* APP SLIDES & CAROUSEL TAB */}
+          {activeTab === 'slides' && (
+            <div className="space-y-5">
+              <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <h2 className="font-heading font-semibold text-base text-slate-800 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-brand-600" />
+                    <span>App Carousel Slides & Dynamic In-App Routing</span>
+                  </h2>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Configure promotional carousel slides displayed on the mobile home screen and set which in-app screen or service opens when tapped.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={fetchSlides}
+                    className="p-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-all"
+                    title="Refresh Slides"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={handleOpenAddSlide}
+                    className="px-3.5 py-1.5 text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-xs flex items-center gap-1.5 transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add New Slide</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Stats Bar */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
+                  <div className="text-[11px] text-slate-400 font-medium uppercase">Total Slides</div>
+                  <div className="text-xl font-bold text-slate-800 mt-1">{slides.length}</div>
+                </div>
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
+                  <div className="text-[11px] text-slate-400 font-medium uppercase">Active in App</div>
+                  <div className="text-xl font-bold text-emerald-600 mt-1">
+                    {slides.filter(s => s.isActive !== false).length}
+                  </div>
+                </div>
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
+                  <div className="text-[11px] text-slate-400 font-medium uppercase">Inactive / Drafts</div>
+                  <div className="text-xl font-bold text-slate-400 mt-1">
+                    {slides.filter(s => s.isActive === false).length}
+                  </div>
+                </div>
+              </div>
+
+              {/* Slides Grid */}
+              {slides.length === 0 ? (
+                <div className="bg-white p-12 text-center rounded-xl border border-slate-200/80 shadow-xs">
+                  <Layers className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-slate-500 font-medium text-sm">No slides created yet</p>
+                  <p className="text-xs text-slate-400 mt-1">Add your first promotional slide with an in-app destination route.</p>
+                  <button
+                    onClick={handleOpenAddSlide}
+                    className="mt-4 px-3 py-1.5 text-xs font-medium text-white bg-brand-600 rounded-lg"
+                  >
+                    Create First Slide
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {slides.map((slide) => {
+                    const isInspection = slide.targetRoute === 'create_inspection';
+                    const isServices = slide.targetRoute === 'services';
+                    const isRequests = slide.targetRoute === 'requests';
+                    const isQuotations = slide.targetRoute === 'quotations';
+                    const isProfile = slide.targetRoute === 'profile';
+                    const isSpecificService = slide.targetRoute && slide.targetRoute.startsWith('service:');
+
+                    let routeLabel = 'Book Inspection Screen';
+                    let routeBadgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
+                    if (isServices) {
+                      routeLabel = 'Services Catalog Tab';
+                      routeBadgeColor = 'bg-purple-50 text-purple-700 border-purple-200';
+                    } else if (isRequests) {
+                      routeLabel = 'Requests Tab';
+                      routeBadgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+                    } else if (isQuotations) {
+                      routeLabel = 'Quotations Tab';
+                      routeBadgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                    } else if (isProfile) {
+                      routeLabel = 'Profile Tab';
+                      routeBadgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
+                    } else if (isSpecificService) {
+                      routeLabel = `Service: ${slide.targetRoute.replace('service:', '')}`;
+                      routeBadgeColor = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                    } else if (slide.targetRoute) {
+                      routeLabel = slide.targetRoute;
+                      routeBadgeColor = 'bg-cyan-50 text-cyan-700 border-cyan-200';
+                    }
+
+                    return (
+                      <div
+                        key={slide.id}
+                        className={`bg-white rounded-xl border transition-all overflow-hidden shadow-xs flex flex-col justify-between ${
+                          slide.isActive !== false ? 'border-slate-200/80 hover:shadow-md' : 'border-slate-200/50 opacity-60'
+                        }`}
+                      >
+                        {/* Slide Banner Preview */}
+                        <div className="relative h-36 bg-slate-100 overflow-hidden group">
+                          {slide.imageUrl ? (
+                            <img
+                              src={slide.imageUrl}
+                              alt={slide.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = 'https://images.unsplash.com/photo-1541888946425-d0fbb18015f6?auto=format&fit=crop&w=600&q=80';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-200">
+                              <Image className="w-8 h-8 opacity-40" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"></div>
+
+                          {/* Top Badges */}
+                          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                            {slide.badgeText && (
+                              <span className="px-2 py-0.5 rounded text-[9.5px] font-bold tracking-wider bg-brand-600 text-white shadow-xs">
+                                {slide.badgeText}
+                              </span>
+                            )}
+                            <span className="px-1.5 py-0.5 rounded text-[9.5px] font-mono font-medium bg-black/50 text-white/90 backdrop-blur-xs">
+                              #{slide.order || 1}
+                            </span>
+                          </div>
+
+                          <div className="absolute top-2.5 right-2.5">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                                slide.isActive !== false
+                                  ? 'bg-emerald-500/90 text-white border-emerald-400'
+                                  : 'bg-slate-700/80 text-slate-300 border-slate-600'
+                              }`}
+                            >
+                              {slide.isActive !== false ? 'Active in App' : 'Disabled'}
+                            </span>
+                          </div>
+
+                          {/* Bottom title in preview */}
+                          <div className="absolute bottom-2.5 left-3 right-3 text-white">
+                            <div className="font-semibold text-xs leading-snug drop-shadow-xs line-clamp-1">
+                              {slide.title}
+                            </div>
+                            {slide.subtitle && (
+                              <div className="text-[10.5px] text-slate-200 font-light drop-shadow-xs line-clamp-1 mt-0.5">
+                                {slide.subtitle}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Slide Card Body */}
+                        <div className="p-3.5 space-y-3 flex-1 flex flex-col justify-between">
+                          <div className="space-y-1.5">
+                            <div className="text-[11px] text-slate-400 uppercase font-medium flex items-center justify-between">
+                              <span>Target In-App Route</span>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                {slide.targetRoute}
+                              </span>
+                            </div>
+                            <div className={`p-2 rounded-lg border text-xs font-semibold flex items-center gap-1.5 ${routeBadgeColor}`}>
+                              <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate">{routeLabel}</span>
+                            </div>
+                          </div>
+
+                          {/* Action Toolbar */}
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                            <button
+                              onClick={() => handleToggleSlideActive(slide)}
+                              className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all ${
+                                slide.isActive !== false
+                                  ? 'text-amber-700 bg-amber-50 hover:bg-amber-100'
+                                  : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                              }`}
+                            >
+                              {slide.isActive !== false ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                              <span>{slide.isActive !== false ? 'Pause' : 'Activate'}</span>
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleOpenEditSlide(slide)}
+                                className="px-2.5 py-1 rounded text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteSlide(slide.id)}
+                                className="p-1 rounded text-red-500 hover:bg-red-50 hover:text-red-700 transition-all"
+                                title="Delete Slide"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* OFFERS TAB */}
+          {activeTab === 'offers' && (
+            <div className="space-y-5">
+              {/* Top Banner & Action */}
+              <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200">
+                      <Tag className="w-4 h-4" />
+                    </span>
+                    <h2 className="font-heading font-semibold text-base text-slate-800">
+                      App Promotional Offers & Deals
+                    </h2>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Manage coupons, discount badges, and service-specific deals shown dynamically in the mobile app.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => fetchOffers()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Refresh</span>
+                  </button>
+                  <button
+                    onClick={handleOpenAddOffer}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-all"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>Create New Offer</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Stats Strip */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
+                  <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Total Offers</span>
+                  <div className="text-xl font-bold text-slate-800 mt-1">{offers.length}</div>
+                </div>
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
+                  <span className="text-[11px] font-medium text-emerald-600 uppercase tracking-wider">Active Deals</span>
+                  <div className="text-xl font-bold text-emerald-600 mt-1">
+                    {offers.filter(o => o.isActive !== false).length}
+                  </div>
+                </div>
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
+                  <span className="text-[11px] font-medium text-amber-600 uppercase tracking-wider">Paused / Drafts</span>
+                  <div className="text-xl font-bold text-amber-600 mt-1">
+                    {offers.filter(o => o.isActive === false).length}
+                  </div>
+                </div>
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
+                  <span className="text-[11px] font-medium text-indigo-600 uppercase tracking-wider">Categories</span>
+                  <div className="text-xl font-bold text-indigo-600 mt-1">
+                    {Array.from(new Set(offers.map(o => o.category || 'Trending'))).length}
+                  </div>
+                </div>
+              </div>
+
+              {/* Category Filter Tabs */}
+              {offers.length > 0 && (
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                  {['ALL', ...Array.from(new Set(offers.map(o => o.category || 'Trending')))].map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setOfferCategoryFilter(cat)}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                        offerCategoryFilter === cat
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Offers Grid */}
+              {offers.length === 0 ? (
+                <div className="bg-white p-12 text-center rounded-xl border border-slate-200/80 shadow-xs">
+                  <Tag className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-slate-500 font-medium text-sm">No promotional offers created yet</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Create discount coupons and deals to entice customers on the mobile app.
+                  </p>
+                  <button
+                    onClick={handleOpenAddOffer}
+                    className="mt-4 px-3.5 py-1.5 text-xs font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-all"
+                  >
+                    Create First Offer
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {offers
+                    .filter(o => offerCategoryFilter === 'ALL' || (o.category || 'Trending') === offerCategoryFilter)
+                    .map((offer) => {
+                      const isInspection = offer.targetRoute === 'create_inspection';
+                      const isServices = offer.targetRoute === 'services';
+                      const isSpecificService = offer.targetRoute && offer.targetRoute.startsWith('service:');
+
+                      let routeLabel = 'Book Inspection Screen';
+                      let routeBadgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
+                      if (isServices) {
+                        routeLabel = 'Services Catalog Tab';
+                        routeBadgeColor = 'bg-purple-50 text-purple-700 border-purple-200';
+                      } else if (isSpecificService) {
+                        routeLabel = `Pre-select: ${offer.targetRoute.replace('service:', '')}`;
+                        routeBadgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                      } else if (offer.targetRoute) {
+                        routeLabel = offer.targetRoute;
+                        routeBadgeColor = 'bg-slate-50 text-slate-700 border-slate-200';
+                      }
+
+                      return (
+                        <div
+                          key={offer.id}
+                          className={`bg-white rounded-xl border transition-all overflow-hidden shadow-xs flex flex-col justify-between ${
+                            offer.isActive !== false ? 'border-slate-200/80 hover:shadow-md' : 'border-slate-200/50 opacity-65'
+                          }`}
+                        >
+                          {/* Top Banner Image with Badges */}
+                          <div className="relative h-32 bg-slate-100 overflow-hidden group">
+                            {offer.imageUrl ? (
+                              <img
+                                src={offer.imageUrl}
+                                alt={offer.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-400 bg-gradient-to-br from-emerald-50 to-teal-50">
+                                <Ticket className="w-8 h-8 text-emerald-400/50" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/30 to-transparent"></div>
+
+                            {/* Top Badges */}
+                            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                              {offer.badge && (
+                                <span className="px-2 py-0.5 rounded text-[9.5px] font-bold tracking-wider bg-amber-500 text-white shadow-xs">
+                                  {offer.badge}
+                                </span>
+                              )}
+                              <span className="px-2 py-0.5 rounded text-[9.5px] font-bold tracking-wide bg-emerald-600 text-white shadow-xs">
+                                {offer.discount || 'SPECIAL'}
+                              </span>
+                            </div>
+
+                            <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                                  offer.isActive !== false
+                                    ? 'bg-emerald-500/90 text-white border-emerald-400'
+                                    : 'bg-slate-700/80 text-slate-300 border-slate-600'
+                                }`}
+                              >
+                                {offer.isActive !== false ? 'Active' : 'Disabled'}
+                              </span>
+                            </div>
+
+                            {/* Title preview overlay */}
+                            <div className="absolute bottom-2 left-3 right-3 text-white">
+                              <div className="text-[10px] font-semibold text-emerald-300 tracking-wider uppercase">
+                                {offer.category || 'Trending'}
+                              </div>
+                              <div className="font-semibold text-xs leading-snug line-clamp-1">
+                                {offer.title}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Body Content */}
+                          <div className="p-3.5 space-y-3 flex-1 flex flex-col justify-between">
+                            <div className="space-y-2">
+                              {/* Coupon Code Pill */}
+                              <div className="flex items-center justify-between bg-emerald-50/60 border border-dashed border-emerald-300 rounded-lg p-2">
+                                <div className="flex items-center gap-1.5">
+                                  <Ticket className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span className="font-mono font-bold text-xs text-emerald-800 tracking-wider">
+                                    {offer.code}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] font-medium text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded">
+                                  {offer.discount}
+                                </span>
+                              </div>
+
+                              {offer.subtitle && (
+                                <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                                  {offer.subtitle}
+                                </p>
+                              )}
+
+                              {/* Min Amount & Validity */}
+                              <div className="flex items-center justify-between text-[10.5px] text-slate-400 pt-1">
+                                <span>Min: ₹{Number(offer.minAmount || 0).toLocaleString('en-IN')}</span>
+                                <span>Expires: {offer.validTill || 'Limited'}</span>
+                              </div>
+
+                              {/* Target Route */}
+                              <div className={`p-1.5 rounded-lg border text-[11px] font-medium flex items-center gap-1.5 ${routeBadgeColor}`}>
+                                <ArrowRight className="w-3 h-3 shrink-0" />
+                                <span className="truncate">{routeLabel}</span>
+                              </div>
+                            </div>
+
+                            {/* Actions Toolbar */}
+                            <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                              <button
+                                onClick={() => handleToggleOfferActive(offer)}
+                                className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all ${
+                                  offer.isActive !== false
+                                    ? 'text-amber-700 bg-amber-50 hover:bg-amber-100'
+                                    : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                                }`}
+                              >
+                                {offer.isActive !== false ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                <span>{offer.isActive !== false ? 'Pause' : 'Activate'}</span>
+                              </button>
+
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleOpenEditOffer(offer)}
+                                  className="px-2.5 py-1 rounded text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteOffer(offer.id)}
+                                  className="p-1 rounded text-red-500 hover:bg-red-50 hover:text-red-700 transition-all"
+                                  title="Delete Offer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* SYSTEM DIAGNOSTICS TAB */}
           {activeTab === 'diagnostics' && (
             <div className="space-y-5">
@@ -1363,6 +2162,515 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
               <div className="pt-2 flex justify-end gap-2">
                 <button type="button" onClick={() => setAddServiceModalOpen(false)} className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg">Cancel</button>
                 <button type="submit" className="px-3.5 py-1.5 text-xs font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700">Save Service</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADD / EDIT SLIDE MODAL */}
+      {slideModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden my-6">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-brand-600" />
+                <h3 className="font-heading font-semibold text-slate-800 text-sm">
+                  {editingSlide ? 'Edit Carousel Slide' : 'Add New Carousel Slide'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setSlideModalOpen(false)}
+                className="p-1 rounded text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveSlide} className="p-4 space-y-3.5 text-xs">
+              {/* Slide Title */}
+              <div className="space-y-1">
+                <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                  Slide Headline / Title *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 20% Off Terrace Waterproofing"
+                  value={slideForm.title}
+                  onChange={(e) => setSlideForm({ ...slideForm, title: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-brand-500 outline-none"
+                />
+              </div>
+
+              {/* Subtitle */}
+              <div className="space-y-1">
+                <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                  Subtitle / Promo Text
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Free moisture scan with every structural inspection"
+                  value={slideForm.subtitle}
+                  onChange={(e) => setSlideForm({ ...slideForm, subtitle: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-brand-500 outline-none"
+                />
+              </div>
+
+              {/* Badge Text & Order in 2 cols */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                    Badge Pill Text
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. LIMITED OFFER"
+                    value={slideForm.badgeText}
+                    onChange={(e) => setSlideForm({ ...slideForm, badgeText: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-brand-500 outline-none uppercase font-mono text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                    Display Order
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={slideForm.order}
+                    onChange={(e) => setSlideForm({ ...slideForm, order: parseInt(e.target.value) || 1 })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-brand-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Image URL & File Upload */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                    Banner Image *
+                  </label>
+                  <label className="text-[11px] text-brand-600 font-semibold cursor-pointer hover:underline flex items-center gap-1">
+                    <Camera className="w-3 h-3" />
+                    <span>{uploadingSlideImg ? 'Uploading...' : 'Upload Image File'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileUpload}
+                      className="hidden"
+                      disabled={uploadingSlideImg}
+                    />
+                  </label>
+                </div>
+                <input
+                  type="url"
+                  placeholder="https://example.com/banner.jpg"
+                  value={slideForm.imageUrl}
+                  onChange={(e) => setSlideForm({ ...slideForm, imageUrl: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-brand-500 outline-none font-mono text-xs"
+                />
+              </div>
+
+              {/* TARGET IN-APP ROUTE SELECTOR (The Key Feature) */}
+              <div className="space-y-1.5 p-3 rounded-lg bg-brand-50/50 border border-brand-100">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-bold text-brand-900 uppercase">
+                    Target Route / Destination Page *
+                  </label>
+                  <span className="text-[10px] text-brand-700 bg-brand-100 px-1.5 py-0.5 rounded font-medium">
+                    When clicked in app
+                  </span>
+                </div>
+
+                <select
+                  value={
+                    ['create_inspection', 'services', 'requests', 'quotations', 'profile'].includes(slideForm.targetRoute)
+                      ? slideForm.targetRoute
+                      : slideForm.targetRoute.startsWith('service:')
+                      ? slideForm.targetRoute
+                      : 'custom'
+                  }
+                  onChange={(e) => {
+                    if (e.target.value !== 'custom') {
+                      setSlideForm({ ...slideForm, targetRoute: e.target.value });
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-white border border-brand-200 rounded-lg text-slate-800 font-medium outline-none focus:ring-1 focus:ring-brand-500"
+                >
+                  <optgroup label="App Main Screens">
+                    <option value="create_inspection">🎯 Book Inspection (Create Inspection Screen)</option>
+                    <option value="services">📂 Services Catalog Tab</option>
+                    <option value="requests">📋 Customer Requests Tab</option>
+                    <option value="quotations">🧾 Quotations Tab</option>
+                    <option value="profile">👤 User Profile Tab</option>
+                  </optgroup>
+
+                  {services && services.length > 0 && (
+                    <optgroup label="Pre-select Specific Service">
+                      {services.map((srv) => (
+                        <option key={srv.id} value={`service:${srv.name}`}>
+                          🔧 Open & Pre-select: {srv.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  <optgroup label="Custom / Other">
+                    <option value="custom">🔗 Custom Route Path / Deep Link...</option>
+                  </optgroup>
+                </select>
+
+                {/* If custom or custom route */}
+                <div className="pt-1">
+                  <input
+                    type="text"
+                    placeholder="Enter route: e.g. create_inspection, services, or service:Waterproofing"
+                    value={slideForm.targetRoute}
+                    onChange={(e) => setSlideForm({ ...slideForm, targetRoute: e.target.value })}
+                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-700 font-mono text-[11px] outline-none"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    User will be automatically navigated to this route in Flutter upon clicking the slide.
+                  </p>
+                </div>
+              </div>
+
+              {/* Active Toggle Checkbox */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="slideActiveCheck"
+                  checked={slideForm.isActive}
+                  onChange={(e) => setSlideForm({ ...slideForm, isActive: e.target.checked })}
+                  className="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500"
+                />
+                <label htmlFor="slideActiveCheck" className="text-xs text-slate-700 font-medium select-none">
+                  Publish Slide Live in Mobile App Carousel
+                </label>
+              </div>
+
+              {/* Modal Buttons */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSlideModalOpen(false)}
+                  className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-xs transition-all flex items-center gap-1.5"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{editingSlide ? 'Update Slide' : 'Save Slide'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* SLIDE MODAL END */}
+
+      {/* ADD / EDIT OFFER MODAL */}
+      {offerModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[92vh]">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-emerald-50/50">
+              <div className="flex items-center gap-2 font-heading font-semibold text-slate-800 text-sm">
+                <Tag className="w-4 h-4 text-emerald-600" />
+                <span>{editingOffer ? 'Edit Promotional Offer' : 'Create New Promotional Offer'}</span>
+              </div>
+              <button
+                onClick={() => setOfferModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body / Form */}
+            <form onSubmit={handleSaveOffer} className="p-5 overflow-y-auto space-y-4 text-xs">
+              {/* Offer Title */}
+              <div className="space-y-1">
+                <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                  Offer Title *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Flat 20% OFF on Waterproofing Audits"
+                  value={offerForm.title}
+                  onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-emerald-500 outline-none font-medium"
+                />
+              </div>
+
+              {/* Subtitle */}
+              <div className="space-y-1">
+                <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                  Subtitle / Promo Tagline
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Advanced infrared terrace & bathroom leakage scanning"
+                  value={offerForm.subtitle}
+                  onChange={(e) => setOfferForm({ ...offerForm, subtitle: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-emerald-500 outline-none"
+                />
+              </div>
+
+              {/* Category & Discount */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                    Category *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Trending, Waterproofing, Civil..."
+                    value={offerForm.category}
+                    onChange={(e) => setOfferForm({ ...offerForm, category: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-emerald-500 outline-none"
+                  />
+                  <div className="flex flex-wrap gap-1 pt-0.5">
+                    {['Trending', 'Waterproofing', 'Civil', 'Renovation'].map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setOfferForm({ ...offerForm, category: c })}
+                        className="text-[9.5px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700"
+                      >
+                        +{c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                    Discount Display *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 20% OFF or ₹500 OFF"
+                    value={offerForm.discount}
+                    onChange={(e) => setOfferForm({ ...offerForm, discount: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-emerald-500 outline-none font-bold text-emerald-700"
+                  />
+                </div>
+              </div>
+
+              {/* Coupon Code & Badge */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                    Coupon Code *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. HIPRO20"
+                    value={offerForm.code}
+                    onChange={(e) => setOfferForm({ ...offerForm, code: e.target.value.toUpperCase() })}
+                    required
+                    className="w-full px-3 py-2 bg-emerald-50 border border-emerald-300 rounded-lg text-emerald-900 focus:bg-white focus:border-emerald-500 outline-none font-mono font-bold uppercase tracking-wider"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                    Badge Pill
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="POPULAR, EXCLUSIVE, NEW USER"
+                    value={offerForm.badge}
+                    onChange={(e) => setOfferForm({ ...offerForm, badge: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-emerald-500 outline-none uppercase font-semibold text-amber-700"
+                  />
+                </div>
+              </div>
+
+              {/* Min Amount & Valid Till */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                    Min Booking Amount (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={offerForm.minAmount}
+                    onChange={(e) => setOfferForm({ ...offerForm, minAmount: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-emerald-500 outline-none font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                    Valid Till
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 31 Dec 2026"
+                    value={offerForm.validTill}
+                    onChange={(e) => setOfferForm({ ...offerForm, validTill: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-emerald-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Banner Image URL & File Upload */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                    Offer Thumbnail / Banner Image
+                  </label>
+                  <label className="text-[11px] text-emerald-600 font-semibold cursor-pointer hover:underline flex items-center gap-1">
+                    <Camera className="w-3 h-3" />
+                    <span>{uploadingOfferImg ? 'Uploading...' : 'Upload Image File'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleOfferImageUpload}
+                      className="hidden"
+                      disabled={uploadingOfferImg}
+                    />
+                  </label>
+                </div>
+                <input
+                  type="url"
+                  placeholder="https://images.unsplash.com/photo-..."
+                  value={offerForm.imageUrl}
+                  onChange={(e) => setOfferForm({ ...offerForm, imageUrl: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-emerald-500 outline-none font-mono text-xs"
+                />
+              </div>
+
+              {/* Target In-App Route Selector */}
+              <div className="space-y-1.5 p-3 rounded-lg bg-emerald-50/50 border border-emerald-100">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-bold text-emerald-900 uppercase">
+                    Target Route / Destination Page *
+                  </label>
+                  <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded font-medium">
+                    When user taps "Book with Offer"
+                  </span>
+                </div>
+
+                <select
+                  value={
+                    ['create_inspection', 'services', 'requests', 'quotations', 'profile'].includes(offerForm.targetRoute)
+                      ? offerForm.targetRoute
+                      : offerForm.targetRoute.startsWith('service:')
+                      ? offerForm.targetRoute
+                      : 'custom'
+                  }
+                  onChange={(e) => {
+                    if (e.target.value !== 'custom') {
+                      setOfferForm({ ...offerForm, targetRoute: e.target.value });
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-lg text-slate-800 font-medium outline-none focus:ring-1 focus:ring-emerald-500"
+                >
+                  <optgroup label="App Main Screens">
+                    <option value="create_inspection">🎯 Book Inspection (Create Inspection Screen)</option>
+                    <option value="services">📂 Services Catalog Tab</option>
+                    <option value="requests">📋 Customer Requests Tab</option>
+                    <option value="quotations">🧾 Quotations Tab</option>
+                    <option value="profile">👤 User Profile Tab</option>
+                  </optgroup>
+
+                  {services && services.length > 0 && (
+                    <optgroup label="Pre-select Specific Service">
+                      {services.map((srv) => (
+                        <option key={srv.id} value={`service:${srv.name}`}>
+                          🔧 Open & Pre-select: {srv.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  <optgroup label="Custom / Other">
+                    <option value="custom">🔗 Custom Route Path...</option>
+                  </optgroup>
+                </select>
+
+                <div className="pt-1">
+                  <input
+                    type="text"
+                    placeholder="e.g. create_inspection or service:Waterproofing"
+                    value={offerForm.targetRoute}
+                    onChange={(e) => setOfferForm({ ...offerForm, targetRoute: e.target.value })}
+                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-700 font-mono text-[11px] outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Terms and Conditions */}
+              <div className="space-y-1">
+                <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                  Terms & Conditions Snippet
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Valid once per user for inspection bookings above ₹1,500."
+                  value={offerForm.terms}
+                  onChange={(e) => setOfferForm({ ...offerForm, terms: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-emerald-500 outline-none text-xs"
+                />
+              </div>
+
+              {/* Order & Active */}
+              <div className="grid grid-cols-2 gap-3 items-center pt-1">
+                <div className="space-y-1">
+                  <label className="block text-[10.5px] font-semibold text-slate-500 uppercase">
+                    Display Order
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={offerForm.order}
+                    onChange={(e) => setOfferForm({ ...offerForm, order: parseInt(e.target.value) || 1 })}
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:bg-white focus:border-emerald-500 outline-none"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-4">
+                  <input
+                    type="checkbox"
+                    id="offerActiveCheck"
+                    checked={offerForm.isActive}
+                    onChange={(e) => setOfferForm({ ...offerForm, isActive: e.target.checked })}
+                    className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+                  />
+                  <label htmlFor="offerActiveCheck" className="text-xs text-slate-700 font-medium select-none">
+                    Active in Mobile App
+                  </label>
+                </div>
+              </div>
+
+              {/* Modal Buttons */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setOfferModalOpen(false)}
+                  className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-all flex items-center gap-1.5"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{editingOffer ? 'Update Offer' : 'Save Offer'}</span>
+                </button>
               </div>
             </form>
           </div>

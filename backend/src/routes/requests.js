@@ -143,20 +143,29 @@ router.post('/', authenticateUser,
       });
     }
 
-    // If user exists without phone number in database, save it now
+    // If user exists without phone number in database, save it if available and not in use
     if (!user.phoneNumber && phone) {
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { phoneNumber: phone },
-        select: {
-          id: true,
-          name: true,
-          phoneNumber: true,
+      try {
+        const existingPhoneUser = await prisma.user.findFirst({
+          where: { phoneNumber: phone }
+        });
+        if (!existingPhoneUser) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: { phoneNumber: phone },
+            select: {
+              id: true,
+              name: true,
+              phoneNumber: true,
+            }
+          });
         }
-      });
+      } catch (err) {
+        console.warn('Could not update user phone number:', err.message);
+      }
     }
 
-    if (!user.phoneNumber) {
+    if (!user.phoneNumber && !phone) {
       return res.status(400).json({
         success: false,
         message: 'Please provide phone number'
@@ -214,12 +223,7 @@ router.post('/', authenticateUser,
     res.status(201).json({
       success: true,
       message: 'Request Created Successfully',
-      data: {
-        id: newRequest.id,
-        requestNumber:newRequest.requestNumber,
-        status:newRequest.status,
-        createdAt:newRequest.created_at
-      }
+      data: newRequest
     });
   } catch (error) {
     console.error('Request creation error:', error);
