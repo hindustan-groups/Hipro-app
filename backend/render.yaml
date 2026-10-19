@@ -5,6 +5,7 @@ services:
     rootDir: backend
     plan: free
     region: singapore
+    autoDeploy: true
     buildCommand: npm install && npx prisma generate
     startCommand: node src/server.js
     healthCheckPath: /api/health
@@ -13,6 +14,8 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: JWT_SECRET
+        value: your_super_secret_jwt_key_here
       - key: DATABASE_URL
         sync: false
       - key: IMAGEKIT_PUBLIC_KEY
