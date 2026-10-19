@@ -44,7 +44,6 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'HEALTHY',
     message: 'Hipro Backend API is running',
-    repo: 'piyush1506',
     timestamp: new Date().toISOString()
   });
 });
