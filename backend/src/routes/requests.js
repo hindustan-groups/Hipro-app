@@ -186,23 +186,6 @@ router.post('/', authenticateUser,
       mediaList = req.files.map(file => `${baseURL}/uploads/${file.filename}`);
     }
 
-    // const phone = customerPhone || phoneNumber ;
-    // const name = customerName;
-
-    // let targetUser = await prisma.user.findFirst({
-    //   where: { phoneNumber: phone }
-    // });
-
-    // if (!targetUser) {
-    //   targetUser = await prisma.user.create({
-    //     data: {
-    //       name,
-    //       phoneNumber: phone,
-    //       password: "demopassword"
-    //     }
-    //   });
-    // }
-
     const requestNumber = `REQ-${(Date.now())+ Math.floor(1000 + Math.random() * 9000)}`;
 
     const newRequest = await prisma.serviceRequest.create({
