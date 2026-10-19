@@ -99,6 +99,46 @@ router.post('/:id/decision', async (req, res) => {
   }
 });
 
+// POST /api/v1/quotations/:id/accept - Alias for accepting quotation
+router.post('/:id/accept', async (req, res) => {
+  try {
+    const quote = await prisma.quotation.update({
+      where: { id: req.params.id },
+      data: { status: 'ACCEPTED' },
+      include: { request: true }
+    });
+    if (quote && quote.requestId) {
+      await prisma.serviceRequest.update({
+        where: { id: quote.requestId },
+        data: { status: 'ACCEPTED' }
+      });
+    }
+    res.json({ success: true, message: 'Quotation ACCEPTED', data: quote });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message || 'Failed to accept quotation' });
+  }
+});
+
+// POST /api/v1/quotations/:id/reject - Alias for rejecting quotation
+router.post('/:id/reject', async (req, res) => {
+  try {
+    const quote = await prisma.quotation.update({
+      where: { id: req.params.id },
+      data: { status: 'REJECTED' },
+      include: { request: true }
+    });
+    if (quote && quote.requestId) {
+      await prisma.serviceRequest.update({
+        where: { id: quote.requestId },
+        data: { status: 'REJECTED' }
+      });
+    }
+    res.json({ success: true, message: 'Quotation REJECTED', data: quote });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message || 'Failed to reject quotation' });
+  }
+});
+
 // POST /api/v1/quotations - Admin creates and sends quotation to customer
 router.post('/', async (req, res) => {
   try {
