@@ -191,6 +191,35 @@ router.post('/', async (req, res) => {
       data: { status: 'QUOTED' }
     });
 
+    // Auto-generate Customer Notification with Image & Quotation Redirection Data
+    try {
+      const { addNotification } = require('./notifications');
+      const notificationImageUrl = (request.mediaUrl && Array.isArray(request.mediaUrl) && request.mediaUrl.length > 0)
+        ? request.mediaUrl[0]
+        : 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80';
+
+      const formattedTotal = Math.round(quotation.grandtotal || 0).toLocaleString('en-IN');
+      const projectName = request.servicecode || request.propertyType || 'Waterproofing & Civil Scope';
+      const projectLocation = request.addressline || request.location || 'Site Location';
+
+      addNotification({
+        title: `New Quotation Received: ₹${formattedTotal}`,
+        description: `Quotation #${quoteNumber} is ready for ${projectName}. Tap to review line-item scope and schedule work.`,
+        imageUrl: notificationImageUrl,
+        type: 'QUOTATION',
+        referenceId: quotation.id,
+        quoteNumber: quotation.quoteNumber,
+        grandTotal: quotation.grandtotal,
+        requestId: request.id,
+        projectName,
+        location: projectLocation,
+        unread: true,
+        timestamp: new Date().toISOString()
+      });
+    } catch (notifErr) {
+      console.error('Failed to dispatch notification for quote:', notifErr);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Quotation successfully created and sent to customer!',
