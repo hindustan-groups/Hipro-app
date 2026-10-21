@@ -59,7 +59,7 @@ function writeNotifications(notifications) {
   }
 }
 
-function addNotification(notification) {
+function addNotification(notification, io = null) {
   const list = readNotifications();
   const item = {
     id: notification.id || `notif_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -70,6 +70,7 @@ function addNotification(notification) {
     referenceId: notification.referenceId || '',
     quoteNumber: notification.quoteNumber || '',
     grandTotal: notification.grandTotal || 0,
+    requestId: notification.requestId || '',
     projectName: notification.projectName || 'Inspection Project',
     location: notification.location || 'Site Location',
     unread: notification.unread !== false,
@@ -78,6 +79,14 @@ function addNotification(notification) {
   list.unshift(item);
   // Keep up to 100 recent notifications
   writeNotifications(list.slice(0, 100));
+
+  if (io) {
+    io.emit('push_notification', item);
+    if (item.type === 'QUOTATION') {
+      io.emit('new_quotation_alert', item);
+    }
+  }
+
   return item;
 }
 

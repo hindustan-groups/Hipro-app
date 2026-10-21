@@ -201,10 +201,11 @@ router.post('/', async (req, res) => {
       const formattedTotal = Math.round(quotation.grandtotal || 0).toLocaleString('en-IN');
       const projectName = request.servicecode || request.propertyType || 'Waterproofing & Civil Scope';
       const projectLocation = request.addressline || request.location || 'Site Location';
+      const io = req.app.get('io');
 
       addNotification({
-        title: `New Quotation Received: ₹${formattedTotal}`,
-        description: `Quotation #${quoteNumber} is ready for ${projectName}. Tap to review line-item scope and schedule work.`,
+        title: `🎉 Great News! Quotation Ready: ₹${formattedTotal}`,
+        description: `Official estimate #${quoteNumber} for ${projectName} is ready! Includes comprehensive scope, materials & warranty. Tap to review & approve.`,
         imageUrl: notificationImageUrl,
         type: 'QUOTATION',
         referenceId: quotation.id,
@@ -215,7 +216,7 @@ router.post('/', async (req, res) => {
         location: projectLocation,
         unread: true,
         timestamp: new Date().toISOString()
-      });
+      }, io);
     } catch (notifErr) {
       console.error('Failed to dispatch notification for quote:', notifErr);
     }
