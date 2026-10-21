@@ -344,6 +344,8 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
+});
+
 // PUT or PATCH /api/v1/requests/:id - Update an inspection request
 const updateRequestHandler = async (req, res) => {
   try {
