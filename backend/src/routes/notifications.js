@@ -155,6 +155,71 @@ router.delete('/:id', (req, res) => {
   }
 });
 
+// FCM Token Management
+const FCM_TOKENS_FILE = path.join(__dirname, '../../uploads/fcm_tokens.json');
+
+function readFcmTokens() {
+  try {
+    if (!fs.existsSync(FCM_TOKENS_FILE)) {
+      return [];
+    }
+    const data = fs.readFileSync(FCM_TOKENS_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch (err) {
+    return [];
+  }
+}
+
+function saveFcmToken(token, userId, platform = 'android') {
+  try {
+    let tokens = readFcmTokens();
+    const existingIndex = tokens.findIndex(t => t.token === token);
+    const item = {
+      token,
+      userId: userId || null,
+      platform,
+      updatedAt: new Date().toISOString()
+    };
+    if (existingIndex >= 0) {
+      tokens[existingIndex] = item;
+    } else {
+      tokens.push(item);
+    }
+    fs.mkdirSync(path.dirname(FCM_TOKENS_FILE), { recursive: true });
+    fs.writeFileSync(FCM_TOKENS_FILE, JSON.stringify(tokens, null, 2), 'utf-8');
+    return item;
+  } catch (err) {
+    console.error('Error saving FCM token:', err);
+    return null;
+  }
+}
+
+// POST /api/v1/notifications/fcm-token
+router.post('/fcm-token', (req, res) => {
+  try {
+    const { token, userId, platform } = req.body;
+    if (!token) {
+      return res.status(400).json({ success: false, message: 'FCM token is required' });
+    }
+    const saved = saveFcmToken(token, userId, platform);
+    res.json({ success: true, message: 'FCM token registered successfully', data: saved });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to save FCM token' });
+  }
+});
+
+// GET /api/v1/notifications/fcm-tokens
+router.get('/fcm-tokens', (req, res) => {
+  try {
+    const tokens = readFcmTokens();
+    res.json({ success: true, total: tokens.length, data: tokens });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to retrieve FCM tokens' });
+  }
+});
+
 module.exports = router;
 module.exports.addNotification = addNotification;
 module.exports.readNotifications = readNotifications;
+module.exports.readFcmTokens = readFcmTokens;
+
