@@ -344,6 +344,122 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+// PUT or PATCH /api/v1/requests/:id - Update an inspection request
+const updateRequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Support lookup by UUID or requestNumber
+    const existing = await prisma.serviceRequest.findFirst({
+      where: {
+        OR: [
+          { id },
+          { requestNumber: id }
+        ]
+      }
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: 'Inspection request not found'
+      });
+    }
+
+    const {
+      servicecode,
+      subServiceCode,
+      issueDescription,
+      propertyType,
+      propertySize,
+      location,
+      preferredDate,
+      preferredTime,
+      addressline,
+      urgency,
+      status,
+      mediaUrls,
+      photos
+    } = req.body;
+
+    let mediaList = [];
+    if (existing.mediaUrl && Array.isArray(existing.mediaUrl)) {
+      mediaList = [...existing.mediaUrl];
+    }
+
+    if (mediaUrls !== undefined) {
+      if (Array.isArray(mediaUrls)) {
+        mediaList = mediaUrls;
+      } else if (typeof mediaUrls === 'string') {
+        try {
+          const parsed = JSON.parse(mediaUrls);
+          if (Array.isArray(parsed)) mediaList = parsed;
+          else mediaList = [mediaUrls];
+        } catch (_) {
+          mediaList = [mediaUrls];
+        }
+      }
+    } else if (photos !== undefined) {
+      if (Array.isArray(photos)) {
+        mediaList = photos;
+      } else if (typeof photos === 'string') {
+        try {
+          const parsed = JSON.parse(photos);
+          if (Array.isArray(parsed)) mediaList = parsed;
+          else mediaList = [photos];
+        } catch (_) {
+          mediaList = [photos];
+        }
+      }
+    }
+
+    // Add newly uploaded files from multer
+    if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+      const host = req.get('host') || 'localhost:5000';
+      const protocol = req.protocol || 'http';
+      for (const file of req.files) {
+        mediaList.push(`${protocol}://${host}/uploads/${file.filename}`);
+      }
+    }
+
+    const updateData = {};
+    if (servicecode !== undefined) updateData.servicecode = servicecode;
+    if (subServiceCode !== undefined) updateData.subServiceCode = subServiceCode;
+    if (issueDescription !== undefined) updateData.issueDescription = issueDescription;
+    if (propertyType !== undefined) updateData.propertyType = propertyType;
+    if (propertySize !== undefined) updateData.propertySize = propertySize;
+    if (location !== undefined) updateData.location = location;
+    if (preferredDate !== undefined) updateData.preferredDate = preferredDate;
+    if (preferredTime !== undefined) updateData.preferredTime = preferredTime;
+    if (addressline !== undefined) updateData.addressline = addressline;
+    if (urgency !== undefined) updateData.urgency = urgency;
+    if (status !== undefined) updateData.status = status;
+    updateData.mediaUrl = mediaList;
+
+    const updated = await prisma.serviceRequest.update({
+      where: { id: existing.id },
+      data: updateData,
+      include: {
+        user: true,
+        quotations: true
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Inspection request updated successfully',
+      data: updated
+    });
+  } catch (error) {
+    console.error('Update request error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update request'
+    });
+  }
+};
+
+router.put('/:id', upload.array('damageImages', 10), updateRequestHandler);
+router.patch('/:id', upload.array('damageImages', 10), updateRequestHandler);
 
 module.exports = router;
