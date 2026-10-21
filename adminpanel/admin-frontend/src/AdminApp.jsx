@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { io } from 'socket.io-client';
 import {
   LayoutDashboard, ClipboardList, Receipt, Calculator,
   Wrench, Users, Activity, ShieldCheck, Plus, RefreshCw,
@@ -7,7 +8,8 @@ import {
   CheckCircle2, GitPullRequest, Zap, ArrowRight, MapPin,
   Calendar, Home, User, Phone, Info, Send, RotateCcw,
   Server, Database, AlertCircle, Droplets, Image, Layers,
-  ExternalLink, Link2, Eye, EyeOff, Upload, Tag, Percent, Ticket
+  ExternalLink, Link2, Eye, EyeOff, Upload, Tag, Percent, Ticket,
+  MessageCircle, CheckCheck
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'https://app.hindustanprojects.in');
@@ -23,6 +25,16 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
   const [toast, setToast] = useState(null);
+
+  // Live Chat Desk State
+  const [chatThreads, setChatThreads] = useState([]);
+  const [activeThreadId, setActiveThreadId] = useState(null);
+  const [threadMessages, setThreadMessages] = useState([]);
+  const [adminReplyText, setAdminReplyText] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
+  const [chatSearch, setChatSearch] = useState('');
+  const [chatFilterType, setChatFilterType] = useState('ALL');
+  const chatMessagesEndRef = useRef(null);
 
   // Slides State
   const [slideModalOpen, setSlideModalOpen] = useState(false);
@@ -89,6 +101,58 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
     return () => clearInterval(interval);
   }, []);
 
+
+  // Real-Time Chat Socket & Event Listeners
+  useEffect(() => {
+    fetchChatThreads();
+    // Connect to Socket.io server
+    // Use VITE_SOCKET_URL env var if set, otherwise construct from location/API_BASE
+    const socketBase = import.meta.env.VITE_SOCKET_URL || 
+      (typeof window !== 'undefined' ? 
+        (window.location.protocol + '//' + window.location.hostname + ':5000') 
+        : 'http://localhost:5000');
+    const socket = io(socketBase, {
+      transports: ['websocket', 'polling']
+    });
+
+    // Join thread room when socket connects
+    socket.on('connect', () => {
+      // We'll join threads as they're opened
+    });
+
+    socket.on('thread_updated', (payload) => {
+      // Optimistically update the specific thread without full refresh
+      if (payload.thread) {
+        setChatThreads(prev => prev.map(t => t.id === payload.thread.id ? payload.thread : t));
+      }
+      if (activeThreadId && payload.thread?.id === activeThreadId) {
+        fetchThreadMessages(activeThreadId);
+      }
+    });
+
+    socket.on('new_message', (msg) => {
+      // Add message to the specific thread if it matches, or if no active thread (first new message)
+      setThreadMessages(prev => {
+        if (activeThreadId && msg.threadId !== activeThreadId) return prev;
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+      // Auto-switch to new thread if no thread was active
+      if (!activeThreadId) {
+        setActiveThreadId(msg.threadId);
+        fetchThreadMessages(msg.threadId);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []); // Empty dependency - socket management is independent of thread state
+
+  useEffect(() => {
+    chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [threadMessages]);
+
   const showToastMsg = (message, type = 'info') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
@@ -103,7 +167,8 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
         fetchServices(),
         fetchUsers(),
         fetchSlides(),
-        fetchOffers()
+        fetchOffers(),
+        fetchChatThreads()
       ]);
       if (showFeedback) showToastMsg('Database synced successfully', 'success');
     } catch (err) {
@@ -421,6 +486,154 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
     } catch (e) { console.error(e); }
   };
 
+  const fetchChatThreads = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/chat/threads`);
+      const data = await res.json();
+      if (data.success && data.data) {
+        setChatThreads(data.data);
+        if (!activeThreadId && data.data.length > 0) {
+          setActiveThreadId(data.data[0].id);
+          fetchThreadMessages(data.data[0].id);
+        }
+      }
+    } catch (e) {
+      console.error('Fetch chat threads error:', e);
+    }
+  };
+
+  const fetchThreadMessages = async (threadId) => {
+    if (!threadId) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/chat/threads/${threadId}/messages`);
+      const data = await res.json();
+      if (data.success && data.data) {
+        setThreadMessages(data.data);
+      }
+    } catch (e) {
+      console.error('Fetch thread messages error:', e);
+    }
+    // NO LONGER auto-mark as read on every fetch - that resets unread counts
+    // Mark as read should be intentional via the mark-read button/action
+  };
+
+  const handleSendAdminReply = async (customText) => {
+    const textToSend = (customText || adminReplyText).trim();
+    if (!textToSend || !activeThreadId) return;
+
+    setIsSendingReply(true);
+    const currentThread = chatThreads.find(t => t.id === activeThreadId);
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/chat/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          threadId: activeThreadId,
+          sender: 'admin',
+          senderName: 'Er. Vikram Sharma (Admin Desk)',
+          text: textToSend,
+          contextType: currentThread?.contextType,
+          contextTag: currentThread?.contextTag,
+          quoteNumber: currentThread?.quoteNumber,
+          requestNumber: currentThread?.requestNumber,
+          customerName: currentThread?.customerName,
+          customerPhone: currentThread?.customerPhone
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setThreadMessages(prev => {
+          if (prev.some(m => m.id === data.data.id)) return prev;
+          return [...prev, data.data];
+        });
+        if (!customText) setAdminReplyText('');
+        fetchChatThreads();
+      }
+    } catch (e) {
+      showToastMsg('Failed to send reply', 'error');
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
+
+  const openChatForRequest = (req) => {
+    if (!req) return;
+    const reqNum = req.requestNumber || req.id || '';
+    const threadId = `thread_req_${reqNum.toString().replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+    setChatThreads(prev => {
+      if (prev.some(t => t.id === threadId)) return prev;
+      return [
+        {
+          id: threadId,
+          customerName: req.user?.name || 'Customer',
+          customerPhone: req.user?.phoneNumber || '+91 94628 77757',
+          contextType: 'REQUEST',
+          contextTag: `Request #${reqNum}`,
+          quoteNumber: '',
+          requestNumber: reqNum,
+          lastMessage: req.description || 'Request initiated',
+          lastMessageTime: new Date().toISOString(),
+          unreadCountAdmin: 0,
+          unreadCountCustomer: 0,
+        },
+        ...prev
+      ];
+    });
+    setActiveThreadId(threadId);
+    // Join the thread socket room for real-time updates
+    if (socket.connected) {
+      socket.emit('join_thread', threadId);
+    }
+    fetchThreadMessages(threadId);
+    setActiveTab('chat');
+    setSidebarOpen(false);
+  };
+
+  const callCustomer = (phone) => {
+    if (!phone) return;
+    window.open(`tel:${phone}`, '_self');
+  };
+
+  const openWhatsApp = (phone, text = '') => {
+    const clean = (phone || '').replace(/[^0-9]/g, '');
+    const num = clean.length === 10 ? `91${clean}` : clean;
+    const url = `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
+  const openChatForQuotation = (q) => {
+    if (!q) return;
+    const qNum = q.quoteNumber || q.id || '';
+    const threadId = `thread_quote_${qNum.toString().replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+    setChatThreads(prev => {
+      if (prev.some(t => t.id === threadId)) return prev;
+      return [
+        {
+          id: threadId,
+          customerName: q.customerName || q.request?.user?.name || q.user?.name || 'Customer',
+          customerPhone: q.customerPhone || q.request?.user?.phoneNumber || q.user?.phoneNumber || '+91 94628 77757',
+          contextType: 'QUOTATION',
+          contextTag: `Quotation #${qNum}`,
+          quoteNumber: qNum,
+          requestNumber: q.requestNumber || '',
+          lastMessage: `Official Quotation for ₹${(q.grandtotal || q.amount || 0).toLocaleString('en-IN')}`,
+          lastMessageTime: new Date().toISOString(),
+          unreadCountAdmin: 0,
+          unreadCountCustomer: 0,
+        },
+        ...prev
+      ];
+    });
+    setActiveThreadId(threadId);
+    // Join the thread socket room for real-time updates
+    if (socket.connected) {
+      socket.emit('join_thread', threadId);
+    }
+    fetchThreadMessages(threadId);
+    setActiveTab('chat');
+    setSidebarOpen(false);
+  };
+
   // Status Handlers
   const handleUpdateStatus = async (requestId, status) => {
     try {
@@ -576,6 +789,27 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
     }
   };
 
+  const TIMELINE_STAGES = [
+    { key: 'SUBMITTED', step: 1, label: 'Submitted', desc: 'Request Logged' },
+    { key: 'ESTIMATING', step: 2, label: 'Estimating', desc: 'Technical & Site Audit' },
+    { key: 'QUOTED', step: 3, label: 'Quoted', desc: 'Quotation Ready' },
+    { key: 'IN_PROGRESS', step: 4, label: 'In Progress', desc: 'Execution & Mobilization' },
+    { key: 'COMPLETED', step: 5, label: 'Completed', desc: 'Work Done & Warranty' },
+  ];
+
+  const getTimelineStepIndex = (status) => {
+    switch ((status || '').toUpperCase()) {
+      case 'SUBMITTED': return 0;
+      case 'ESTIMATING': return 1;
+      case 'QUOTED': return 2;
+      case 'ACCEPTED':
+      case 'PAID':
+      case 'IN_PROGRESS': return 3;
+      case 'COMPLETED': return 4;
+      default: return 0;
+    }
+  };
+
   const selectedBuilderReq = requests.find(r => r.id === builderRequestId);
 
   return (
@@ -635,6 +869,22 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
               <span>Create Quotation</span>
             </div>
             <span className="text-[9px] uppercase font-medium text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200">Dynamic</span>
+          </button>
+
+          <button onClick={() => { setActiveTab('chat'); setSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'chat' ? 'bg-indigo-50 text-indigo-700 font-semibold shadow-xs' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50'}`}>
+            <div className="flex items-center gap-2.5">
+              <MessageCircle className="w-4 h-4 text-indigo-600" />
+              <span>Live Chat Desk</span>
+            </div>
+            {chatThreads.some(t => t.unreadCountAdmin > 0) ? (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-600 text-white animate-pulse">
+                {chatThreads.reduce((acc, t) => acc + (t.unreadCountAdmin || 0), 0)} New
+              </span>
+            ) : (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                {chatThreads.length}
+              </span>
+            )}
           </button>
 
           <div className="px-3 pt-5 pb-1.5 text-[10.5px] font-medium text-slate-400 uppercase tracking-wider">Catalog & Users</div>
@@ -707,10 +957,11 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                   activeTab === 'requests' ? 'Inspection Requests' :
                     activeTab === 'quotations' ? 'Quotations Desk' :
                       activeTab === 'builder' ? 'Quotation Generator' :
-                        activeTab === 'services' ? 'Services Catalog' :
-                          activeTab === 'slides' ? 'App Slides & Banners' :
-                            activeTab === 'offers' ? 'App Offers & Coupon Deals' :
-                              activeTab === 'users' ? 'Customer Directory' : 'System Diagnostics'}
+                        activeTab === 'chat' ? 'Live Customer Chat Desk' :
+                          activeTab === 'services' ? 'Services Catalog' :
+                            activeTab === 'slides' ? 'App Slides & Banners' :
+                              activeTab === 'offers' ? 'App Offers & Coupon Deals' :
+                                activeTab === 'users' ? 'Customer Directory' : 'System Diagnostics'}
               </h1>
               <p className="text-[11px] text-slate-400 hidden sm:block">Hind Building Solutions — Technical Operations Portal</p>
             </div>
@@ -879,44 +1130,44 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                    <button onClick={() => setActiveTab('builder')} className="p-3 rounded-lg border border-slate-200 hover:border-brand-500 hover:bg-brand-50/20 text-left transition-all group flex items-start gap-2.5">
-                      <div className="p-2 rounded-md bg-brand-50 text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-all">
-                        <Calculator className="w-4 h-4" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <button onClick={() => setActiveTab('builder')} className="p-3.5 rounded-xl border border-slate-200 hover:border-brand-500 hover:bg-brand-50/20 text-left transition-all group flex items-start gap-3">
+                      <div className="p-2.5 rounded-lg bg-brand-50 text-brand-600 group-hover:bg-brand-600 group-hover:text-white transition-all shrink-0">
+                        <Calculator className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="font-medium text-xs text-slate-800 group-hover:text-brand-600">Build Quotation</div>
-                        <div className="text-[10.5px] text-slate-400 mt-0.5">Itemized BOQ & pricing</div>
+                        <div className="font-semibold text-sm text-slate-800 group-hover:text-brand-600">Build Quotation</div>
+                        <div className="text-xs text-slate-500 mt-0.5">Itemized BOQ & pricing</div>
                       </div>
                     </button>
 
-                    <button onClick={() => setActiveTab('requests')} className="p-3 rounded-lg border border-slate-200 hover:border-brand-500 hover:bg-brand-50/20 text-left transition-all group flex items-start gap-2.5">
-                      <div className="p-2 rounded-md bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                        <Camera className="w-4 h-4" />
+                    <button onClick={() => setActiveTab('requests')} className="p-3.5 rounded-xl border border-slate-200 hover:border-brand-500 hover:bg-brand-50/20 text-left transition-all group flex items-start gap-3">
+                      <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shrink-0">
+                        <Camera className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="font-medium text-xs text-slate-800 group-hover:text-brand-600">Inspect Photos</div>
-                        <div className="text-[10.5px] text-slate-400 mt-0.5">Review damaged areas</div>
+                        <div className="font-semibold text-sm text-slate-800 group-hover:text-brand-600">Inspect Photos</div>
+                        <div className="text-xs text-slate-500 mt-0.5">Review damaged areas</div>
                       </div>
                     </button>
 
-                    <button onClick={() => { setActiveTab('services'); setAddServiceModalOpen(true); }} className="p-3 rounded-lg border border-slate-200 hover:border-brand-500 hover:bg-brand-50/20 text-left transition-all group flex items-start gap-2.5">
-                      <div className="p-2 rounded-md bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                        <Plus className="w-4 h-4" />
+                    <button onClick={() => { setActiveTab('services'); setAddServiceModalOpen(true); }} className="p-3.5 rounded-xl border border-slate-200 hover:border-brand-500 hover:bg-brand-50/20 text-left transition-all group flex items-start gap-3">
+                      <div className="p-2.5 rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all shrink-0">
+                        <Plus className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="font-medium text-xs text-slate-800 group-hover:text-brand-600">Catalog Service</div>
-                        <div className="text-[10.5px] text-slate-400 mt-0.5">Add repair service</div>
+                        <div className="font-semibold text-sm text-slate-800 group-hover:text-brand-600">Catalog Service</div>
+                        <div className="text-xs text-slate-500 mt-0.5">Add repair service</div>
                       </div>
                     </button>
 
-                    <button onClick={() => setActiveTab('diagnostics')} className="p-3 rounded-lg border border-slate-200 hover:border-brand-500 hover:bg-brand-50/20 text-left transition-all group flex items-start gap-2.5">
-                      <div className="p-2 rounded-md bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all">
-                        <Activity className="w-4 h-4" />
+                    <button onClick={() => setActiveTab('diagnostics')} className="p-3.5 rounded-xl border border-slate-200 hover:border-brand-500 hover:bg-brand-50/20 text-left transition-all group flex items-start gap-3">
+                      <div className="p-2.5 rounded-lg bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all shrink-0">
+                        <Activity className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="font-medium text-xs text-slate-800 group-hover:text-brand-600">Test API Health</div>
-                        <div className="text-[10.5px] text-slate-400 mt-0.5">PostgreSQL & routes</div>
+                        <div className="font-semibold text-sm text-slate-800 group-hover:text-brand-600">Test API Health</div>
+                        <div className="text-xs text-slate-500 mt-0.5">PostgreSQL & routes</div>
                       </div>
                     </button>
                   </div>
@@ -928,23 +1179,23 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                 <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <h3 className="font-heading font-medium text-sm text-slate-800">Recent Customer Requests</h3>
-                    <button onClick={() => setActiveTab('requests')} className="text-[11px] font-medium text-brand-600 hover:text-brand-700 flex items-center gap-1">
-                      View All <ArrowRight className="w-3 h-3" />
+                    <button onClick={() => setActiveTab('requests')} className="text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1">
+                      View All <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {requests.slice(0, 4).map(req => (
-                      <div key={req.id} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50/60 border border-slate-100 hover:border-slate-200 transition-all">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-md bg-white border border-slate-200 text-brand-600 flex items-center justify-center text-xs">
-                            <ClipboardList className="w-3.5 h-3.5" />
+                      <div key={req.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-200/80 hover:border-slate-300 transition-all">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 text-brand-600 flex items-center justify-center text-sm shadow-2xs shrink-0">
+                            <ClipboardList className="w-4 h-4" />
                           </div>
                           <div>
-                            <div className="font-medium text-xs text-slate-800">{req.requestNumber} — {req.servicecode}</div>
-                            <div className="text-[10.5px] text-slate-400">{req.user?.name || 'Customer'} • {req.propertyType || 'House'}</div>
+                            <div className="font-bold text-sm text-slate-800">{req.requestNumber} — {req.servicecode}</div>
+                            <div className="text-xs text-slate-500 mt-0.5">{req.user?.name || 'Customer'} • {req.propertyType || 'House'}</div>
                           </div>
                         </div>
-                        <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-medium border ${getStatusBadge(req.status)}`}>{req.status}</span>
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusBadge(req.status)}`}>{req.status}</span>
                       </div>
                     ))}
                   </div>
@@ -988,71 +1239,148 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
                 {requests.map(req => {
                   const media = Array.isArray(req.mediaUrl) ? req.mediaUrl : [];
                   const isUrgent = req.urgency === 'URGENT';
                   return (
-                    <div key={req.id} className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs hover:shadow-sm transition-all flex flex-col justify-between space-y-3">
-                      <div className="space-y-2.5">
+                    <div key={req.id} className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+                      <div className="space-y-3.5">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono font-medium text-xs text-brand-600">{req.requestNumber}</span>
-                            <span className={`px-1.5 py-0.5 rounded text-[9.5px] font-medium uppercase ${isUrgent ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-sm sm:text-base text-brand-600 tracking-wide">{req.requestNumber}</span>
+                            <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${isUrgent ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
                               {req.urgency || 'NORMAL'}
                             </span>
                           </div>
-                          <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-medium border ${getStatusBadge(req.status)}`}>{req.status}</span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold border tracking-wide ${getStatusBadge(req.status)}`}>{req.status}</span>
                         </div>
 
                         <div>
-                          <h3 className="font-heading font-medium text-sm text-slate-800">{req.servicecode}</h3>
-                          {req.subServiceCode && <p className="text-[11px] font-medium text-brand-600">{req.subServiceCode}</p>}
+                          <h3 className="font-heading font-bold text-base sm:text-lg text-slate-900 tracking-tight">{req.servicecode}</h3>
+                          {req.subServiceCode && <p className="text-xs sm:text-sm font-semibold text-brand-600 mt-0.5">{req.subServiceCode}</p>}
                         </div>
 
-                        <div className="p-2.5 bg-slate-50 rounded-lg text-xs text-slate-600 leading-relaxed border border-slate-100 font-normal">
-                          <span className="font-medium text-slate-800">Issue:</span> {req.issueDescription || 'No description'}
+                        <div className="p-3.5 sm:p-4 bg-slate-50/90 rounded-xl text-sm text-slate-700 leading-relaxed border border-slate-200 font-normal">
+                          <span className="font-bold text-slate-900">Issue:</span> {req.issueDescription || 'No description provided'}
                         </div>
 
                         {media.length > 0 ? (
-                          <div className="flex gap-2 overflow-x-auto pb-1">
-                            {media.map((imgUrl, i) => (
-                              <div key={i} onClick={() => setActivePhotoModal({ photos: media, index: i, title: `${req.requestNumber} Photo Review` })} className="w-14 h-14 rounded-lg overflow-hidden border border-slate-200 cursor-pointer relative group flex-shrink-0 hover:border-brand-500 transition-all">
-                                <img src={imgUrl} alt="Damage" className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=300&q=80'; }} />
-                                <span className="absolute bottom-0 inset-x-0 bg-slate-900/60 text-white text-[8.5px] font-normal text-center py-0.5">#{i + 1}</span>
-                              </div>
-                            ))}
+                          <div className="space-y-1.5">
+                            <div className="text-xs font-semibold text-slate-500">Damage Photos / Evidence ({media.length}):</div>
+                            <div className="flex gap-2.5 overflow-x-auto pb-1.5">
+                              {media.map((imgUrl, i) => (
+                                <div key={i} onClick={() => setActivePhotoModal({ photos: media, index: i, title: `${req.requestNumber} Photo Review` })} className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border-2 border-slate-200 cursor-pointer relative group shrink-0 hover:border-brand-500 hover:shadow-md transition-all">
+                                  <img src={imgUrl} alt="Damage" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=300&q=80'; }} />
+                                  <span className="absolute bottom-0 inset-x-0 bg-slate-900/70 backdrop-blur-xs text-white text-[10px] font-semibold text-center py-1">Photo #{i + 1}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         ) : (
-                          <div className="text-[10.5px] text-slate-400 italic">No photos uploaded</div>
+                          <div className="p-3 bg-slate-50/50 rounded-lg border border-dashed border-slate-200 text-xs sm:text-sm text-slate-400 italic">No photos uploaded</div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-1.5 text-[11px] pt-2 border-t border-slate-100 text-slate-500">
-                          <div className="flex items-center gap-1"><User className="w-3 h-3 text-slate-400" /> <span className="font-medium text-slate-700">{req.user?.name || 'Customer'}</span></div>
-                          <div className="flex items-center gap-1 font-mono"><Phone className="w-3 h-3 text-slate-400" /> {req.user?.phoneNumber || 'N/A'}</div>
-                          <div className="flex items-center gap-1"><Home className="w-3 h-3 text-slate-400" /> {req.propertyType || 'House'} ({req.propertySize || 'Standard'})</div>
-                          <div className="flex items-center gap-1"><Calendar className="w-3 h-3 text-slate-400" /> {req.preferredDate || 'Flexible'}</div>
-                          <div className="col-span-2 flex items-center gap-1"><MapPin className="w-3 h-3 text-slate-400" /> <span className="truncate">{req.addressline || 'Main Residence'} {req.location && `• ${req.location}`}</span></div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm pt-3 border-t border-slate-100 text-slate-600">
+                          <div className="flex items-center gap-2"><User className="w-4 h-4 text-slate-400 shrink-0" /> <span className="font-semibold text-slate-800">{req.user?.name || 'Customer'}</span></div>
+                          <div className="flex items-center gap-2 font-mono"><Phone className="w-4 h-4 text-slate-400 shrink-0" /> <span className="font-medium text-slate-700">{req.user?.phoneNumber || 'N/A'}</span></div>
+                          <div className="flex items-center gap-2"><Home className="w-4 h-4 text-slate-400 shrink-0" /> <span className="font-medium text-slate-700">{req.propertyType || 'House'} ({req.propertySize || 'Standard'})</span></div>
+                          <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-slate-400 shrink-0" /> <span className="font-medium text-slate-700">{req.preferredDate || 'Flexible'}</span></div>
+                          <div className="col-span-1 sm:col-span-2 flex items-center gap-2"><MapPin className="w-4 h-4 text-slate-400 shrink-0" /> <span className="font-medium text-slate-700 truncate">{req.addressline || 'Main Residence'} {req.location && `• ${req.location}`}</span></div>
+                        </div>
+
+                        {/* INTERACTIVE TIMELINE STAGE CONTROLLER */}
+                        <div className="p-3 bg-slate-50/90 rounded-xl border border-slate-200/90 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                              <Clock className="w-4 h-4 text-brand-600" />
+                              <span>Service Timeline (Customer View)</span>
+                            </div>
+                            <span className="text-[11px] font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-md border border-brand-200">
+                              Stage {getTimelineStepIndex(req.status) + 1} of 5
+                            </span>
+                          </div>
+
+                          {/* Mini Progress Bar */}
+                          <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="bg-brand-600 h-full transition-all duration-300"
+                              style={{ width: `${((getTimelineStepIndex(req.status) + 1) / 5) * 100}%` }}
+                            />
+                          </div>
+
+                          {/* 5 Milestone Step Buttons */}
+                          <div className="grid grid-cols-5 gap-1.5 pt-0.5">
+                            {TIMELINE_STAGES.map((stg, idx) => {
+                              const currentIdx = getTimelineStepIndex(req.status);
+                              const isPast = idx < currentIdx;
+                              const isCurrent = idx === currentIdx;
+
+                              let btnStyle = 'bg-white text-slate-500 border-slate-200 hover:border-brand-400 hover:text-brand-600';
+                              if (isCurrent) {
+                                btnStyle = 'bg-brand-600 text-white border-brand-600 shadow-xs font-bold ring-2 ring-brand-500/20';
+                              } else if (isPast) {
+                                btnStyle = 'bg-emerald-50 text-emerald-700 border-emerald-300 font-semibold';
+                              }
+
+                              return (
+                                <button
+                                  key={stg.key}
+                                  type="button"
+                                  onClick={() => handleUpdateStatus(req.id, stg.key)}
+                                  title={`Set Timeline to: ${stg.label} (${stg.desc})`}
+                                  className={`px-1 py-1.5 rounded-lg border text-center transition-all flex flex-col items-center justify-center gap-0.5 ${btnStyle}`}
+                                >
+                                  <div className="flex items-center justify-center">
+                                    {isPast ? (
+                                      <Check className="w-3 h-3 text-emerald-600" />
+                                    ) : (
+                                      <span className={`text-[10px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold ${isCurrent ? 'bg-white text-brand-600' : 'bg-slate-100 text-slate-600'}`}>
+                                        {stg.step}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] leading-tight truncate max-w-full">
+                                    {stg.label}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div className="text-[10.5px] text-slate-400 flex items-center justify-between">
+                            <span>💡 Tap any milestone to update app timeline</span>
+                            <span className="font-semibold text-slate-600">{TIMELINE_STAGES[getTimelineStepIndex(req.status)]?.desc}</span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <select value={req.status} onChange={(e) => handleUpdateStatus(req.id, e.target.value)} className="text-[11px] font-medium px-2 py-1 bg-slate-50 border border-slate-200 rounded-md text-slate-600 focus:outline-none">
-                          <option value="SUBMITTED">SUBMITTED</option>
-                          <option value="ESTIMATING">ESTIMATING</option>
-                          <option value="QUOTED">QUOTED</option>
-                          <option value="ACCEPTED">ACCEPTED</option>
-                          <option value="IN_PROGRESS">IN_PROGRESS</option>
-                          <option value="COMPLETED">COMPLETED</option>
-                          <option value="REJECTED">REJECTED</option>
-                        </select>
+                      <div className="pt-3.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-500">Status:</span>
+                          <select value={req.status} onChange={(e) => handleUpdateStatus(req.id, e.target.value)} className="text-xs sm:text-sm font-semibold px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-brand-500/20">
+                            <option value="SUBMITTED">SUBMITTED</option>
+                            <option value="ESTIMATING">ESTIMATING</option>
+                            <option value="QUOTED">QUOTED</option>
+                            <option value="ACCEPTED">ACCEPTED</option>
+                            <option value="IN_PROGRESS">IN_PROGRESS</option>
+                            <option value="COMPLETED">COMPLETED</option>
+                            <option value="REJECTED">REJECTED</option>
+                          </select>
+                        </div>
 
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => handleStartQuote(req)} className="px-2.5 py-1 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-xs flex items-center gap-1 transition-all">
-                            <Calculator className="w-3 h-3" /> Build Quote
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openChatForRequest(req)}
+                            title="Chat with Customer"
+                            className="px-3.5 py-2 text-xs sm:text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg shadow-xs flex items-center gap-1.5 transition-all"
+                          >
+                            <MessageCircle className="w-4 h-4 text-indigo-600" /> Chat
                           </button>
-                          <button onClick={() => handleDeleteRequest(req.id)} title="Delete request" className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all">
-                            <Trash2 className="w-3.5 h-3.5" />
+                          <button onClick={() => handleStartQuote(req)} className="px-3.5 py-2 text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs flex items-center gap-1.5 transition-all">
+                            <Calculator className="w-4 h-4" /> Build Quote
+                          </button>
+                          <button onClick={() => handleDeleteRequest(req.id)} title="Delete request" className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -1077,49 +1405,56 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
                 {quotations.map(q => {
                   const lineItemsArray = Array.isArray(q.lineItem) ? q.lineItem : [];
                   const grandTotalFormatted = (q.grandtotal || 0).toLocaleString('en-IN');
                   return (
-                    <div key={q.id} className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs hover:shadow-sm transition-all flex flex-col justify-between space-y-3">
-                      <div className="space-y-2.5">
+                    <div key={q.id} className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+                      <div className="space-y-3.5">
                         <div className="flex items-center justify-between">
-                          <span className="font-mono font-medium text-xs text-brand-600">{q.quoteNumber}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-medium border ${getStatusBadge(q.status)}`}>{q.status}</span>
+                          <span className="font-mono font-bold text-sm sm:text-base text-brand-600 tracking-wide">{q.quoteNumber}</span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold border tracking-wide ${getStatusBadge(q.status)}`}>{q.status}</span>
                         </div>
 
-                        <div className="flex items-baseline justify-between">
+                        <div className="flex items-baseline justify-between gap-2">
                           <div>
-                            <h3 className="font-heading font-medium text-sm text-slate-800">{q.request?.servicecode || 'Repair Quotation'}</h3>
-                            <div className="text-[11px] text-slate-400 font-mono">{q.request?.requestNumber || ''}</div>
+                            <h3 className="font-heading font-bold text-base sm:text-lg text-slate-900 tracking-tight">{q.request?.servicecode || 'Repair Quotation'}</h3>
+                            <div className="text-xs sm:text-sm text-slate-500 font-mono mt-0.5">{q.request?.requestNumber || ''}</div>
                           </div>
-                          <div className="font-heading font-semibold text-lg text-emerald-600 font-mono">₹{grandTotalFormatted}</div>
+                          <div className="font-heading font-bold text-xl sm:text-2xl text-emerald-600 font-mono shrink-0">₹{grandTotalFormatted}</div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-1.5 text-[11px] p-2.5 bg-slate-50 rounded-lg border border-slate-100 text-slate-600">
-                          <div><strong>Client:</strong> {q.request?.user?.name || 'Customer'}</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-slate-700">
+                          <div><strong className="text-slate-900">Client:</strong> {q.request?.user?.name || 'Customer'}</div>
                           <div className="font-mono">{q.request?.user?.phoneNumber || 'N/A'}</div>
-                          <div><strong>Timeline:</strong> {q.estimatedTimeline || '1-2 Days'}</div>
-                          <div><strong>Warranty:</strong> {q.warranty_coverage ? q.warranty_coverage.slice(0, 18) + '...' : '1 Year'}</div>
+                          <div><strong className="text-slate-900">Timeline:</strong> {q.estimatedTimeline || '1-2 Days'}</div>
+                          <div><strong className="text-slate-900">Warranty:</strong> {q.warranty_coverage ? q.warranty_coverage.slice(0, 24) + (q.warranty_coverage.length > 24 ? '...' : '') : '1 Year'}</div>
                         </div>
 
-                        <div className="text-[10.5px] text-slate-400 font-normal">
-                          <strong>Scope ({lineItemsArray.length}):</strong> {lineItemsArray.map(li => li.item || li.description).slice(0, 2).join(', ')}{lineItemsArray.length > 2 ? '...' : ''}
+                        <div className="text-xs sm:text-sm text-slate-600 font-normal">
+                          <strong className="text-slate-800">Scope ({lineItemsArray.length}):</strong> {lineItemsArray.map(li => li.item || li.description).slice(0, 2).join(', ')}{lineItemsArray.length > 2 ? '...' : ''}
                         </div>
                       </div>
 
-                      <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <button onClick={() => setActiveQuoteModal(q)} className="px-2.5 py-1 text-xs font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-md flex items-center gap-1 transition-all">
-                            <Printer className="w-3 h-3" /> View & Print
+                      <div className="pt-3.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openChatForQuotation(q)}
+                            className="px-3.5 py-2 text-xs sm:text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg flex items-center gap-1.5 transition-all shadow-2xs"
+                            title="Chat with Customer"
+                          >
+                            <MessageCircle className="w-4 h-4 text-indigo-600" /> Chat
                           </button>
-                          <button onClick={() => handleQuoteDecision(q.id, 'ACCEPTED')} className="px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md flex items-center gap-1 transition-all">
-                            <Check className="w-3 h-3" /> Accept
+                          <button onClick={() => setActiveQuoteModal(q)} className="px-3.5 py-2 text-xs sm:text-sm font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-lg flex items-center gap-1.5 transition-all shadow-2xs">
+                            <Printer className="w-4 h-4" /> View & Print
+                          </button>
+                          <button onClick={() => handleQuoteDecision(q.id, 'ACCEPTED')} className="px-3.5 py-2 text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg flex items-center gap-1.5 transition-all shadow-2xs">
+                            <Check className="w-4 h-4" /> Accept
                           </button>
                         </div>
-                        <button onClick={() => handleDeleteQuotation(q.id)} className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all">
-                          <Trash2 className="w-3.5 h-3.5" />
+                        <button onClick={() => handleDeleteQuotation(q.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete quotation">
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -1323,6 +1658,379 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                       <Send className="w-3.5 h-3.5" /> Issue Quotation
                     </button>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* LIVE CHAT DESK TAB */}
+          {activeTab === 'chat' && (
+            <div className="space-y-6">
+              {/* Header / Stats Banner */}
+              <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-xs">
+                      <MessageCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2.5">
+                        <h2 className="font-heading font-semibold text-xl sm:text-2xl text-slate-900">
+                          Live Customer Chat Desk
+                        </h2>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                          Socket Live
+                        </span>
+                      </div>
+                      <p className="text-xs sm:text-sm font-semibold text-slate-600 mt-0.5">
+                        Real-time direct communication with customers across Quotations, Service Requests, and Technical Inquiries.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      fetchChatThreads();
+                      if (activeThreadId) fetchThreadMessages(activeThreadId);
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+                  >
+                    <RefreshCw className="w-4 h-4 text-slate-700" />
+                    <span>Sync Threads</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Chat Two-Pane Workspace */}
+              <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden grid grid-cols-12 min-h-[700px] h-[calc(100vh-280px)]">
+                {/* LEFT COLUMN: Conversation Threads List */}
+                <div className="col-span-12 md:col-span-5 lg:col-span-4 border-r border-slate-200 flex flex-col h-full bg-slate-50/50">
+                  {/* Search and Filters */}
+                  <div className="p-4 border-b border-slate-200 space-y-3 bg-white">
+                    <div className="relative">
+                      <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                      <input
+                        type="text"
+                        value={chatSearch}
+                        onChange={(e) => setChatSearch(e.target.value)}
+                        placeholder="Search client, quote #, phone..."
+                        className="w-full pl-9 pr-3.5 py-2 text-sm font-semibold text-slate-800 placeholder-slate-400 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                      />
+                    </div>
+                    {/* Filter tabs */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs font-semibold">
+                      {[
+                        { id: 'ALL', label: 'All' },
+                        { id: 'QUOTATION', label: 'Quotes' },
+                        { id: 'REQUEST', label: 'Requests' },
+                        { id: 'GENERAL', label: 'General' },
+                      ].map(filter => (
+                        <button
+                          key={filter.id}
+                          onClick={() => setChatFilterType(filter.id)}
+                          className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${
+                            chatFilterType === filter.id
+                              ? 'bg-indigo-600 text-white shadow-xs'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          }`}
+                        >
+                          {filter.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Thread list scroll container */}
+                  <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+                    {(() => {
+                      const filtered = chatThreads.filter(t => {
+                        if (chatFilterType !== 'ALL' && t.contextType !== chatFilterType) return false;
+                        if (!chatSearch.trim()) return true;
+                        const q = chatSearch.toLowerCase();
+                        return (
+                          (t.customerName && t.customerName.toLowerCase().includes(q)) ||
+                          (t.customerPhone && t.customerPhone.toLowerCase().includes(q)) ||
+                          (t.quoteNumber && t.quoteNumber.toLowerCase().includes(q)) ||
+                          (t.requestNumber && t.requestNumber.toLowerCase().includes(q)) ||
+                          (t.contextTag && t.contextTag.toLowerCase().includes(q)) ||
+                          (t.lastMessage && t.lastMessage.toLowerCase().includes(q))
+                        );
+                      });
+
+                      if (filtered.length === 0) {
+                        return (
+                          <div className="p-8 text-center text-slate-500 space-y-2">
+                            <MessageCircle className="w-8 h-8 text-slate-400 mx-auto" />
+                            <p className="font-semibold text-sm">No conversations found</p>
+                            <p className="text-xs text-slate-400">Customer inquiries from app and quotes will appear here.</p>
+                          </div>
+                        );
+                      }
+
+                      return filtered.map(t => {
+                        const isSelected = activeThreadId === t.id;
+                        const unread = t.unreadCountAdmin || 0;
+                        const initial = (t.customerName || 'C')[0].toUpperCase();
+
+                        return (
+                          <div
+                            key={t.id}
+                            onClick={() => {
+                              setActiveThreadId(t.id);
+                              fetchThreadMessages(t.id);
+                              setChatThreads(prev => prev.map(item => item.id === t.id ? { ...item, unreadCountAdmin: 0 } : item));
+                            }}
+                            className={`p-4 cursor-pointer transition-all flex items-start gap-3 border-l-4 ${
+                              isSelected
+                                ? 'bg-indigo-50/80 border-indigo-600'
+                                : 'bg-white hover:bg-slate-50 border-transparent'
+                            }`}
+                          >
+                            {/* Avatar */}
+                            <div className="relative shrink-0">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-semibold text-sm flex items-center justify-center shadow-xs">
+                                {initial}
+                              </div>
+                              {unread > 0 && (
+                                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full animate-ping" />
+                              )}
+                            </div>
+
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1 mb-0.5">
+                                <h4 className="font-semibold text-sm text-slate-900 truncate">
+                                  {t.customerName || 'Customer'}
+                                </h4>
+                                <span className="text-[11px] font-semibold text-slate-500 shrink-0">
+                                  {t.lastMessageTime ? new Date(t.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                                {t.quoteNumber ? (
+                                  <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                    Quote #{t.quoteNumber}
+                                  </span>
+                                ) : t.requestNumber ? (
+                                  <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    Req #{t.requestNumber}
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700">
+                                    {t.contextTag || 'Consultation'}
+                                  </span>
+                                )}
+                                {unread > 0 && (
+                                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white">
+                                    {unread} new
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="text-xs font-semibold text-slate-600 truncate">
+                                {t.lastMessage || 'No messages yet'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                {/* RIGHT COLUMN: Active Thread Chat View */}
+                <div className="col-span-12 md:col-span-7 lg:col-span-8 flex flex-col h-full bg-white">
+                  {(() => {
+                    const currentThread = chatThreads.find(t => t.id === activeThreadId) || (activeThreadId ? { id: activeThreadId, customerName: 'Client' } : null);
+
+                    if (!currentThread) {
+                      return (
+                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/50">
+                          <div className="w-16 h-16 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 mb-3">
+                            <MessageCircle className="w-8 h-8" />
+                          </div>
+                          <h3 className="font-semibold text-lg text-slate-900">Select a Conversation</h3>
+                          <p className="text-xs sm:text-sm font-semibold text-slate-600 max-w-sm mt-1">
+                            Choose any customer thread from the left panel to review questions and reply in real-time.
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <>
+                        {/* Thread Header */}
+                        <div className="p-4 sm:px-6 sm:py-4 border-b border-slate-200 flex items-center justify-between gap-3 bg-white">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-indigo-600 text-white font-semibold flex items-center justify-center text-sm shadow-xs">
+                              {(currentThread.customerName || 'C')[0].toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold text-base text-slate-900">
+                                  {currentThread.customerName || 'Customer'}
+                                </h3>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                                <span>{currentThread.customerPhone || 'Customer App Client'}</span>
+                                {currentThread.contextTag && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-indigo-600">{currentThread.contextTag}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Quick Context Shortcuts */}
+                          <div className="flex items-center gap-2">
+                            {currentThread.quoteNumber && (
+                              <button
+                                onClick={() => setActiveTab('quotations')}
+                                className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-all flex items-center gap-1.5"
+                                title="Open Quotations desk"
+                              >
+                                <Receipt className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">View Quote</span>
+                              </button>
+                            )}
+                            {currentThread.requestNumber && (
+                              <button
+                                onClick={() => setActiveTab('requests')}
+                                className="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all flex items-center gap-1.5"
+                                title="Open Requests desk"
+                              >
+                                <ClipboardList className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">View Request</span>
+                              </button>
+                            )}
+                            {currentThread.customerPhone && (
+                              <button
+                                onClick={() => callCustomer(currentThread.customerPhone)}
+                                className="p-2 rounded-xl text-slate-700 hover:text-indigo-600 hover:bg-slate-100 border border-slate-200 transition-all"
+                                title="Call Customer"
+                              >
+                                <PhoneCall className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Thread Message Stream */}
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50/60">
+                          {/* Context Callout Banner */}
+                          <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center justify-between text-xs font-semibold text-slate-700">
+                            <div className="flex items-center gap-2">
+                              <Info className="w-4 h-4 text-indigo-600 shrink-0" />
+                              <span>
+                                Real-Time Chat Room: <span className="text-slate-900 font-bold">{currentThread.contextTag || currentThread.id}</span>
+                              </span>
+                            </div>
+                            <span className="text-slate-500 font-normal">Customer messages sync directly from mobile app</span>
+                          </div>
+
+                          {/* Messages */}
+                          {threadMessages.length === 0 ? (
+                            <div className="py-12 text-center text-slate-500 space-y-2">
+                              <Sparkles className="w-6 h-6 text-indigo-500 mx-auto" />
+                              <p className="font-semibold text-sm">No messages in this conversation yet</p>
+                              <p className="text-xs text-slate-400">Send an official note or proposal update to start the discussion.</p>
+                            </div>
+                          ) : (
+                            threadMessages.map(msg => {
+                              const isAdmin = msg.sender === 'admin';
+                              return (
+                                <div
+                                  key={msg.id || msg.createdAt}
+                                  className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}
+                                >
+                                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 mb-1 px-1">
+                                    <span>{isAdmin ? 'Er. Vikram Sharma (Admin Desk)' : (msg.senderName || currentThread.customerName || 'Customer')}</span>
+                                    <span>•</span>
+                                    <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                  </div>
+                                  <div
+                                    className={`max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl text-sm font-semibold shadow-xs ${
+                                      isAdmin
+                                        ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-tr-xs'
+                                        : 'bg-white text-slate-900 border border-slate-200/90 rounded-tl-xs'
+                                    }`}
+                                  >
+                                    <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+                                    {isAdmin && (
+                                      <div className="flex items-center justify-end gap-1 mt-1 text-[10px] text-indigo-100">
+                                        <CheckCheck className="w-3.5 h-3.5" />
+                                        <span>Delivered</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                          <div ref={chatMessagesEndRef} />
+                        </div>
+
+                        {/* Quick Pre-Set Replies */}
+                        <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 flex items-center gap-2 overflow-x-auto text-xs font-semibold">
+                          <span className="text-slate-500 shrink-0">Quick reply:</span>
+                          {[
+                            'Hello! I am reviewing your request right now.',
+                            'Our senior engineer will visit your site tomorrow.',
+                            'Quotation has been prepared. Please review and approve.',
+                            'Thank you! Our materials and team have been dispatched.',
+                            'Can you please share photos or video of the affected area?'
+                          ].map((chip, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => handleSendAdminReply(chip)}
+                              className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50/50 whitespace-nowrap transition-all shadow-2xs"
+                            >
+                              {chip}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Admin Reply Input */}
+                        <div className="p-3.5 sm:p-4 bg-white border-t border-slate-200">
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              handleSendAdminReply();
+                            }}
+                            className="flex items-center gap-2.5"
+                          >
+                            <input
+                              type="text"
+                              value={adminReplyText}
+                              onChange={(e) => setAdminReplyText(e.target.value)}
+                              placeholder="Write a message to customer... (Press Enter to send)"
+                              className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-slate-400"
+                            />
+                            <button
+                              type="submit"
+                              disabled={isSendingReply || !adminReplyText.trim()}
+                              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-xs transition-all shrink-0"
+                            >
+                              {isSendingReply ? (
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Send className="w-4 h-4" />
+                              )}
+                              <span className="hidden sm:inline">Send</span>
+                            </button>
+                          </form>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -2007,6 +2715,17 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                 <span>Official Quotation Document</span>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const q = activeQuoteModal;
+                    setActiveQuoteModal(null);
+                    openChatForQuotation(q);
+                  }}
+                  className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg shadow-xs transition-all"
+                  title="Chat with Customer"
+                >
+                  <MessageCircle className="w-3.5 h-3.5 text-indigo-600" /> Chat
+                </button>
                 <button onClick={() => window.print()} className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-xs transition-all">
                   <Printer className="w-3 h-3" /> Print / PDF
                 </button>

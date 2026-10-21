@@ -328,6 +328,72 @@ router.patch('/:id/status', async (req, res) => {
       data: { status },
       include: { quotations: true, user: true }
     });
+
+    // Auto-generate notification for the user based on stage advancement
+    try {
+      const { addNotification } = require('./notifications');
+      const io = req.app.get('io');
+      const reqNum = updated.requestNumber || updated.id.slice(0, 8);
+      const serviceName = updated.servicecode || 'Service Request';
+      const notificationImageUrl = (updated.mediaUrl && Array.isArray(updated.mediaUrl) && updated.mediaUrl.length > 0)
+        ? updated.mediaUrl[0]
+        : null;
+
+      let title = `Update on Request #${reqNum}`;
+      let description = `Your request status has been updated to ${status}.`;
+
+      switch (status) {
+        case 'ESTIMATING':
+          title = `📋 Technical Review in Progress (#${reqNum})`;
+          description = `Our engineering team is analyzing damage severity & calculating custom itemized BOQ for ${serviceName}.`;
+          break;
+        case 'QUOTED':
+          title = `💰 Quotation Ready for Review (#${reqNum})`;
+          description = `Official estimation for ${serviceName} is published! Tap to view itemized pricing & warranty details.`;
+          break;
+        case 'ACCEPTED':
+          title = `🤝 Order Confirmed & Scheduled (#${reqNum})`;
+          description = `Quotation confirmed! Technical crew & specialized materials are being mobilized.`;
+          break;
+        case 'IN_PROGRESS':
+          title = `🚀 Work in Progress on Site (#${reqNum})`;
+          description = `Our certified team has commenced waterproofing & structural repairs on site.`;
+          break;
+        case 'COMPLETED':
+          title = `✅ Service Completed & Warranty Active (#${reqNum})`;
+          description = `Site execution and quality testing are completed. Your official 5-Year warranty is now active!`;
+          break;
+        case 'REJECTED':
+        case 'CANCELLED':
+          title = `Request Closed (#${reqNum})`;
+          description = `Your service request #${reqNum} has been closed or cancelled.`;
+          break;
+      }
+
+      addNotification({
+        title,
+        description,
+        imageUrl: notificationImageUrl,
+        type: 'STATUS_UPDATE',
+        referenceId: updated.id,
+        requestId: updated.id,
+        projectName: serviceName,
+        location: updated.addressline || updated.location || 'Site Location',
+        unread: true,
+        timestamp: new Date().toISOString()
+      }, io);
+
+      if (io) {
+        io.emit('request_status_updated', {
+          requestId: updated.id,
+          requestNumber: updated.requestNumber,
+          status: updated.status
+        });
+      }
+    } catch (notifErr) {
+      console.error('Failed to dispatch status notification:', notifErr);
+    }
+
     res.json({ success: true, message: 'Status updated successfully', data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

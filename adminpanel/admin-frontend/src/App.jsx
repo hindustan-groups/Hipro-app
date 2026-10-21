@@ -266,6 +266,27 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
     }
   };
 
+  const TIMELINE_STAGES = [
+    { key: 'SUBMITTED', step: 1, label: 'Submitted', desc: 'Request Logged' },
+    { key: 'ESTIMATING', step: 2, label: 'Estimating', desc: 'Technical & Site Audit' },
+    { key: 'QUOTED', step: 3, label: 'Quoted', desc: 'Quotation Ready' },
+    { key: 'IN_PROGRESS', step: 4, label: 'In Progress', desc: 'Execution & Mobilization' },
+    { key: 'COMPLETED', step: 5, label: 'Completed', desc: 'Work Done & Warranty' },
+  ];
+
+  const getTimelineStepIndex = (status) => {
+    switch ((status || '').toUpperCase()) {
+      case 'SUBMITTED': return 0;
+      case 'ESTIMATING': return 1;
+      case 'QUOTED': return 2;
+      case 'ACCEPTED':
+      case 'PAID':
+      case 'IN_PROGRESS': return 3;
+      case 'COMPLETED': return 4;
+      default: return 0;
+    }
+  };
+
   const selectedBuilderReq = requests.find(r => r.id === builderRequestId);
 
   return (
@@ -701,6 +722,64 @@ export default function AdminApp({ onSwitchToCustomerApp }) {
                           <div className="flex items-center gap-1"><Home className="w-3 h-3 text-slate-400" /> {req.propertyType || 'House'} ({req.propertySize || 'Standard'})</div>
                           <div className="flex items-center gap-1"><Calendar className="w-3 h-3 text-slate-400" /> {req.preferredDate || 'Flexible'}</div>
                           <div className="col-span-2 flex items-center gap-1"><MapPin className="w-3 h-3 text-slate-400" /> <span className="truncate">{req.addressline || 'Main Residence'} {req.location && `• ${req.location}`}</span></div>
+                        </div>
+
+                        {/* INTERACTIVE TIMELINE STAGE CONTROLLER */}
+                        <div className="p-2.5 bg-slate-50/90 rounded-lg border border-slate-200/90 space-y-2 mt-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-700">
+                              <Clock className="w-3.5 h-3.5 text-brand-600" />
+                              <span>Service Timeline</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+                              Stage {getTimelineStepIndex(req.status) + 1} of 5
+                            </span>
+                          </div>
+
+                          <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
+                            <div
+                              className="bg-brand-600 h-full transition-all duration-300"
+                              style={{ width: `${((getTimelineStepIndex(req.status) + 1) / 5) * 100}%` }}
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-5 gap-1 pt-0.5">
+                            {TIMELINE_STAGES.map((stg, idx) => {
+                              const currentIdx = getTimelineStepIndex(req.status);
+                              const isPast = idx < currentIdx;
+                              const isCurrent = idx === currentIdx;
+
+                              let btnStyle = 'bg-white text-slate-500 border-slate-200 hover:border-brand-400 hover:text-brand-600';
+                              if (isCurrent) {
+                                btnStyle = 'bg-brand-600 text-white border-brand-600 shadow-xs font-bold';
+                              } else if (isPast) {
+                                btnStyle = 'bg-emerald-50 text-emerald-700 border-emerald-300 font-semibold';
+                              }
+
+                              return (
+                                <button
+                                  key={stg.key}
+                                  type="button"
+                                  onClick={() => handleUpdateStatus(req.id, stg.key)}
+                                  title={`Set Timeline to: ${stg.label}`}
+                                  className={`px-1 py-1 rounded border text-center transition-all flex flex-col items-center justify-center gap-0.5 ${btnStyle}`}
+                                >
+                                  <div className="flex items-center justify-center">
+                                    {isPast ? (
+                                      <Check className="w-2.5 h-2.5 text-emerald-600" />
+                                    ) : (
+                                      <span className={`text-[9px] w-3 h-3 rounded-full flex items-center justify-center font-bold ${isCurrent ? 'bg-white text-brand-600' : 'bg-slate-100 text-slate-600'}`}>
+                                        {stg.step}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[9px] leading-tight truncate max-w-full">
+                                    {stg.label}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
 
