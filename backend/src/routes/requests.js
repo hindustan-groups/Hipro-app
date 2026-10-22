@@ -282,10 +282,21 @@ router.patch('/phone', requireAuth, async (req, res) => {
     });
   }
 })
-// GET /api/v1/requests - Get all requests with quotations and user info
-router.get('/', async (req, res) => {
+// GET /api/v1/requests - Get all requests with quotations and user info (filtered for logged in user, or all for admin)
+router.get('/', authenticateUser, async (req, res) => {
   try {
+    const { phone, userId } = req.query;
+    const where = {};
+    const targetUserId = req.userId || userId;
+
+    if (targetUserId) {
+      where.userId = targetUserId;
+    } else if (phone) {
+      where.user = { phoneNumber: phone };
+    }
+
     const requests = await prisma.serviceRequest.findMany({
+      where,
       include: {
         quotations: true,
         user: true
@@ -343,13 +354,18 @@ router.patch('/:id/status', async (req, res) => {
       let description = `Your request status has been updated to ${status}.`;
 
       switch (status) {
+        case 'AUDIT_SCHEDULED':
+        case 'SITE_AUDIT':
+          title = `📍 Physical Site Audit Scheduled (#${reqNum})`;
+          description = `A senior structural engineer has been assigned for an on-site physical inspection for ${serviceName}.`;
+          break;
         case 'ESTIMATING':
           title = `📋 Technical Review in Progress (#${reqNum})`;
           description = `Our engineering team is analyzing damage severity & calculating custom itemized BOQ for ${serviceName}.`;
           break;
         case 'QUOTED':
           title = `💰 Quotation Ready for Review (#${reqNum})`;
-          description = `Official estimation for ${serviceName} is published! Tap to view itemized pricing & warranty details.`;
+          description = `Official estimation for ${serviceName} is published! Tap to view itemized pricing & scope details.`;
           break;
         case 'ACCEPTED':
           title = `🤝 Order Confirmed & Scheduled (#${reqNum})`;
@@ -357,11 +373,11 @@ router.patch('/:id/status', async (req, res) => {
           break;
         case 'IN_PROGRESS':
           title = `🚀 Work in Progress on Site (#${reqNum})`;
-          description = `Our certified team has commenced waterproofing & structural repairs on site.`;
+          description = `Our certified team has commenced repairs and execution on site.`;
           break;
         case 'COMPLETED':
-          title = `✅ Service Completed & Warranty Active (#${reqNum})`;
-          description = `Site execution and quality testing are completed. Your official 5-Year warranty is now active!`;
+          title = `✅ Service Completed & Handed Over (#${reqNum})`;
+          description = `Site execution and quality testing are completed. Your project has been successfully completed and handed over!`;
           break;
         case 'REJECTED':
         case 'CANCELLED':

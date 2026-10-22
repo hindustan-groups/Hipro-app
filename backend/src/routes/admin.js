@@ -170,17 +170,35 @@ router.delete('/services/:id', async (req, res) => {
 // POST /api/v1/admin/sub-services - Create sub-service
 router.post('/sub-services', async (req, res) => {
   try {
-    const { serviceId, titleEn, titleHi, desc, checklist } = req.body;
+    const {
+      serviceId,
+      titleEn,
+      titleHi,
+      desc,
+      checklist,
+      visitingCharge,
+      bookNowEnabled,
+      getQuoteEnabled,
+      requiredFields,
+      isActive
+    } = req.body;
+
     if (!serviceId || !titleEn) {
       return res.status(400).json({ success: false, message: 'Service ID and Title are required' });
     }
+
     const subService = await prisma.subService.create({
       data: {
         serviceId,
         titleEn,
         titleHi: titleHi || null,
         desc: desc || '',
-        checklist: Array.isArray(checklist) ? checklist : (checklist ? checklist.split('\n').filter(Boolean) : [])
+        checklist: Array.isArray(checklist) ? checklist : (checklist ? checklist.split('\n').filter(Boolean) : []),
+        visitingCharge: visitingCharge !== undefined ? parseFloat(visitingCharge) : 199.0,
+        bookNowEnabled: bookNowEnabled !== undefined ? Boolean(bookNowEnabled) : true,
+        getQuoteEnabled: getQuoteEnabled !== undefined ? Boolean(getQuoteEnabled) : true,
+        isActive: isActive !== undefined ? Boolean(isActive) : true,
+        requiredFields: requiredFields || null
       }
     });
     res.status(201).json({ success: true, message: 'SubService created successfully', data: subService });
@@ -189,7 +207,46 @@ router.post('/sub-services', async (req, res) => {
   }
 });
 
-// GET /api/v1/admin/sub-services - List all sub-services
+// PUT /api/v1/admin/sub-services/:id - Update sub-service
+router.put('/sub-services/:id', async (req, res) => {
+  try {
+    const {
+      titleEn,
+      titleHi,
+      desc,
+      checklist,
+      visitingCharge,
+      bookNowEnabled,
+      getQuoteEnabled,
+      requiredFields,
+      isActive
+    } = req.body;
+
+    const updateData = {};
+    if (titleEn !== undefined) updateData.titleEn = titleEn;
+    if (titleHi !== undefined) updateData.titleHi = titleHi;
+    if (desc !== undefined) updateData.desc = desc;
+    if (checklist !== undefined) {
+      updateData.checklist = Array.isArray(checklist) ? checklist : (checklist ? checklist.split('\n').filter(Boolean) : []);
+    }
+    if (visitingCharge !== undefined) updateData.visitingCharge = parseFloat(visitingCharge);
+    if (bookNowEnabled !== undefined) updateData.bookNowEnabled = Boolean(bookNowEnabled);
+    if (getQuoteEnabled !== undefined) updateData.getQuoteEnabled = Boolean(getQuoteEnabled);
+    if (isActive !== undefined) updateData.isActive = Boolean(isActive);
+    if (requiredFields !== undefined) updateData.requiredFields = requiredFields;
+
+    const updated = await prisma.subService.update({
+      where: { id: req.params.id },
+      data: updateData
+    });
+
+    res.json({ success: true, message: 'SubService updated successfully', data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// DELETE /api/v1/admin/sub-services/:id - Delete sub-service
 router.delete('/sub-services/:id', async (req, res) => {
   try {
     await prisma.subService.delete({

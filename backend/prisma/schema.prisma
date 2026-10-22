@@ -4,98 +4,179 @@ datasource db {
 }
 
 generator client {
- provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 model Service {
-    id          String       @id @default(uuid())
-    code        String       @unique
-    name        String
-    description String
-    icon        String
-    iconImage   String?
-    imageUrl    String?
-    rating      Float
-    subServices SubService[]
-    created_at  DateTime     @default(now())
+    id             String          @id @default(uuid())
+    code           String          @unique
+    name           String
+    description    String
+    icon           String
+    iconImage      String?
+    imageUrl       String?
+    rating         Float
+    isActive       Boolean         @default(true)
+    subServices    SubService[]
+    requests       ServiceRequest[]
+    directBookings DirectBooking[]
+    created_at     DateTime        @default(now())
 }
 
 model SubService {
-    id        String   @id @default(uuid())
-    serviceId String
-    service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-    titleEn   String
-    titleHi   String?
-    desc      String
-    checklist String[]
-    created_at DateTime @default(now())
+    id              String          @id @default(uuid())
+    serviceId       String
+    service         Service         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+    titleEn         String
+    titleHi         String?
+    desc            String
+    checklist       String[]
+    visitingCharge  Float           @default(199.0)
+    bookNowEnabled  Boolean         @default(true)
+    getQuoteEnabled Boolean         @default(true)
+    isActive        Boolean         @default(true)
+    requiredFields  Json?
+    requests        ServiceRequest[]
+    directBookings  DirectBooking[]
+    created_at      DateTime        @default(now())
 }
 
 model user {
-    id String @id @default(uuid())
-    name String
-    address UserAddress[]
-    phoneNumber String? @unique
-    email String? @unique
-    password String?
-    googleId String? @unique
-    photoUrl String?
-    authProvider String? @default("local")
-    requests ServiceRequest[]
-    created_at DateTime @default(now())
+    id             String           @id @default(uuid())
+    name           String
+    address        UserAddress[]
+    phoneNumber    String?          @unique
+    email          String?          @unique
+    password       String?
+    googleId       String?          @unique
+    photoUrl       String?
+    authProvider   String?          @default("local")
+    requests       ServiceRequest[]
+    directBookings DirectBooking[]
+    created_at     DateTime         @default(now())
 }
 
 model UserAddress {
-    id String @id @default(uuid())
-    userId String
-    user user @relation(fields: [userId], references: [id])
-    type String @default("house") //HOUSE, APARTMENT ,OFFICE 
+    id      String @id @default(uuid())
+    userId  String
+    user    user   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    type    String @default("house") // HOUSE, APARTMENT, OFFICE 
     address String
-    city String
-    pin String
-    label String
+    city    String
+    pin     String
+    label   String
 }
 
-// Service Damage Request Model (Store damage photos)
+// Service Damage Request Model (Robust with Foreign Keys & Unique Constraints)
 model ServiceRequest {
-    id String @id @default(uuid()) 
-    requestNumber String
-    userId String
-    user user @relation(fields: [userId], references: [id])
-    servicecode String
-    subServiceCode String
+    id               String       @id @default(uuid()) 
+    requestNumber    String       @unique
+    userId           String
+    user             user         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    // Direct Foreign Key References to prevent orphaned / corrupted records
+    serviceId        String?
+    service          Service?     @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+    subServiceId     String?
+    subService       SubService?  @relation(fields: [subServiceId], references: [id], onDelete: SetNull)
+
+    // Snapshots
+    servicecode      String
+    subServiceCode   String
     issueDescription String
-    urgency String
-    status String
-    mediaUrl String[]
-    propertyType String
-    propertySize String
-    location String
-    preferredDate String
-    quotations Quotation[]
-    preferredTime String
-    addressline String @default("main Residance")
-    created_at DateTime @default(now())  
-}
-model Quotation {
-    id String @id @default(uuid())
-    quoteNumber String @unique
-    requestId String 
-    request ServiceRequest @relation(fields: [requestId], references: [id])
-    status String
-    lineItem Json
-    materialCost Float
-    laborCost Float
-    totalCost Float
-    discount Float
-    subtotal Float
-    taxGST Float 
-    grandtotal Float
-    taxRate Float
-    termsAndConditions String
-    created_by String
-    quotation_url String?
-    estimatedTimeline String
-    created_at DateTime @default(now())
+    urgency          String       @default("NORMAL")
+    status           String       @default("SUBMITTED")
+    mediaUrl         String[]
+    propertyType     String
+    propertySize     String
+    location         String
+    latitude         Float?       // Live GPS coordinates
+    longitude        Float?
+    preferredDate    String
+    preferredTime    String
+    addressline      String       @default("main Residance")
+
+    quotations       Quotation[]
+
+    created_at       DateTime     @default(now())  
+    updated_at       DateTime     @default(now()) @updatedAt
 }
 
+model Quotation {
+    id                 String         @id @default(uuid())
+    quoteNumber        String         @unique
+    requestId          String 
+    request            ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+    status             String
+    lineItem           Json
+    materialCost       Float
+    laborCost          Float
+    totalCost          Float
+    discount           Float
+    subtotal           Float
+    taxGST             Float 
+    grandtotal         Float
+    taxRate            Float
+    termsAndConditions String
+    created_by         String
+    quotation_url      String?
+    estimatedTimeline  String
+    created_at         DateTime       @default(now())
+}
+
+// Direct Maintenance Booking Model (Pre-paid Instant Visits & On-Demand Service)
+model DirectBooking {
+    id                   String      @id @default(uuid())
+    bookingNumber        String      @unique // e.g. HIP-1001
+    userId               String?
+    user                 user?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+    serviceId            String
+    service              Service     @relation(fields: [serviceId], references: [id])
+    subServiceId         String
+    subService           SubService  @relation(fields: [subServiceId], references: [id])
+    serviceName          String
+    subServiceName       String
+    subServiceDesc       String?
+    customFieldAnswers   Json?       // Customer answers to required subservice questions
+
+    customerName         String
+    customerPhone        String
+    customerAddress      String
+    city                 String
+    pincode              String?
+    landmark             String?
+    latitude             Float?      // Geo-coordinates for live technician dispatch
+    longitude            Float?
+    scheduledDate        String
+    scheduledSlot        String
+
+    technicianId         String?
+    technicianName       String?
+    technicianPhone      String?
+
+    visitingCharge       Float       @default(199.0)
+    onlinePaidAmount     Float       @default(199.0)
+    additionalWorkAmount Float       @default(0.0)
+    totalAmount          Float       @default(199.0)
+
+    status               String      @default("CONFIRMED") // CONFIRMED, ASSIGNED, IN_PROGRESS, COMPLETED, CANCELLED
+    paymentStatus        String      @default("PAID")      // PAID, REFUNDED
+    paymentMethod        String      @default("ONLINE")
+    razorpayPaymentId    String?
+    razorpayOrderId      String?
+
+    notes                String?
+    cancelReason         String?
+    statusHistory        Json?
+
+    // Robust Refund Management
+    refundStatus         String      @default("NONE") // NONE, INITIATED, PROCESSED, FAILED
+    refundId             String?
+    refundAmount         Float       @default(0.0)
+    refundReason         String?
+    refundArn            String?
+    refundedAt           DateTime?
+
+    created_at           DateTime    @default(now())
+    updated_at           DateTime    @default(now()) @updatedAt
+}

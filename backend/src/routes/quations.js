@@ -2,10 +2,49 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../prisma');
 
-// GET /api/v1/quotations - List all quotations
-router.get('/', async (req, res) => {
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_here';
+
+function authenticateUser(req, res, next) {
   try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    
+    if (token && JWT_SECRET) {
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded && decoded.id) {
+          req.userId = decoded.id;
+        }
+      } catch (err) {
+        // Token was invalid or expired
+      }
+    }
+    next();
+  } catch (error) {
+    next();
+  }
+}
+
+// GET /api/v1/quotations - List quotations (filtered for logged in user, or all for admin)
+router.get('/', authenticateUser, async (req, res) => {
+  try {
+    const { phone, userId } = req.query;
+    const where = {};
+    const targetUserId = req.userId || userId;
+
+    if (targetUserId) {
+      where.request = {
+        userId: targetUserId
+      };
+    } else if (phone) {
+      where.request = {
+        user: { phoneNumber: phone }
+      };
+    }
+
     const quotes = await prisma.quotation.findMany({
+      where,
       include: {
         request: {
           include: {
@@ -196,7 +235,7 @@ router.post('/', async (req, res) => {
       const { addNotification } = require('./notifications');
       const notificationImageUrl = (request.mediaUrl && Array.isArray(request.mediaUrl) && request.mediaUrl.length > 0)
         ? request.mediaUrl[0]
-        : 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80';
+        : null;
 
       const formattedTotal = Math.round(quotation.grandtotal || 0).toLocaleString('en-IN');
       const projectName = request.servicecode || request.propertyType || 'Waterproofing & Civil Scope';
