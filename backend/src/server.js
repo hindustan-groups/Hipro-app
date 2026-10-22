@@ -71,6 +71,7 @@ app.use('/api/v1/notifications', require('./routes/notifications'));
 app.use('/api/v1/chat', require('./routes/chat'));
 app.use('/api/v1/ent', require('./routes/ent'));
 app.use('/api/v1/entertainment', require('./routes/ent'));
+app.use('/api/v1/api/v1/ent', require('./routes/ent'));
 app.use('/api/v1/direct-bookings', require('./routes/directBookings'));
 
 // Root endpoint - API Status
