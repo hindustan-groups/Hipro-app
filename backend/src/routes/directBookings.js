@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const prisma = require('../prisma');
+const { addNotification } = require('./notifications');
 
 // Helper to generate unique booking number (e.g. HIP-1001)
 async function generateBookingNumber() {
@@ -22,8 +23,16 @@ async function generateBookingNumber() {
 // ==========================================
 router.get('/', async (req, res) => {
   try {
-    const { status, city, serviceId, search, date } = req.query;
+    const { status, city, serviceId, search, date, userId, customerPhone } = req.query;
     const where = {};
+
+    if (userId) {
+      where.userId = userId;
+    }
+
+    if (customerPhone) {
+      where.customerPhone = customerPhone;
+    }
 
     if (status && status !== 'ALL' && status !== 'All') {
       where.status = status.toUpperCase();
@@ -223,10 +232,44 @@ router.post('/', async (req, res) => {
       }
     ];
 
+    // Safely resolve valid userId (prevent Foreign Key constraint failures when guest or phone is passed)
+    let validUserId = null;
+    if (userId && userId !== 'guest' && userId !== 'null' && userId !== 'undefined') {
+      try {
+        const userExists = await prisma.user.findUnique({
+          where: { id: String(userId) }
+        });
+        if (userExists) {
+          validUserId = userExists.id;
+        } else {
+          const userByPhoneOrEmail = await prisma.user.findFirst({
+            where: {
+              OR: [
+                { phoneNumber: String(userId) },
+                { email: String(userId) }
+              ]
+            }
+          });
+          if (userByPhoneOrEmail) validUserId = userByPhoneOrEmail.id;
+        }
+      } catch (err) {
+        console.warn('User lookup warning:', err.message);
+      }
+    }
+
+    if (!validUserId && customerPhone) {
+      try {
+        const userByPhone = await prisma.user.findFirst({
+          where: { phoneNumber: customerPhone.trim() }
+        });
+        if (userByPhone) validUserId = userByPhone.id;
+      } catch (err) {}
+    }
+
     const newBooking = await prisma.directBooking.create({
       data: {
         bookingNumber,
-        userId: userId || null,
+        userId: validUserId,
         serviceId: subService.serviceId,
         subServiceId: subService.id,
         serviceName: subService.service.name,
@@ -285,40 +328,62 @@ router.post('/', async (req, res) => {
 });
 
 // ==========================================
-// 5. PATCH /api/v1/direct-bookings/:id/technician (Assign / Reassign Technician)
+// 5. PATCH /api/v1/direct-bookings/:id/technician & /:id/assign
+// (Assign / Reassign Field Specialist / Technician)
 // ==========================================
-router.patch('/:id/technician', async (req, res) => {
+const handleAssignTechnician = async (req, res) => {
   try {
     const { id } = req.params;
-    const { technicianId, technicianName, technicianPhone, assignedBy } = req.body;
+    const {
+      technicianId,
+      technicianName,
+      technicianPhone,
+      technicianRole,
+      technicianPhoto,
+      technicianRating,
+      assignedBy
+    } = req.body;
 
     if (!technicianName || !technicianPhone) {
       return res.status(400).json({ success: false, message: 'Technician Name and Phone are required' });
     }
 
-    const booking = await prisma.directBooking.findUnique({ where: { id } });
+    const booking = await prisma.directBooking.findFirst({
+      where: {
+        OR: [{ id }, { bookingNumber: id }]
+      }
+    });
+
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
     const currentHistory = Array.isArray(booking.statusHistory) ? booking.statusHistory : [];
+    const role = (technicianRole && String(technicianRole).trim())
+      ? String(technicianRole).trim()
+      : 'Senior Service Specialist';
+
     const historyEntry = {
       status: 'ASSIGNED',
       timestamp: new Date().toISOString(),
       actor: assignedBy || 'ADMIN_DESK',
-      note: `Technician assigned: ${technicianName} (${technicianPhone})`
+      note: `Technician assigned: ${technicianName.trim()} (${technicianPhone.trim()}, ${role})`
     };
 
     const updated = await prisma.directBooking.update({
-      where: { id },
+      where: { id: booking.id },
       data: {
         technicianId: technicianId || `tech_${Date.now()}`,
         technicianName: technicianName.trim(),
         technicianPhone: technicianPhone.trim(),
+        technicianRole: role,
+        technicianPhoto: technicianPhoto || 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=600&q=80',
+        technicianRating: technicianRating ? parseFloat(technicianRating) : (booking.technicianRating || 4.9),
+        assignedAt: new Date(),
         status: 'ASSIGNED',
         statusHistory: [...currentHistory, historyEntry]
       },
-      include: { service: true, subService: true }
+      include: { service: true, subService: true, user: true }
     });
 
     const io = req.app.get('io');
@@ -329,6 +394,28 @@ router.patch('/:id/technician', async (req, res) => {
       });
     }
 
+    // Real-Time Notification dispatched to customer's app
+    try {
+      addNotification({
+        title: 'Technician Assigned',
+        description: `${updated.technicianName} (${updated.technicianRole}) has been assigned to your instant booking #${updated.bookingNumber}. Contact: ${updated.technicianPhone}`,
+        imageUrl: updated.technicianPhoto || 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=600&q=80',
+        type: 'BOOKING',
+        referenceId: updated.id,
+        bookingNumber: updated.bookingNumber,
+        requestId: updated.id,
+        projectName: updated.subServiceName,
+        location: `${updated.customerAddress}, ${updated.city}`,
+        technicianName: updated.technicianName,
+        technicianPhone: updated.technicianPhone,
+        technicianRole: updated.technicianRole,
+        unread: true,
+        timestamp: new Date().toISOString()
+      }, io);
+    } catch (notifErr) {
+      console.error('Failed to dispatch notification for technician assignment:', notifErr.message);
+    }
+
     res.json({
       success: true,
       message: `Technician ${technicianName} assigned successfully`,
@@ -337,7 +424,11 @@ router.patch('/:id/technician', async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
-});
+};
+
+router.patch('/:id/technician', handleAssignTechnician);
+router.patch('/:id/assign', handleAssignTechnician);
+router.put('/:id/assign', handleAssignTechnician);
 
 // ==========================================
 // 6. PATCH /api/v1/direct-bookings/:id/status (Status Transitions)

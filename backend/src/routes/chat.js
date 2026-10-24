@@ -199,6 +199,27 @@ router.post('/messages', (req, res) => {
       io.emit('thread_updated', { thread, message: newMessage });
     }
 
+    // If Admin replied, generate notification for customer app
+    if (sender === 'admin') {
+      try {
+        const { addNotification } = require('./notifications');
+        const snippet = text.trim().length > 100 ? text.trim().substring(0, 97) + '...' : text.trim();
+        addNotification({
+          title: `💬 New Message from ${senderName || 'Hipro Technical Lead'}`,
+          description: snippet,
+          type: 'CHAT',
+          referenceId: threadId,
+          quoteNumber: thread.quoteNumber || '',
+          requestNumber: thread.requestNumber || '',
+          projectName: thread.contextTag || 'Technical Consultation',
+          unread: true,
+          timestamp: nowIso
+        }, io);
+      } catch (errNotif) {
+        console.error('Failed to dispatch notification for chat message:', errNotif);
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: 'Message sent successfully',

@@ -73,6 +73,7 @@ app.use('/api/v1/ent', require('./routes/ent'));
 app.use('/api/v1/entertainment', require('./routes/ent'));
 app.use('/api/v1/api/v1/ent', require('./routes/ent'));
 app.use('/api/v1/direct-bookings', require('./routes/directBookings'));
+app.use('/api/v1/payments', require('./routes/payments'));
 
 // Root endpoint - API Status
 app.get('/', (req, res) => {

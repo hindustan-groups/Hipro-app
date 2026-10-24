@@ -175,6 +175,8 @@ router.post('/sub-services', async (req, res) => {
       titleEn,
       titleHi,
       desc,
+      image,
+      imageUrl,
       checklist,
       visitingCharge,
       bookNowEnabled,
@@ -193,6 +195,7 @@ router.post('/sub-services', async (req, res) => {
         titleEn,
         titleHi: titleHi || null,
         desc: desc || '',
+        image: image || imageUrl || null,
         checklist: Array.isArray(checklist) ? checklist : (checklist ? checklist.split('\n').filter(Boolean) : []),
         visitingCharge: visitingCharge !== undefined ? parseFloat(visitingCharge) : 199.0,
         bookNowEnabled: bookNowEnabled !== undefined ? Boolean(bookNowEnabled) : true,
@@ -214,6 +217,8 @@ router.put('/sub-services/:id', async (req, res) => {
       titleEn,
       titleHi,
       desc,
+      image,
+      imageUrl,
       checklist,
       visitingCharge,
       bookNowEnabled,
@@ -226,6 +231,7 @@ router.put('/sub-services/:id', async (req, res) => {
     if (titleEn !== undefined) updateData.titleEn = titleEn;
     if (titleHi !== undefined) updateData.titleHi = titleHi;
     if (desc !== undefined) updateData.desc = desc;
+    if (image !== undefined || imageUrl !== undefined) updateData.image = image !== undefined ? image : imageUrl;
     if (checklist !== undefined) {
       updateData.checklist = Array.isArray(checklist) ? checklist : (checklist ? checklist.split('\n').filter(Boolean) : []);
     }

@@ -201,15 +201,19 @@ router.post('/', authenticateUser,
       data: {
         requestNumber,
         userId: user.id,
+        serviceId: req.body.serviceId || null,
+        subServiceId: req.body.subServiceId || null,
         servicecode: servicecode || req.body.categoryName || req.body.categoryId || 'General Service',
         subServiceCode: subServiceCode || req.body.subServiceName || 'Site Inspection',
         issueDescription: issueDescription || 'General site inspection requested.',
-        urgency: 'NORMAL',
+        urgency: req.body.urgency || 'NORMAL',
         status: status || 'SUBMITTED',
         mediaUrl: mediaList,
         propertyType: propertyType || 'Residential',
         propertySize: propertySize || 'Standard Area',
         location: location || addressline || req.body.address || 'Bhilwara, Rajasthan',
+        latitude: req.body.latitude ? parseFloat(req.body.latitude) : null,
+        longitude: req.body.longitude ? parseFloat(req.body.longitude) : null,
         preferredDate: preferredDate || new Date().toISOString().split('T')[0],
         preferredTime: preferredTime || 'Morning (09:00 AM - 12:00 PM)',
         addressline: addressline || req.body.address || 'Site Address'
@@ -416,6 +420,63 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
+// PATCH /api/v1/requests/:id/assign - Assign Lead Engineer to Service Request
+router.patch('/:id/assign', async (req, res) => {
+  try {
+    const { technicianName, technicianPhone, technicianRole } = req.body;
+    if (!technicianName) {
+      return res.status(400).json({ success: false, message: 'Technician/Engineer name is required' });
+    }
+
+    const reqItem = await prisma.serviceRequest.findFirst({
+      where: {
+        OR: [{ id: req.params.id }, { requestNumber: req.params.id }]
+      }
+    });
+
+    if (!reqItem) {
+      return res.status(404).json({ success: false, message: 'Request not found' });
+    }
+
+    const updated = await prisma.serviceRequest.update({
+      where: { id: reqItem.id },
+      data: {
+        technicianName: technicianName.trim(),
+        technicianPhone: technicianPhone ? technicianPhone.trim() : null,
+        technicianRole: technicianRole ? technicianRole.trim() : 'Lead Inspection Engineer'
+      },
+      include: { quotations: true, user: true }
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('request_updated', updated);
+    }
+
+    try {
+      const { addNotification } = require('./notifications');
+      addNotification({
+        title: 'Lead Engineer Assigned',
+        description: `${updated.technicianName} (${updated.technicianRole}) has been assigned for your inspection #${updated.requestNumber}.`,
+        type: 'REQUEST',
+        referenceId: updated.id,
+        requestId: updated.id,
+        requestNumber: updated.requestNumber,
+        projectName: updated.servicecode || 'Site Inspection',
+        location: updated.addressline || updated.location || 'Site Location',
+        unread: true,
+        timestamp: new Date().toISOString()
+      }, io);
+    } catch (notifErr) {
+      console.error('Failed to dispatch engineer assignment notification:', notifErr);
+    }
+
+    res.json({ success: true, message: 'Engineer assigned successfully', data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // DELETE /api/v1/requests/:id - Delete a request
 router.delete('/:id', async (req, res) => {
   try {
@@ -509,10 +570,14 @@ const updateRequestHandler = async (req, res) => {
     const updateData = {};
     if (servicecode !== undefined) updateData.servicecode = servicecode;
     if (subServiceCode !== undefined) updateData.subServiceCode = subServiceCode;
+    if (req.body.serviceId !== undefined) updateData.serviceId = req.body.serviceId;
+    if (req.body.subServiceId !== undefined) updateData.subServiceId = req.body.subServiceId;
     if (issueDescription !== undefined) updateData.issueDescription = issueDescription;
     if (propertyType !== undefined) updateData.propertyType = propertyType;
     if (propertySize !== undefined) updateData.propertySize = propertySize;
     if (location !== undefined) updateData.location = location;
+    if (req.body.latitude !== undefined) updateData.latitude = req.body.latitude ? parseFloat(req.body.latitude) : null;
+    if (req.body.longitude !== undefined) updateData.longitude = req.body.longitude ? parseFloat(req.body.longitude) : null;
     if (preferredDate !== undefined) updateData.preferredDate = preferredDate;
     if (preferredTime !== undefined) updateData.preferredTime = preferredTime;
     if (addressline !== undefined) updateData.addressline = addressline;

@@ -559,6 +559,105 @@ async function main() {
     }
   ];
 
+  const SUBSERVICE_IMAGES = {
+    // Civil Construction
+    "RCC Slab & Beam Casting": "https://images.unsplash.com/photo-1541888946425-d0fbb18615f3?auto=format&fit=crop&w=800&q=80",
+    "Column Jacketing & Retrofitting": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=800&q=80",
+    "Boundary Wall & Plinth Work": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=800&q=80",
+    "Core Cutting & Alterations": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80",
+
+    // Water Leakage Solutions
+    "Roof & Terrace Waterproofing": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "Bathroom & Wet Area Seepage": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80",
+    "Chemical PU Injection & Crack Sealing": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80",
+    "Basement & Retaining Wall Defense": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+
+    // Structure Repair
+    "Sagging Slab & Beam Rehabilitation": "https://images.unsplash.com/photo-1541888946425-d0fbb18615f3?auto=format&fit=crop&w=800&q=80",
+    "Rebar Rust Removal & Anti-Corrosion": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80",
+    "Foundation Settlement Audit": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=800&q=80",
+
+    // Crack Stitching
+    "Helical Rebar Wall Stitching": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=800&q=80",
+    "Epoxy Injection for Structural Cracks": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "Ceiling & Plaster Hairline Crack Fill": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+
+    // Damp Wall Treatment
+    "Shora & Salt Efflorescence Treatment": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+    "Rising Damp Chemical DPC Injection": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "Black Mold & Fungal Disinfection": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80",
+
+    // Plumbing & Drains
+    "Acoustic & Thermal Leak Detection": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "Concealed CPVC / UPVC Pipe Repair": "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=800&q=80",
+    "Hydro-Jet Drain Unclogging": "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=800&q=80",
+    "Booster Pump & Water Automation": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+
+    // Electrical & Wiring
+    "Short Circuit & MCB Trip Diagnosis": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80",
+    "Concealed Fire-Resistant Rewiring": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80",
+    "Chemical Earthing Pit Installation": "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?auto=format&fit=crop&w=800&q=80",
+
+    // Painting & Wall Finish
+    "Exterior Waterproof Weathercoat": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=800&q=80",
+    "Interior Luxury Washable Emulsion": "https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=800&q=80",
+    "Waterproof Acrylic Putty & Leveling": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "Designer Texture & Accent Walls": "https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=800&q=80",
+
+    // Tile & Flooring
+    "Vitrified Floor & Wall Tiling": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+    "Waterproof Epoxy Grouting": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80",
+    "Italian Marble Diamond Polishing": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+    "Surgical Broken Tile Replacement": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80",
+
+    // POP Ceiling & Plaster
+    "Gypsum Designer False Ceiling": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+    "POP Wall Punning & Plaster Leveling": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+    "Soundproof Drywall Partitions": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+
+    // Architectural & 3D Plan
+    "2D Floor Plan & Vastu Layout": "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=800&q=80",
+    "3D Front Elevation & Facade": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
+    "Structural Engineering Drawings": "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=800&q=80",
+
+    // Termite & Pest Control
+    "Post-Construction Drill & Inject Defense": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "Pre-Construction Soil Trenching": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=800&q=80",
+    "Wood Borer & Timber Protection": "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?auto=format&fit=crop&w=800&q=80",
+
+    // Water Tank Cleaning
+    "Underground Sump High-Pressure Clean": "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=800&q=80",
+    "Overhead Sintex / PVC Tank UV Clean": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80",
+    "Tank Seepage & Crack Chemical Patch": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+
+    // Glass & Windows
+    "Soundproof UPVC Sliding Windows": "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=800&q=80",
+    "Toughened Glass Shower Partitions": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+    "Balcony Glass Railings & Spiders": "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=800&q=80",
+
+    // Solar & Inverter Setup
+    "Rooftop On-Grid Solar Plant": "https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=800&q=80",
+    "Solar Water Heater Setup & Repair": "https://images.unsplash.com/photo-1508873696983-2df570464756?auto=format&fit=crop&w=800&q=80",
+    "Hybrid Inverter & Lithium Battery Sync": "https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=800&q=80",
+
+    // Carpentry & Doors
+    "Main Door & Digital Smart Lock": "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80",
+    "Modular Kitchen Drawer & Hinge Tuneup": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=800&q=80",
+    "Wood PU Polish & Scratch Removal": "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?auto=format&fit=crop&w=800&q=80",
+
+    // CCTV & Home Security
+    "HD IP CCTV Camera Installation": "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80",
+    "Video Door Phone & Intercom": "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80",
+    "Smart Sensor Alarm & Motion Defense": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80",
+
+    // Home Quality Inspection
+    "Pre-Possession Snagging Inspection": "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=800&q=80",
+    "Concrete Rebound Hammer Test": "https://images.unsplash.com/photo-1541888946425-d0fbb18615f3?auto=format&fit=crop&w=800&q=80",
+    "Thermal Thermal Heat & Moisture Audit": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80"
+  };
+
+  const DEFAULT_SUB_IMAGE = "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80";
+
   for (const s of servicesData) {
     const { subServices, ...serviceFields } = s;
 
@@ -569,29 +668,211 @@ async function main() {
       create: serviceFields
     });
 
-    // 2. Clear existing subServices to ensure clean, updated state
-    await prisma.subService.deleteMany({
-      where: { serviceId: service.id }
-    });
-
-    // 3. Create rich subServices
+    // 2. Safely Upsert SubServices (preserves foreign keys on existing bookings/requests)
     for (const sub of subServices) {
-      await prisma.subService.create({
-        data: {
-          serviceId: service.id,
-          titleEn: sub.titleEn,
-          titleHi: sub.titleHi,
-          desc: sub.desc,
-          checklist: sub.checklist
-        }
+      const imgUrl = sub.image || SUBSERVICE_IMAGES[sub.titleEn] || DEFAULT_SUB_IMAGE;
+      const charge = sub.visitingCharge !== undefined ? sub.visitingCharge : 199.0;
+
+      const existingSub = await prisma.subService.findFirst({
+        where: { serviceId: service.id, titleEn: sub.titleEn }
       });
+
+      const subData = {
+        serviceId: service.id,
+        titleEn: sub.titleEn,
+        titleHi: sub.titleHi,
+        desc: sub.desc,
+        image: imgUrl,
+        visitingCharge: charge,
+        bookNowEnabled: sub.bookNowEnabled !== undefined ? sub.bookNowEnabled : true,
+        getQuoteEnabled: sub.getQuoteEnabled !== undefined ? sub.getQuoteEnabled : true,
+        isActive: true,
+        checklist: sub.checklist
+      };
+
+      if (existingSub) {
+        await prisma.subService.update({
+          where: { id: existingSub.id },
+          data: subData
+        });
+      } else {
+        await prisma.subService.create({
+          data: subData
+        });
+      }
     }
-    console.log(`✅ Upserted ${service.name} with ${subServices.length} subservices`);
+    console.log(`✅ Upserted ${service.name} with ${subServices.length} subservices with high-res imagery`);
   }
 
-  console.log('🎉 All 18 Services & SubServices successfully seeded into Neon / Aiven DB with 2D Icons!');
+  // 3. Seed Demo User
+  let demoUser = await prisma.user.findFirst();
+  if (!demoUser) {
+    demoUser = await prisma.user.create({
+      data: {
+        name: "Piyush Sharma",
+        phoneNumber: "+91 94628 77757",
+        email: "piyush@example.com",
+        authProvider: "local",
+      }
+    });
+    console.log(`✅ Created demo user: ${demoUser.name}`);
+  }
+
+  // 4. Seed Demo Direct Bookings
+  const waterService = await prisma.service.findUnique({
+    where: { code: "WATER_LEAKAGE" },
+    include: { subServices: true }
+  });
+
+  if (waterService && waterService.subServices.length > 0) {
+    const sub1 = waterService.subServices[0];
+    const existingB1 = await prisma.directBooking.findUnique({
+      where: { bookingNumber: "HIP-1001" }
+    });
+
+    if (!existingB1) {
+      await prisma.directBooking.create({
+        data: {
+          bookingNumber: "HIP-1001",
+          userId: demoUser.id,
+          serviceId: waterService.id,
+          subServiceId: sub1.id,
+          serviceName: waterService.name,
+          subServiceName: sub1.titleEn,
+          subServiceDesc: sub1.desc,
+          customerName: demoUser.name,
+          customerPhone: demoUser.phoneNumber || "+91 94628 77757",
+          customerAddress: "Flat 402, Royal Palms, Subhash Nagar",
+          city: "Bhilwara",
+          pincode: "311001",
+          landmark: "Near City Mall",
+          scheduledDate: "Tomorrow",
+          scheduledSlot: "10:00 AM - 12:00 PM",
+          technicianId: "TECH-07",
+          technicianName: "Vikram Sharma (Sr. Specialist)",
+          technicianPhone: "+91 98290 12345",
+          visitingCharge: 199.0,
+          onlinePaidAmount: 199.0,
+          totalAmount: 199.0,
+          status: "CONFIRMED",
+          paymentStatus: "PAID",
+          paymentMethod: "ONLINE",
+          notes: "Leakage on bathroom ceiling since last monsoon."
+        }
+      });
+      console.log('✅ Seeded demo DirectBooking HIP-1001 (CONFIRMED)');
+    }
+
+    const existingB2 = await prisma.directBooking.findUnique({
+      where: { bookingNumber: "HIP-1002" }
+    });
+    if (!existingB2) {
+      await prisma.directBooking.create({
+        data: {
+          bookingNumber: "HIP-1002",
+          userId: demoUser.id,
+          serviceId: waterService.id,
+          subServiceId: sub1.id,
+          serviceName: waterService.name,
+          subServiceName: sub1.titleEn,
+          subServiceDesc: sub1.desc,
+          customerName: demoUser.name,
+          customerPhone: demoUser.phoneNumber || "+91 94628 77757",
+          customerAddress: "House 12, Shastri Nagar",
+          city: "Bhilwara",
+          pincode: "311001",
+          scheduledDate: "15 Oct 2026",
+          scheduledSlot: "02:00 PM - 04:00 PM",
+          technicianId: "TECH-03",
+          technicianName: "Ramesh Sen",
+          technicianPhone: "+91 94141 55667",
+          visitingCharge: 199.0,
+          onlinePaidAmount: 199.0,
+          totalAmount: 199.0,
+          status: "COMPLETED",
+          paymentStatus: "PAID",
+          paymentMethod: "ONLINE",
+          notes: "Initial inspection completed. Report shared."
+        }
+      });
+      console.log('✅ Seeded demo DirectBooking HIP-1002 (COMPLETED)');
+    }
+  }
+
+  // 5. Seed Demo Service Request & Quotation
+  const civilService = await prisma.service.findUnique({
+    where: { code: "CIVIL_CONSTRUCTION" },
+    include: { subServices: true }
+  });
+
+  if (civilService && civilService.subServices.length > 0) {
+    const civilSub = civilService.subServices[0];
+    let req1 = await prisma.serviceRequest.findUnique({
+      where: { requestNumber: "REQ-2026-101" }
+    });
+
+    if (!req1) {
+      req1 = await prisma.serviceRequest.create({
+        data: {
+          requestNumber: "REQ-2026-101",
+          userId: demoUser.id,
+          serviceId: civilService.id,
+          subServiceId: civilSub.id,
+          servicecode: civilService.code,
+          subServiceCode: civilSub.titleEn,
+          issueDescription: "Cracks observed on beam and slab during monsoon season.",
+          urgency: "HIGH",
+          status: "QUOTED",
+          mediaUrl: ["https://images.unsplash.com/photo-1541888946425-d0fbb18615f3?auto=format&fit=crop&w=800&q=80"],
+          propertyType: "Residential Villa",
+          propertySize: "1800 sq ft",
+          location: "Bhilwara, Rajasthan",
+          latitude: 25.3463,
+          longitude: 74.6364,
+          preferredDate: "2026-10-25",
+          preferredTime: "11:00 AM",
+          addressline: "Plot 88, Near Lake View Colony"
+        }
+      });
+      console.log('✅ Seeded demo ServiceRequest REQ-2026-101');
+
+      const existingQ1 = await prisma.quotation.findUnique({
+        where: { quoteNumber: "QTE-2026-501" }
+      });
+
+      if (!existingQ1) {
+        await prisma.quotation.create({
+          data: {
+            quoteNumber: "QTE-2026-501",
+            requestId: req1.id,
+            status: "PENDING_APPROVAL",
+            lineItem: [
+              { item: "Polymer modified micro-concrete", quantity: "4 bags", rate: 850, amount: 3400 },
+              { item: "Rust converter & rebar coating", quantity: "2 liters", rate: 1200, amount: 2400 },
+              { item: "Skilled structural masonry labor", quantity: "3 days", rate: 1500, amount: 4500 }
+            ],
+            materialCost: 5800.0,
+            laborCost: 4500.0,
+            totalCost: 10300.0,
+            discount: 500.0,
+            subtotal: 9800.0,
+            taxGST: 1764.0,
+            grandtotal: 11564.0,
+            taxRate: 18.0,
+            termsAndConditions: "1. 50% advance on material mobilization.\n2. Work guaranteed for 5 years with warranty certificate.",
+            created_by: "Er. Vikram Sharma",
+            estimatedTimeline: "4 Working Days"
+          }
+        });
+        console.log('✅ Seeded demo Quotation QTE-2026-501');
+      }
+    }
+  }
+
+  console.log('🎉 All 18 Services, SubServices with high-res images, and demo Data seeded into Neon / Aiven DB!');
 }
 
 main()
   .catch((e) => console.error(e))
   .finally(async () => await prisma.$disconnect());
+

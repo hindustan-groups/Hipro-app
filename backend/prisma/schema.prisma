@@ -30,6 +30,7 @@ model SubService {
     titleEn         String
     titleHi         String?
     desc            String
+    image           String?
     checklist       String[]
     visitingCharge  Float           @default(199.0)
     bookNowEnabled  Boolean         @default(true)
@@ -96,6 +97,11 @@ model ServiceRequest {
     preferredTime    String
     addressline      String       @default("main Residance")
 
+    technicianId     String?
+    technicianName   String?
+    technicianPhone  String?
+    technicianRole   String?      @default("Lead Inspection Engineer")
+
     quotations       Quotation[]
 
     created_at       DateTime     @default(now())  
@@ -153,6 +159,10 @@ model DirectBooking {
     technicianId         String?
     technicianName       String?
     technicianPhone      String?
+    technicianRole       String?     @default("Field Service Specialist")
+    technicianPhoto      String?
+    technicianRating     Float?      @default(4.9)
+    assignedAt           DateTime?
 
     visitingCharge       Float       @default(199.0)
     onlinePaidAmount     Float       @default(199.0)
