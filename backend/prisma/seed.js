@@ -53,7 +53,7 @@ async function main() {
           titleEn: "Roof & Terrace Waterproofing",
           titleHi: "छत और छत की दरारों की वाटरप्रूफिंग",
           desc: "Multi-layer elastomeric polymer waterproofing and joint sealing with ponding test.",
-          checklist: ["Thermal imaging leak detection", "Primer + 3 waterproof coats", "Written warranty certificate"]
+          checklist: ["Thermal imaging leak detection", "Primer + 3 waterproof coats", "Detailed work completion report"]
         },
         {
           titleEn: "Bathroom & Wet Area Seepage",
@@ -367,7 +367,7 @@ async function main() {
           titleEn: "Post-Construction Drill & Inject Defense",
           titleHi: "ड्रिल और केमिकल इंजेक्शन द्वारा दीमक रोकथाम",
           desc: "Precision skirting holes drilled at 1-foot intervals and pressurized termiticide injected to create chemical barrier.",
-          checklist: ["Non-repellent chemical injection", "Wall skirting hole sealing", "5-Year written service warranty"]
+          checklist: ["Non-repellent chemical injection", "Wall skirting hole sealing", "Certified chemical treatment certificate"]
         },
         {
           titleEn: "Pre-Construction Soil Trenching",
@@ -859,7 +859,7 @@ async function main() {
             taxGST: 1764.0,
             grandtotal: 11564.0,
             taxRate: 18.0,
-            termsAndConditions: "1. 50% advance on material mobilization.\n2. Work guaranteed for 5 years with warranty certificate.",
+            termsAndConditions: "1. 50% advance on material mobilization.\n2. Work executed according to standard engineering specifications.",
             created_by: "Er. Vikram Sharma",
             estimatedTimeline: "4 Working Days"
           }

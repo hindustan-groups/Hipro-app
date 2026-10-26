@@ -2,7 +2,27 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const prisma = require('../prisma');
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_here';
 const { addNotification } = require('./notifications');
+
+function authenticateUser(req, res, next) {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (token && JWT_SECRET) {
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded && decoded.id) {
+          req.userId = decoded.id;
+        }
+      } catch (err) {}
+    }
+    next();
+  } catch (error) {
+    next();
+  }
+}
 
 // Helper to generate unique booking number (e.g. HIP-1001)
 async function generateBookingNumber() {
@@ -21,16 +41,20 @@ async function generateBookingNumber() {
 // 1. GET /api/v1/direct-bookings
 // Query Filters: status, city, serviceId, search, date
 // ==========================================
-router.get('/', async (req, res) => {
+router.get('/', authenticateUser, async (req, res) => {
   try {
     const { status, city, serviceId, search, date, userId, customerPhone } = req.query;
     const where = {};
+    const targetUserId = req.userId || userId;
 
-    if (userId) {
-      where.userId = userId;
-    }
-
-    if (customerPhone) {
+    if (targetUserId && customerPhone) {
+      where.OR = [
+        { userId: targetUserId },
+        { customerPhone: customerPhone }
+      ];
+    } else if (targetUserId) {
+      where.userId = targetUserId;
+    } else if (customerPhone) {
       where.customerPhone = customerPhone;
     }
 

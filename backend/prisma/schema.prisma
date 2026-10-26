@@ -123,6 +123,8 @@ model Quotation {
     taxGST             Float 
     grandtotal         Float
     taxRate            Float
+    advancePercentage  Float?         @default(50.0)
+    advanceAmount      Float?
     termsAndConditions String
     created_by         String
     quotation_url      String?

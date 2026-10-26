@@ -33,7 +33,14 @@ router.get('/', authenticateUser, async (req, res) => {
     const where = {};
     const targetUserId = req.userId || userId;
 
-    if (targetUserId) {
+    if (targetUserId && phone) {
+      where.request = {
+        OR: [
+          { userId: targetUserId },
+          { user: { phoneNumber: phone } }
+        ]
+      };
+    } else if (targetUserId) {
       where.request = {
         userId: targetUserId
       };
@@ -106,6 +113,77 @@ router.delete('/:id', async (req, res) => {
       success: false,
       message: error.message || 'Failed to delete quotation'
     });
+  }
+});
+
+// PATCH /api/v1/quotations/:id - Admin adjusts advance payment amount/percentage or terms
+router.patch('/:id', async (req, res) => {
+  try {
+    const { advancePercentage, advanceAmount, termsAndConditions, estimatedTimeline, grandtotal } = req.body;
+    const existing = await prisma.quotation.findFirst({
+      where: {
+        OR: [
+          { id: req.params.id },
+          { quoteNumber: req.params.id }
+        ]
+      },
+      include: { request: true }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Quotation not found' });
+    }
+
+    const currentTotal = grandtotal !== undefined ? parseFloat(grandtotal) : existing.grandtotal;
+    let finalAdvAmount = existing.advanceAmount;
+    let finalAdvPct = existing.advancePercentage ?? 50.0;
+
+    if (advanceAmount !== undefined) {
+      finalAdvAmount = parseFloat(advanceAmount);
+      finalAdvPct = currentTotal > 0 ? parseFloat(((finalAdvAmount / currentTotal) * 100).toFixed(1)) : finalAdvPct;
+    } else if (advancePercentage !== undefined) {
+      finalAdvPct = parseFloat(advancePercentage);
+      finalAdvAmount = Math.round(currentTotal * (finalAdvPct / 100));
+    }
+
+    const updated = await prisma.quotation.update({
+      where: { id: existing.id },
+      data: {
+        advancePercentage: finalAdvPct,
+        advanceAmount: finalAdvAmount,
+        ...(termsAndConditions !== undefined && { termsAndConditions }),
+        ...(estimatedTimeline !== undefined && { estimatedTimeline }),
+        ...(grandtotal !== undefined && { grandtotal: currentTotal })
+      },
+      include: {
+        request: {
+          include: { user: true }
+        }
+      }
+    });
+
+    // Notify connected clients via socket
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('quotation_updated', {
+          id: updated.id,
+          quoteNumber: updated.quoteNumber,
+          advancePercentage: finalAdvPct,
+          advanceAmount: finalAdvAmount,
+          grandtotal: updated.grandtotal
+        });
+      }
+    } catch (_) {}
+
+    res.json({
+      success: true,
+      message: `Advance payment adjusted to ₹${Math.round(finalAdvAmount).toLocaleString('en-IN')} (${finalAdvPct}%)`,
+      data: updated
+    });
+  } catch (error) {
+    console.error('Update quotation error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to update quotation' });
   }
 });
 
@@ -192,6 +270,8 @@ router.post('/', async (req, res) => {
       taxRate,
       totalCost,
       grandtotal,
+      advancePercentage,
+      advanceAmount,
       termsAndConditions,
       estimatedTimeline,
       created_by
@@ -203,6 +283,18 @@ router.post('/', async (req, res) => {
     }
 
     const quoteNumber = `QTE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    const parsedGrandTotal = parseFloat(grandtotal || (parseFloat(subtotal || 0) + parseFloat(taxGST || 0)));
+
+    let finalAdvPct = 50.0;
+    let finalAdvAmt = Math.round(parsedGrandTotal * 0.5);
+
+    if (advanceAmount !== undefined && advanceAmount !== null && parseFloat(advanceAmount) > 0) {
+      finalAdvAmt = parseFloat(advanceAmount);
+      finalAdvPct = parsedGrandTotal > 0 ? parseFloat(((finalAdvAmt / parsedGrandTotal) * 100).toFixed(1)) : 50.0;
+    } else if (advancePercentage !== undefined && advancePercentage !== null && parseFloat(advancePercentage) > 0) {
+      finalAdvPct = parseFloat(advancePercentage);
+      finalAdvAmt = Math.round(parsedGrandTotal * (finalAdvPct / 100));
+    }
 
     const quotation = await prisma.quotation.create({
       data: {
@@ -217,8 +309,10 @@ router.post('/', async (req, res) => {
         taxGST: parseFloat(taxGST || 0),
         taxRate: parseFloat(taxRate || 18),
         totalCost: parseFloat(totalCost || (parseFloat(materialCost || 0) + parseFloat(laborCost || 0))),
-        grandtotal: parseFloat(grandtotal || (parseFloat(subtotal || 0) + parseFloat(taxGST || 0))),
-        termsAndConditions: termsAndConditions || 'Standard 1-year service warranty applies. 50% advance, 50% on completion.',
+        grandtotal: parsedGrandTotal,
+        advancePercentage: finalAdvPct,
+        advanceAmount: finalAdvAmt,
+        termsAndConditions: termsAndConditions || `Standard service scope applies. ${finalAdvPct}% advance (₹${finalAdvAmt.toLocaleString('en-IN')}) to start work, remaining on completion.`,
         created_by: created_by || 'Hipro Technical Admin Desk',
         estimatedTimeline: estimatedTimeline || '1-2 Working Days'
       }
@@ -244,7 +338,7 @@ router.post('/', async (req, res) => {
 
       addNotification({
         title: `🎉 Great News! Quotation Ready: ₹${formattedTotal}`,
-        description: `Official estimate #${quoteNumber} for ${projectName} is ready! Includes comprehensive scope, materials & warranty. Tap to review & approve.`,
+        description: `Official estimate #${quoteNumber} for ${projectName} is ready! Includes comprehensive scope, materials & pricing breakdown. Tap to review & approve.`,
         imageUrl: notificationImageUrl,
         type: 'QUOTATION',
         referenceId: quotation.id,

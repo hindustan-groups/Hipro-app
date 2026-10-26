@@ -3,27 +3,173 @@ const router = express.Router();
 const axios = require('axios');
 const crypto = require('crypto');
 const prisma = require('../prisma');
+const { addNotification } = require('./notifications');
 
 // ==========================================
-// 1. POST /api/v1/payments/create-order
-// Creates an authenticated Razorpay Order
+// 1. GET /api/v1/payments/quotation-summary/:id
+// Authoritative backend computation of quotation payment details
+// ==========================================
+router.get('/quotation-summary/:id', async (req, res) => {
+  try {
+    const quote = await prisma.quotation.findFirst({
+      where: {
+        OR: [
+          { id: req.params.id },
+          { quoteNumber: req.params.id }
+        ]
+      },
+      include: {
+        request: {
+          include: { user: true }
+        }
+      }
+    });
+
+    if (!quote) {
+      return res.status(404).json({
+        success: false,
+        message: 'Quotation not found'
+      });
+    }
+
+    const grandTotal = parseFloat(quote.grandtotal || 0);
+    const advancePercentage = quote.advancePercentage ? parseFloat(quote.advancePercentage) : 50.0;
+    
+    // Backend authoritative advance calculation
+    let advanceAmount = quote.advanceAmount ? parseFloat(quote.advanceAmount) : null;
+    if (!advanceAmount || isNaN(advanceAmount) || advanceAmount <= 0) {
+      advanceAmount = Math.round(grandTotal * (advancePercentage / 100));
+    }
+    const balanceAmount = Math.max(0, grandTotal - advanceAmount);
+
+    return res.json({
+      success: true,
+      quotationId: quote.id,
+      quoteNumber: quote.quoteNumber,
+      projectName: quote.request?.servicecode || 'Service Scope',
+      status: quote.status,
+      grandTotal,
+      advancePercentage,
+      advanceAmount,
+      balanceAmount,
+      currency: '₹',
+      options: [
+        {
+          id: 'advance',
+          title: `${advancePercentage}% Advance Deposit to Start Work`,
+          amount: advanceAmount,
+          subtitle: `Pay ₹${advanceAmount.toLocaleString('en-IN')} now to mobilize materials & start work. Remaining balance of ₹${balanceAmount.toLocaleString('en-IN')} due on completion.`,
+          isRecommended: true
+        },
+        {
+          id: 'full',
+          title: 'Full 100% Project Payment',
+          amount: grandTotal,
+          subtitle: `Pay full ₹${grandTotal.toLocaleString('en-IN')} upfront with priority engineer slot dispatch.`,
+          isRecommended: false
+        }
+      ]
+    });
+  } catch (error) {
+    console.error('Quotation summary error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate quotation payment summary'
+    });
+  }
+});
+
+// ==========================================
+// 2. POST /api/v1/payments/create-order
+// Payment amount is strictly computed on the backend side from DB records
 // ==========================================
 router.post('/create-order', async (req, res) => {
   try {
-    const { amount, quotationId, subServiceId, customerName, customerPhone, customerEmail } = req.body;
+    const {
+      quotationId,
+      bookingNumber,
+      subServiceId,
+      paymentOption, // 'advance' or 'full'
+      customerName,
+      customerPhone,
+      customerEmail,
+      amount // optional fallback only if no entity ID is provided
+    } = req.body;
 
-    const parsedAmount = parseFloat(amount);
-    if (!parsedAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
+    let payableAmount = 0;
+    let quote = null;
+    let selectedOption = String(paymentOption || 'advance').toLowerCase();
+
+    // 1. Backend calculates amount for Quotations
+    if (quotationId) {
+      quote = await prisma.quotation.findFirst({
+        where: {
+          OR: [
+            { id: quotationId },
+            { quoteNumber: quotationId }
+          ]
+        },
+        include: {
+          request: {
+            include: { user: true }
+          }
+        }
+      });
+
+      if (!quote) {
+        return res.status(404).json({
+          success: false,
+          message: 'Quotation not found in database'
+        });
+      }
+
+      const grandTotal = parseFloat(quote.grandtotal || 0);
+      const advancePercentage = quote.advancePercentage ? parseFloat(quote.advancePercentage) : 50.0;
+      let advanceAmount = quote.advanceAmount ? parseFloat(quote.advanceAmount) : null;
+      if (!advanceAmount || isNaN(advanceAmount) || advanceAmount <= 0) {
+        advanceAmount = Math.round(grandTotal * (advancePercentage / 100));
+      }
+
+      if (selectedOption === 'full') {
+        payableAmount = grandTotal;
+      } else {
+        // Default: Admin-configured advance to start work
+        payableAmount = advanceAmount;
+      }
+    }
+    // 2. Backend calculates amount for Direct Maintenance Bookings
+    else if (bookingNumber) {
+      const booking = await prisma.directBooking.findUnique({
+        where: { bookingNumber }
+      });
+      if (booking) {
+        payableAmount = parseFloat(booking.onlinePaidAmount || booking.visitingCharge || 199.0);
+      }
+    }
+    // 3. Backend calculates amount from SubService record
+    else if (subServiceId) {
+      const subService = await prisma.subService.findUnique({
+        where: { id: subServiceId }
+      });
+      if (subService) {
+        payableAmount = parseFloat(subService.visitingCharge || 199.0);
+      }
+    }
+    // 4. Fallback if no entity specified
+    else if (amount) {
+      payableAmount = parseFloat(amount);
+    }
+
+    if (!payableAmount || isNaN(payableAmount) || payableAmount <= 0) {
       return res.status(400).json({
         success: false,
-        message: 'Valid payment amount is required'
+        message: 'Unable to determine payable amount from backend'
       });
     }
 
     const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_Tpmg07aMyYH1Oc';
     const keySecret = process.env.RAZORPAY_KEY_SECRET || 'aYNsVt5iYhkXFI01M2IBzoKQ';
-    const amountInPaise = Math.round(parsedAmount * 100);
-
+    const amountInPaise = Math.round(payableAmount * 100);
     const receipt = `rcpt_${Date.now().toString().slice(-8)}`;
 
     let orderId = null;
@@ -38,10 +184,13 @@ router.post('/create-order', async (req, res) => {
             currency: 'INR',
             receipt: receipt,
             notes: {
-              customerName: customerName || 'Hipro Customer',
-              customerPhone: customerPhone || '',
-              quotationId: quotationId || '',
-              subServiceId: subServiceId || ''
+              customerName: customerName || quote?.request?.user?.name || 'Hipro Customer',
+              customerPhone: customerPhone || quote?.request?.user?.phoneNumber || '',
+              quotationId: quote?.id || quotationId || '',
+              quoteNumber: quote?.quoteNumber || '',
+              paymentOption: selectedOption,
+              bookingNumber: bookingNumber || '',
+              calculatedAmount: payableAmount
             }
           },
           {
@@ -69,11 +218,20 @@ router.post('/create-order', async (req, res) => {
     return res.json({
       success: true,
       orderId,
-      amount: parsedAmount,
+      amount: payableAmount,
       amountInPaise,
       currency: 'INR',
       keyId,
-      receipt
+      receipt,
+      quotation: quote ? {
+        id: quote.id,
+        quoteNumber: quote.quoteNumber,
+        grandTotal: quote.grandtotal,
+        advanceAmount: quote.advanceAmount || Math.round(quote.grandtotal * 0.5),
+        advancePercentage: quote.advancePercentage || 50.0,
+        payableAmount,
+        selectedOption
+      } : null
     });
   } catch (error) {
     console.error('create-order error:', error);
@@ -85,8 +243,8 @@ router.post('/create-order', async (req, res) => {
 });
 
 // ==========================================
-// 2. POST /api/v1/payments/verify
-// Cryptographically verify Razorpay Payment Signature
+// 3. POST /api/v1/payments/verify
+// Cryptographically verify Razorpay Payment Signature & update DB
 // ==========================================
 router.post('/verify', async (req, res) => {
   try {
@@ -95,7 +253,8 @@ router.post('/verify', async (req, res) => {
       razorpay_payment_id,
       razorpay_signature,
       quotationId,
-      bookingNumber
+      bookingNumber,
+      paymentOption
     } = req.body;
 
     if (!razorpay_payment_id) {
@@ -128,14 +287,40 @@ router.post('/verify', async (req, res) => {
     // Update Quotation if present
     if (quotationId) {
       try {
-        await prisma.quotation.update({
+        const quote = await prisma.quotation.update({
           where: { id: quotationId },
           data: {
             status: 'ACCEPTED'
+          },
+          include: {
+            request: {
+              include: { user: true }
+            }
           }
         });
+
+        if (quote && quote.requestId) {
+          await prisma.serviceRequest.update({
+            where: { id: quote.requestId },
+            data: { status: 'PAID' }
+          });
+        }
+
+        // Notify customer and admin desk
+        try {
+          const io = req.app.get('io');
+          const formattedAmount = Math.round(quote.advanceAmount || quote.grandtotal * 0.5).toLocaleString('en-IN');
+          addNotification({
+            title: `💳 Payment Received for #${quote.quoteNumber}`,
+            description: `Payment of ₹${formattedAmount} successfully processed. Work order is now initiated!`,
+            type: 'PAYMENT',
+            referenceId: quote.id,
+            quoteNumber: quote.quoteNumber,
+            unread: true
+          }, io);
+        } catch (_) {}
       } catch (err) {
-        console.warn('Quotation status update notice:', err.message);
+        console.warn('Quotation/Request status update notice:', err.message);
       }
     }
 
