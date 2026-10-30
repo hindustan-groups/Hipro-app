@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <!-- Top Right Skyscraper Tower (Slate Gray) -->
+  <polygon points="310,65 410,120 410,305 310,250" fill="#707F8E" />
+
+  <!-- Main H-Body (Vibrant Royal Blue) -->
+  <path d="
+    M 180,85 
+    L 75,145 
+    L 75,445 
+    Q 75,470 105,470
+    L 180,470 
+    L 180,340 
+    L 250,290 
+    L 355,365 
+    L 320,365 
+    L 320,470 
+    L 410,470 
+    L 410,305 
+    L 310,250 
+    L 250,215 
+    L 180,265 
+    Z
+  " fill="#0D5BC6" />
+
+  <!-- Center House Silhouetted Cutout (Crisp White) -->
+  <path d="
+    M 180,470 
+    L 180,340 
+    L 250,290 
+    L 355,365 
+    L 320,365 
+    L 320,470 
+    Z
+  " fill="#FFFFFF" />
+
+  <!-- 4-Pane Architectural Window (Dark Slate) -->
+  <rect x="221" y="360" width="24" height="24" rx="2" fill="#1E293B" />
+  <rect x="255" y="360" width="24" height="24" rx="2" fill="#1E293B" />
+  <rect x="221" y="394" width="24" height="24" rx="2" fill="#1E293B" />
+  <rect x="255" y="394" width="24" height="24" rx="2" fill="#1E293B" />
+</svg>

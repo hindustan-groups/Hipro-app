@@ -7,6 +7,7 @@ const SLIDES_FILE = path.join(__dirname, '../../uploads/slides.json');
 
 // Default initial slides
 const DEFAULT_SLIDES = [
+  // --- Service Slides ---
   {
     id: 'slide_1',
     title: 'Waterproofing & Leakage Audit',
@@ -14,6 +15,7 @@ const DEFAULT_SLIDES = [
     badgeText: 'LIMITED OFFER',
     imageUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80',
     targetRoute: 'create_inspection',
+    section: 'services',
     isActive: true,
     order: 1,
     createdAt: new Date().toISOString()
@@ -25,6 +27,7 @@ const DEFAULT_SLIDES = [
     badgeText: 'CERTIFIED PROS',
     imageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb18015f6?auto=format&fit=crop&w=800&q=80',
     targetRoute: 'services',
+    section: 'services',
     isActive: true,
     order: 2,
     createdAt: new Date().toISOString()
@@ -36,8 +39,46 @@ const DEFAULT_SLIDES = [
     badgeText: 'QUICK ESTIMATE',
     imageUrl: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=800&q=80',
     targetRoute: 'requests',
+    section: 'services',
     isActive: true,
     order: 3,
+    createdAt: new Date().toISOString()
+  },
+  // --- Adventure / Entertainment Slides ---
+  {
+    id: 'slide_adv_1',
+    title: 'Tandem Paragliding in Rishikesh',
+    subtitle: 'Soar with DGCA certified pilots across Himalayan views',
+    badgeText: 'TOP ADVENTURE',
+    imageUrl: 'https://images.unsplash.com/photo-1516298773066-c48f8e9bd92b?auto=format&fit=crop&w=800&q=80',
+    targetRoute: 'adventure',
+    section: 'adventure',
+    isActive: true,
+    order: 4,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'slide_adv_2',
+    title: 'Desert Safari & Starry Dunes',
+    subtitle: 'Camp under the stars with sunset camel rides in Jaisalmer',
+    badgeText: 'DESERT CLUB',
+    imageUrl: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
+    targetRoute: 'adventure',
+    section: 'adventure',
+    isActive: true,
+    order: 5,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'slide_adv_3',
+    title: 'White Water River Rafting',
+    subtitle: 'Conquer Grade III & IV rapids on the Holy Ganges River',
+    badgeText: 'HIGH THRILL',
+    imageUrl: 'https://images.unsplash.com/photo-1530866495561-507c9faab2ed?auto=format&fit=crop&w=800&q=80',
+    targetRoute: 'adventure',
+    section: 'adventure',
+    isActive: true,
+    order: 6,
     createdAt: new Date().toISOString()
   }
 ];
@@ -72,10 +113,28 @@ function writeSlides(slides) {
 // GET /api/v1/slides - Public endpoint for mobile app (Active slides only)
 router.get('/', (req, res) => {
   try {
+    const { section } = req.query;
     const slides = readSlides();
-    const activeSlides = slides
+    let activeSlides = slides
       .filter(s => s.isActive !== false)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    if (section) {
+      const sec = section.toLowerCase().trim();
+      if (sec === 'adventure' || sec === 'ent' || sec === 'entertainment') {
+        activeSlides = activeSlides.filter(s => 
+          (s.section && (s.section.toLowerCase() === 'adventure' || s.section.toLowerCase() === 'ent' || s.section.toLowerCase() === 'entertainment')) ||
+          (s.targetRoute && (s.targetRoute.toLowerCase() === 'adventure' || s.targetRoute.toLowerCase() === 'ent'))
+        );
+      } else if (sec === 'services' || sec === 'service') {
+        activeSlides = activeSlides.filter(s => 
+          !s.section || 
+          s.section.toLowerCase() === 'services' || 
+          s.section.toLowerCase() === 'service' ||
+          (s.targetRoute && s.targetRoute.toLowerCase() !== 'adventure' && s.targetRoute.toLowerCase() !== 'ent')
+        );
+      }
+    }
 
     res.json({
       success: true,

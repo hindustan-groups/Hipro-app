@@ -137,9 +137,9 @@ async function main() {
       code: "DAMP_TREATMENT",
       name: "Damp Wall Treatment",
       description: "Efflorescence (Shora) removal, chemical DPC barrier, and anti-mold sanitization.",
-      icon: "https://cdn-icons-png.flaticon.com/512/4334/4334080.png",
-      iconImage: "https://cdn-icons-png.flaticon.com/512/4334/4334080.png",
-      imageUrl: "https://cdn-icons-png.flaticon.com/512/4334/4334080.png",
+      icon: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+      iconImage: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+      imageUrl: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
       rating: 4.8,
       subServices: [
         {
@@ -265,9 +265,9 @@ async function main() {
       code: "TILE_WORK",
       name: "Tile & Flooring",
       description: "Laser-aligned floor & wall vitrified tiles, marble diamond polish, and epoxy grouting.",
-      icon: "https://cdn-icons-png.flaticon.com/512/3595/3595460.png",
-      iconImage: "https://cdn-icons-png.flaticon.com/512/3595/3595460.png",
-      imageUrl: "https://cdn-icons-png.flaticon.com/512/3595/3595460.png",
+      icon: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+      iconImage: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+      imageUrl: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
       rating: 4.9,
       subServices: [
         {
@@ -718,86 +718,7 @@ async function main() {
     console.log(`✅ Created demo user: ${demoUser.name}`);
   }
 
-  // 4. Seed Demo Direct Bookings
-  const waterService = await prisma.service.findUnique({
-    where: { code: "WATER_LEAKAGE" },
-    include: { subServices: true }
-  });
-
-  if (waterService && waterService.subServices.length > 0) {
-    const sub1 = waterService.subServices[0];
-    const existingB1 = await prisma.directBooking.findUnique({
-      where: { bookingNumber: "HIP-1001" }
-    });
-
-    if (!existingB1) {
-      await prisma.directBooking.create({
-        data: {
-          bookingNumber: "HIP-1001",
-          userId: demoUser.id,
-          serviceId: waterService.id,
-          subServiceId: sub1.id,
-          serviceName: waterService.name,
-          subServiceName: sub1.titleEn,
-          subServiceDesc: sub1.desc,
-          customerName: demoUser.name,
-          customerPhone: demoUser.phoneNumber || "+91 94628 77757",
-          customerAddress: "Flat 402, Royal Palms, Subhash Nagar",
-          city: "Bhilwara",
-          pincode: "311001",
-          landmark: "Near City Mall",
-          scheduledDate: "Tomorrow",
-          scheduledSlot: "10:00 AM - 12:00 PM",
-          technicianId: "TECH-07",
-          technicianName: "Vikram Sharma (Sr. Specialist)",
-          technicianPhone: "+91 98290 12345",
-          visitingCharge: 199.0,
-          onlinePaidAmount: 199.0,
-          totalAmount: 199.0,
-          status: "CONFIRMED",
-          paymentStatus: "PAID",
-          paymentMethod: "ONLINE",
-          notes: "Leakage on bathroom ceiling since last monsoon."
-        }
-      });
-      console.log('✅ Seeded demo DirectBooking HIP-1001 (CONFIRMED)');
-    }
-
-    const existingB2 = await prisma.directBooking.findUnique({
-      where: { bookingNumber: "HIP-1002" }
-    });
-    if (!existingB2) {
-      await prisma.directBooking.create({
-        data: {
-          bookingNumber: "HIP-1002",
-          userId: demoUser.id,
-          serviceId: waterService.id,
-          subServiceId: sub1.id,
-          serviceName: waterService.name,
-          subServiceName: sub1.titleEn,
-          subServiceDesc: sub1.desc,
-          customerName: demoUser.name,
-          customerPhone: demoUser.phoneNumber || "+91 94628 77757",
-          customerAddress: "House 12, Shastri Nagar",
-          city: "Bhilwara",
-          pincode: "311001",
-          scheduledDate: "15 Oct 2026",
-          scheduledSlot: "02:00 PM - 04:00 PM",
-          technicianId: "TECH-03",
-          technicianName: "Ramesh Sen",
-          technicianPhone: "+91 94141 55667",
-          visitingCharge: 199.0,
-          onlinePaidAmount: 199.0,
-          totalAmount: 199.0,
-          status: "COMPLETED",
-          paymentStatus: "PAID",
-          paymentMethod: "ONLINE",
-          notes: "Initial inspection completed. Report shared."
-        }
-      });
-      console.log('✅ Seeded demo DirectBooking HIP-1002 (COMPLETED)');
-    }
-  }
+  // 4. Direct Bookings (Only real user bookings are kept; no demo bookings)
 
   // 5. Seed Demo Service Request & Quotation
   const civilService = await prisma.service.findUnique({

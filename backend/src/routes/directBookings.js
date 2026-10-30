@@ -241,8 +241,21 @@ router.post('/', async (req, res) => {
 
     // Locked Server Pricing (Client-side price is never trusted)
     const visitingCharge = subService.visitingCharge || 199.0;
-    const onlinePaidAmount = visitingCharge;
-    const totalAmount = visitingCharge;
+    let additionalTotal = 0;
+    if (subService.requiredFields) {
+      try {
+        const rf = typeof subService.requiredFields === 'string' ? JSON.parse(subService.requiredFields) : subService.requiredFields;
+        const charges = rf.charges || rf.additionalCharges || (Array.isArray(rf) ? rf.filter(f => f.fieldType === 'charge' || f.fieldType === 'fee' || f.isCharge === true) : []);
+        if (Array.isArray(charges)) {
+          for (const c of charges) {
+            const amt = parseFloat(c.amount || 0);
+            if (!isNaN(amt) && !c.isFree) additionalTotal += amt;
+          }
+        }
+      } catch (err) {}
+    }
+    const onlinePaidAmount = visitingCharge + additionalTotal;
+    const totalAmount = visitingCharge + additionalTotal;
 
     const bookingNumber = await generateBookingNumber();
 
@@ -290,6 +303,23 @@ router.post('/', async (req, res) => {
       } catch (err) {}
     }
 
+    const bookingCity = (city || 'Udaipur').trim();
+    // Dynamically query verified partner from PostgreSQL database by city
+    let assignedPartner = await prisma.partner.findFirst({
+      where: {
+        cityName: { equals: bookingCity, mode: 'insensitive' },
+        isActive: true
+      },
+      orderBy: { rating: 'desc' }
+    });
+    // If none specifically found for this city, fallback to highest rated active partner from DB
+    if (!assignedPartner) {
+      assignedPartner = await prisma.partner.findFirst({
+        where: { isActive: true },
+        orderBy: { rating: 'desc' }
+      });
+    }
+
     const newBooking = await prisma.directBooking.create({
       data: {
         bookingNumber,
@@ -303,7 +333,7 @@ router.post('/', async (req, res) => {
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
         customerAddress: customerAddress.trim(),
-        city: (city || 'Dehradun').trim(),
+        city: bookingCity,
         pincode: pincode ? pincode.trim() : null,
         landmark: landmark ? landmark.trim() : null,
         latitude: latitude ? parseFloat(latitude) : null,
@@ -314,7 +344,14 @@ router.post('/', async (req, res) => {
         onlinePaidAmount,
         additionalWorkAmount: 0.0,
         totalAmount,
-        status: 'CONFIRMED',
+        status: assignedPartner ? 'ASSIGNED' : 'CONFIRMED',
+        technicianId: assignedPartner ? assignedPartner.id : null,
+        technicianName: assignedPartner ? assignedPartner.name : null,
+        technicianPhone: assignedPartner ? assignedPartner.phone : null,
+        technicianRole: assignedPartner ? assignedPartner.role : 'Field Service Specialist',
+        technicianPhoto: assignedPartner ? assignedPartner.photo : null,
+        technicianRating: assignedPartner ? assignedPartner.rating : 4.9,
+        assignedAt: assignedPartner ? new Date() : null,
         paymentStatus: 'PAID',
         paymentMethod: 'ONLINE',
         razorpayPaymentId: razorpayPaymentId || null,
@@ -328,10 +365,10 @@ router.post('/', async (req, res) => {
       }
     });
 
-    // Real-Time Notification to Admin Panel via Socket.IO
+    // Real-Time Notification to Admin Panel via Socket.IO (targeted to admin room only)
     const io = req.app.get('io');
     if (io) {
-      io.emit('new_direct_booking', {
+      io.to('admin').emit('new_direct_booking', {
         message: `New paid direct booking: ${newBooking.bookingNumber} (${newBooking.subServiceName})`,
         booking: newBooking
       });

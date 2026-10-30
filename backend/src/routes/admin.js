@@ -116,16 +116,19 @@ router.get('/users', async (req, res) => {
 // POST /api/v1/admin/services - Create new service
 router.post('/services', async (req, res) => {
   try {
-    const { code, name, description, icon, rating } = req.body;
+    const { code, name, description, icon, rating, imageUrl, iconImage, image } = req.body;
     if (!code || !name) {
       return res.status(400).json({ success: false, message: 'Code and Name are required' });
     }
+    const finalImage = imageUrl || iconImage || image || icon || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80';
     const service = await prisma.service.create({
       data: {
         code: code.toUpperCase().trim(),
         name,
         description: description || '',
-        icon: icon || 'Wrench',
+        icon: finalImage,
+        iconImage: finalImage,
+        imageUrl: finalImage,
         rating: parseFloat(rating || 4.8)
       }
     });
@@ -138,16 +141,22 @@ router.post('/services', async (req, res) => {
 // PUT /api/v1/admin/services/:id - Update service
 router.put('/services/:id', async (req, res) => {
   try {
-    const { code, name, description, icon, rating } = req.body;
+    const { code, name, description, icon, rating, imageUrl, iconImage, image } = req.body;
+    const updateData = {};
+    if (code) updateData.code = code.toUpperCase().trim();
+    if (name) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    const finalImage = imageUrl || iconImage || image || icon;
+    if (finalImage) {
+      updateData.icon = finalImage;
+      updateData.iconImage = finalImage;
+      updateData.imageUrl = finalImage;
+    }
+    if (rating !== undefined) updateData.rating = parseFloat(rating);
+
     const service = await prisma.service.update({
       where: { id: req.params.id },
-      data: {
-        ...(code && { code: code.toUpperCase().trim() }),
-        ...(name && { name }),
-        ...(description !== undefined && { description }),
-        ...(icon && { icon }),
-        ...(rating !== undefined && { rating: parseFloat(rating) })
-      }
+      data: updateData
     });
     res.json({ success: true, message: 'Service updated successfully', data: service });
   } catch (error) {
@@ -189,6 +198,11 @@ router.post('/sub-services', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Service ID and Title are required' });
     }
 
+    let parsedRequiredFields = requiredFields;
+    if (typeof requiredFields === 'string' && requiredFields.trim()) {
+      try { parsedRequiredFields = JSON.parse(requiredFields); } catch (_) {}
+    }
+
     const subService = await prisma.subService.create({
       data: {
         serviceId,
@@ -201,7 +215,7 @@ router.post('/sub-services', async (req, res) => {
         bookNowEnabled: bookNowEnabled !== undefined ? Boolean(bookNowEnabled) : true,
         getQuoteEnabled: getQuoteEnabled !== undefined ? Boolean(getQuoteEnabled) : true,
         isActive: isActive !== undefined ? Boolean(isActive) : true,
-        requiredFields: requiredFields || null
+        requiredFields: parsedRequiredFields || []
       }
     });
     res.status(201).json({ success: true, message: 'SubService created successfully', data: subService });
@@ -239,7 +253,13 @@ router.put('/sub-services/:id', async (req, res) => {
     if (bookNowEnabled !== undefined) updateData.bookNowEnabled = Boolean(bookNowEnabled);
     if (getQuoteEnabled !== undefined) updateData.getQuoteEnabled = Boolean(getQuoteEnabled);
     if (isActive !== undefined) updateData.isActive = Boolean(isActive);
-    if (requiredFields !== undefined) updateData.requiredFields = requiredFields;
+    if (requiredFields !== undefined) {
+      let parsedRequiredFields = requiredFields;
+      if (typeof requiredFields === 'string' && requiredFields.trim()) {
+        try { parsedRequiredFields = JSON.parse(requiredFields); } catch (_) {}
+      }
+      updateData.requiredFields = parsedRequiredFields;
+    }
 
     const updated = await prisma.subService.update({
       where: { id: req.params.id },
@@ -263,6 +283,211 @@ router.delete('/sub-services/:id', async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
+// ==========================================
+// DYNAMIC CITY MASTER API (Zomato-style)
+// ==========================================
+
+// GET /api/v1/admin/cities - List all cities
+router.get('/cities', async (req, res) => {
+  try {
+    const cities = await prisma.city.findMany({
+      orderBy: { name: 'asc' },
+      include: {
+        _count: { select: { partners: true } }
+      }
+    });
+    res.json({ success: true, total: cities.length, cities });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/v1/admin/cities - Create new city dynamically
+router.post('/cities', async (req, res) => {
+  try {
+    const { name, state, tagline, imageUrl, badge, isActive } = req.body;
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'City name is required' });
+    }
+
+    const city = await prisma.city.create({
+      data: {
+        name: name.trim(),
+        state: state ? state.trim() : 'Rajasthan',
+        tagline: tagline ? tagline.trim() : `Quality Services in ${name.trim()}`,
+        imageUrl: imageUrl || null,
+        badge: badge ? badge.trim() : null,
+        isActive: isActive !== undefined ? Boolean(isActive) : true
+      }
+    });
+
+    res.status(201).json({ success: true, message: 'City created successfully', city });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PUT /api/v1/admin/cities/:id - Update city
+router.put('/cities/:id', async (req, res) => {
+  try {
+    const { name, state, tagline, imageUrl, badge, isActive, partnerCount, serviceCount } = req.body;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name.trim();
+    if (state !== undefined) updateData.state = state.trim();
+    if (tagline !== undefined) updateData.tagline = tagline.trim();
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+    if (badge !== undefined) updateData.badge = badge;
+    if (isActive !== undefined) updateData.isActive = Boolean(isActive);
+    if (partnerCount !== undefined) updateData.partnerCount = parseInt(partnerCount, 10);
+    if (serviceCount !== undefined) updateData.serviceCount = parseInt(serviceCount, 10);
+
+    const updated = await prisma.city.update({
+      where: { id: req.params.id },
+      data: updateData
+    });
+
+    res.json({ success: true, message: 'City updated successfully', city: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// DELETE /api/v1/admin/cities/:id - Delete city
+router.delete('/cities/:id', async (req, res) => {
+  try {
+    await prisma.city.delete({ where: { id: req.params.id } });
+    res.json({ success: true, message: 'City deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ==========================================
+// DYNAMIC PARTNER / TECHNICIAN API (City-linked)
+// ==========================================
+
+// GET /api/v1/admin/partners - List all partners (with optional city filter)
+router.get('/partners', async (req, res) => {
+  try {
+    const { city } = req.query;
+    const where = {};
+    if (city && city.toLowerCase() !== 'all') {
+      where.cityName = { equals: city.trim(), mode: 'insensitive' };
+    }
+
+    const partners = await prisma.partner.findMany({
+      where,
+      orderBy: { created_at: 'desc' }
+    });
+
+    res.json({ success: true, total: partners.length, partners });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/v1/admin/partners - Add new partner technician
+router.post('/partners', async (req, res) => {
+  try {
+    const {
+      name,
+      phone,
+      role,
+      cityName,
+      cityId,
+      experienceYears,
+      rating,
+      completedJobs,
+      badge,
+      photo,
+      specialties,
+      isActive
+    } = req.body;
+
+    if (!name || !phone || !cityName) {
+      return res.status(400).json({ success: false, message: 'Name, phone, and cityName are required' });
+    }
+
+    const partner = await prisma.partner.create({
+      data: {
+        name: name.trim(),
+        phone: phone.trim(),
+        role: role ? role.trim() : 'Lead Inspection Engineer',
+        cityName: cityName.trim(),
+        cityId: cityId || null,
+        experienceYears: experienceYears ? parseInt(experienceYears, 10) : 5,
+        rating: rating ? parseFloat(rating) : 4.9,
+        completedJobs: completedJobs ? parseInt(completedJobs, 10) : 0,
+        badge: badge ? badge.trim() : null,
+        photo: photo || null,
+        specialties: Array.isArray(specialties) ? specialties : (specialties ? [specialties] : []),
+        isActive: isActive !== undefined ? Boolean(isActive) : true
+      }
+    });
+
+    res.status(201).json({ success: true, message: 'Partner added successfully', partner });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PUT /api/v1/admin/partners/:id - Update partner
+router.put('/partners/:id', async (req, res) => {
+  try {
+    const {
+      name,
+      phone,
+      role,
+      cityName,
+      cityId,
+      experienceYears,
+      rating,
+      completedJobs,
+      badge,
+      photo,
+      specialties,
+      isActive
+    } = req.body;
+
+    const updateData = {};
+    if (name !== undefined) updateData.name = name.trim();
+    if (phone !== undefined) updateData.phone = phone.trim();
+    if (role !== undefined) updateData.role = role.trim();
+    if (cityName !== undefined) updateData.cityName = cityName.trim();
+    if (cityId !== undefined) updateData.cityId = cityId;
+    if (experienceYears !== undefined) updateData.experienceYears = parseInt(experienceYears, 10);
+    if (rating !== undefined) updateData.rating = parseFloat(rating);
+    if (completedJobs !== undefined) updateData.completedJobs = parseInt(completedJobs, 10);
+    if (badge !== undefined) updateData.badge = badge;
+    if (photo !== undefined) updateData.photo = photo;
+    if (specialties !== undefined) {
+      updateData.specialties = Array.isArray(specialties) ? specialties : (specialties ? [specialties] : []);
+    }
+    if (isActive !== undefined) updateData.isActive = Boolean(isActive);
+
+    const updated = await prisma.partner.update({
+      where: { id: req.params.id },
+      data: updateData
+    });
+
+    res.json({ success: true, message: 'Partner updated successfully', partner: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// DELETE /api/v1/admin/partners/:id - Remove partner
+router.delete('/partners/:id', async (req, res) => {
+  try {
+    await prisma.partner.delete({ where: { id: req.params.id } });
+    res.json({ success: true, message: 'Partner deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ==========================================
 
 // ENVIRONMENT SETTINGS API
 const fs = require('fs');

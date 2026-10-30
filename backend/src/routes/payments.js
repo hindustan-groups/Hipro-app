@@ -152,12 +152,52 @@ router.post('/create-order', async (req, res) => {
         where: { id: subServiceId }
       });
       if (subService) {
-        payableAmount = parseFloat(subService.visitingCharge || 199.0);
+        let base = parseFloat(subService.visitingCharge || 199.0);
+        let extra = 0;
+        if (subService.requiredFields) {
+          try {
+            const rf = typeof subService.requiredFields === 'string' ? JSON.parse(subService.requiredFields) : subService.requiredFields;
+            const charges = rf.charges || rf.additionalCharges || (Array.isArray(rf) ? rf.filter(f => f.fieldType === 'charge' || f.fieldType === 'fee' || f.isCharge === true) : []);
+            if (Array.isArray(charges)) {
+              for (const c of charges) {
+                const amt = parseFloat(c.amount || 0);
+                if (!isNaN(amt) && !c.isFree) extra += amt;
+              }
+            }
+          } catch (err) {}
+        }
+        payableAmount = base + extra;
       }
     }
     // 4. Fallback if no entity specified
     else if (amount) {
       payableAmount = parseFloat(amount);
+    }
+
+    // 5. Apply coupon discount if provided
+    let appliedDiscount = 0;
+    let appliedCouponCode = null;
+    const incomingCoupon = req.body.couponCode;
+    if (incomingCoupon && typeof incomingCoupon === 'string' && incomingCoupon.trim()) {
+      try {
+        const offersRouter = require('./offers');
+        if (offersRouter && typeof offersRouter.readOffers === 'function') {
+          const offers = offersRouter.readOffers();
+          const cleanCode = incomingCoupon.trim().toUpperCase();
+          const matchingOffer = offers.find(o => (o.code || '').trim().toUpperCase() === cleanCode);
+          if (matchingOffer && matchingOffer.isActive !== false) {
+            const minAmt = parseFloat(matchingOffer.minAmount || 0);
+            if (minAmt <= 0 || payableAmount >= minAmt) {
+              appliedDiscount = offersRouter.calculateDiscount(matchingOffer.discount, payableAmount);
+              appliedDiscount = Math.min(payableAmount, appliedDiscount);
+              payableAmount = Math.max(0, payableAmount - appliedDiscount);
+              appliedCouponCode = cleanCode;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Coupon check error in create-order:', err);
+      }
     }
 
     if (!payableAmount || isNaN(payableAmount) || payableAmount <= 0) {
@@ -190,7 +230,9 @@ router.post('/create-order', async (req, res) => {
               quoteNumber: quote?.quoteNumber || '',
               paymentOption: selectedOption,
               bookingNumber: bookingNumber || '',
-              calculatedAmount: payableAmount
+              calculatedAmount: payableAmount,
+              couponCode: appliedCouponCode || '',
+              discountAmount: appliedDiscount
             }
           },
           {
@@ -220,6 +262,8 @@ router.post('/create-order', async (req, res) => {
       orderId,
       amount: payableAmount,
       amountInPaise,
+      discountAmount: appliedDiscount,
+      couponCode: appliedCouponCode,
       currency: 'INR',
       keyId,
       receipt,

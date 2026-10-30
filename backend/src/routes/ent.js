@@ -590,10 +590,10 @@ router.post('/bookings', (req, res) => {
     bookings.unshift(newBooking);
     saveBookings(bookings);
 
-    // If socket.io is active, notify admin in real-time
+    // If socket.io is active, notify admin in real-time (targeted to admin room only)
     const io = req.app.get('io');
     if (io) {
-      io.emit('new_ent_booking', {
+      io.to('admin').emit('new_ent_booking', {
         message: `New ENT adventure booked: ${ent.title} in ${ent.city}`,
         booking: newBooking,
       });
@@ -616,8 +616,21 @@ router.post('/bookings', (req, res) => {
 router.get('/my-bookings/:userId', (req, res) => {
   try {
     const { userId } = req.params;
+    const { phone } = req.query;
     const bookings = loadBookings();
-    const userBookings = bookings.filter((b) => b.userId === userId);
+    const cleanId = String(userId || '').trim().toLowerCase();
+    const cleanPhone = String(phone || '').trim();
+
+    const userBookings = bookings.filter((b) => {
+      const bUser = String(b.userId || '').trim().toLowerCase();
+      const bPhone = String(b.travelerPhone || '').trim();
+
+      if (cleanPhone && bPhone === cleanPhone) return true;
+      if (cleanId === 'guest_user') {
+        return !b.userId || b.userId === 'guest_user' || (cleanPhone && bPhone === cleanPhone);
+      }
+      return bUser === cleanId || (cleanId.length >= 10 && bPhone === cleanId) || (cleanPhone && bPhone === cleanPhone);
+    });
 
     res.json({
       success: true,
@@ -670,7 +683,7 @@ router.patch('/bookings/:id/cancel', (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.emit('ent_booking_updated', {
+      io.to('admin').emit('ent_booking_updated', {
         action: 'CANCELLED',
         booking: bookings[idx],
       });
@@ -756,7 +769,7 @@ router.patch('/admin/bookings/:id/status', (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.emit('ent_booking_updated', {
+      io.to('admin').emit('ent_booking_updated', {
         action: 'STATUS_UPDATED',
         status,
         booking: bookings[idx],

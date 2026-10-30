@@ -7,11 +7,13 @@ const OFFERS_FILE = path.join(__dirname, '../../uploads/offers.json');
 
 // Default initial offers
 const DEFAULT_OFFERS = [
+  // --- Service Coupons & Offers ---
   {
     id: 'offer_1',
     title: 'Flat 20% OFF on Waterproofing Audits',
     subtitle: 'Advanced infrared terrace & bathroom leakage scanning',
     category: 'Waterproofing',
+    section: 'services',
     discount: '20% OFF',
     code: 'HIPRO20',
     badge: 'POPULAR',
@@ -29,6 +31,7 @@ const DEFAULT_OFFERS = [
     title: 'Flat ₹500 OFF on Structural Repairs',
     subtitle: 'Certified engineers for crack stitching & foundation care',
     category: 'Civil',
+    section: 'services',
     discount: '₹500 OFF',
     code: 'CIVIL500',
     badge: 'EXCLUSIVE',
@@ -46,6 +49,7 @@ const DEFAULT_OFFERS = [
     title: 'Free Initial Site Consultation',
     subtitle: 'Expert site evaluation for new home constructions & renovations',
     category: 'Trending',
+    section: 'services',
     discount: 'FREE VISIT',
     code: 'FIRSTFREE',
     badge: 'NEW USER',
@@ -63,6 +67,7 @@ const DEFAULT_OFFERS = [
     title: 'Save 15% on Full Home Renovation',
     subtitle: 'Comprehensive architectural planning and modern elevation',
     category: 'Renovation',
+    section: 'services',
     discount: '15% OFF',
     code: 'RENO15',
     badge: 'LIMITED TIME',
@@ -73,6 +78,61 @@ const DEFAULT_OFFERS = [
     terms: 'Applies to full renovation and structural remodelling packages.',
     isActive: true,
     order: 4,
+    createdAt: new Date().toISOString()
+  },
+  // --- Adventure / Entertainment Coupons & Offers ---
+  {
+    id: 'offer_adv_1',
+    title: 'Flat 20% OFF on River Rafting & Sky Adventures',
+    subtitle: 'Valid on Ganga river rafting, tandem paragliding & paramotor passes',
+    category: 'Adventure',
+    section: 'adventure',
+    discount: '20% OFF',
+    code: 'THRILL20',
+    badge: 'TOP ADVENTURE',
+    imageUrl: 'https://images.unsplash.com/photo-1516298773066-c48f8e9bd92b?auto=format&fit=crop&w=800&q=80',
+    minAmount: 1000,
+    validTill: '31 Dec 2026',
+    targetRoute: 'adventure',
+    terms: 'Applicable on adventure passes in Rishikesh & Dehradun.',
+    isActive: true,
+    order: 5,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'offer_adv_2',
+    title: 'Flat ₹300 OFF on Jaisalmer Desert Camps',
+    subtitle: 'Camp under the stars with sunset camel ride & Rajasthani folk night',
+    category: 'Desert Safari',
+    section: 'adventure',
+    discount: '₹300 OFF',
+    code: 'DESERT300',
+    badge: 'DESERT SPECIAL',
+    imageUrl: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
+    minAmount: 1200,
+    validTill: '31 Jan 2027',
+    targetRoute: 'adventure',
+    terms: 'Valid on desert safari & tent stay packages in Sam Dunes.',
+    isActive: true,
+    order: 6,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'offer_adv_3',
+    title: 'Save 10% on Group Adventure Passes',
+    subtitle: 'Special concession for groups of 3 or more adventurers',
+    category: 'Air Sports',
+    section: 'adventure',
+    discount: '10% OFF',
+    code: 'GROUP10',
+    badge: 'GROUP PASS',
+    imageUrl: 'https://images.unsplash.com/photo-1530866495561-507c9faab2ed?auto=format&fit=crop&w=800&q=80',
+    minAmount: 1500,
+    validTill: '28 Feb 2027',
+    targetRoute: 'adventure',
+    terms: 'Minimum booking of ₹1,500 required.',
+    isActive: true,
+    order: 7,
     createdAt: new Date().toISOString()
   }
 ];
@@ -104,13 +164,152 @@ function writeOffers(offers) {
   }
 }
 
+function calculateDiscount(discountStr, amount) {
+  if (!discountStr || typeof discountStr !== 'string') return 0;
+  const str = discountStr.toUpperCase().trim();
+  
+  // Percentage match e.g. "20% OFF", "15%", "FLAT 25%"
+  const percentMatch = str.match(/(\d+(?:\.\d+)?)\s*%/);
+  if (percentMatch) {
+    const pct = parseFloat(percentMatch[1]);
+    if (!isNaN(pct) && pct > 0) {
+      return Math.round((amount * pct) / 100);
+    }
+  }
+
+  // Flat rupee match e.g. "₹500 OFF", "RS 500", "500 OFF", "FLAT 200"
+  const rupeeMatch = str.match(/(?:₹|RS\.?|FLAT)?\s*(\d+(?:\.\d+)?)/i);
+  if (rupeeMatch) {
+    const flat = parseFloat(rupeeMatch[1]);
+    if (!isNaN(flat) && flat > 0) {
+      return Math.min(amount, flat);
+    }
+  }
+
+  // Free visit match
+  if (str.includes('FREE')) {
+    return amount;
+  }
+
+  return 0;
+}
+
+// POST /api/v1/offers/validate - Validate coupon code & compute discount
+router.post('/validate', (req, res) => {
+  try {
+    const { code, amount, section } = req.body;
+    if (!code || typeof code !== 'string') {
+      return res.status(400).json({ success: false, message: 'Coupon code is required' });
+    }
+
+    const trimmedCode = code.trim().toUpperCase();
+    const orderAmount = parseFloat(amount || 0);
+
+    const offers = readOffers();
+    const offer = offers.find(o => (o.code || '').trim().toUpperCase() === trimmedCode);
+
+    if (!offer) {
+      return res.status(404).json({
+        success: false,
+        message: `Coupon "${trimmedCode}" is invalid.`
+      });
+    }
+
+    if (offer.isActive === false) {
+      return res.status(400).json({
+        success: false,
+        message: `Coupon "${trimmedCode}" is no longer active.`
+      });
+    }
+
+    // Section validation (Separation between Services & Entertainment/Adventure)
+    if (section && typeof section === 'string') {
+      const targetSec = section.toLowerCase().trim();
+      const offerSec = (offer.section || 'services').toLowerCase().trim();
+
+      if (targetSec === 'adventure' || targetSec === 'ent' || targetSec === 'entertainment') {
+        if (offerSec === 'services' || offerSec === 'service') {
+          return res.status(400).json({
+            success: false,
+            message: `Coupon "${trimmedCode}" is valid only for Home Services bookings, not for Adventure bookings.`
+          });
+        }
+      } else if (targetSec === 'services' || targetSec === 'service') {
+        if (offerSec === 'adventure' || offerSec === 'ent' || offerSec === 'entertainment') {
+          return res.status(400).json({
+            success: false,
+            message: `Coupon "${trimmedCode}" is valid only for Adventure & Entertainment bookings, not for Home Services.`
+          });
+        }
+      }
+    }
+
+    // Check minimum order amount if specified
+    const minAmount = parseFloat(offer.minAmount || 0);
+    if (minAmount > 0 && orderAmount > 0 && orderAmount < minAmount) {
+      return res.status(400).json({
+        success: false,
+        message: `Coupon requires a minimum booking amount of ₹${minAmount.toLocaleString('en-IN')}. (Current: ₹${orderAmount.toLocaleString('en-IN')})`
+      });
+    }
+
+    // Calculate discount amount
+    let discountAmount = calculateDiscount(offer.discount, orderAmount);
+    if (orderAmount > 0) {
+      discountAmount = Math.min(orderAmount, discountAmount);
+    }
+    const finalAmount = Math.max(0, orderAmount - discountAmount);
+
+    return res.json({
+      success: true,
+      valid: true,
+      coupon: {
+        id: offer.id,
+        code: offer.code,
+        title: offer.title,
+        subtitle: offer.subtitle,
+        category: offer.category,
+        section: offer.section || 'services',
+        discount: offer.discount,
+        discountAmount,
+        originalAmount: orderAmount,
+        finalAmount,
+        minAmount,
+        terms: offer.terms || 'Standard terms apply.'
+      },
+      message: `Coupon "${trimmedCode}" applied successfully! You save ₹${discountAmount.toLocaleString('en-IN')}.`
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to validate coupon', error: err.message });
+  }
+});
+
 // GET /api/v1/offers - Public endpoint for mobile app
 router.get('/', (req, res) => {
   try {
+    const { section } = req.query;
     const offers = readOffers();
-    const active = offers
+    let active = offers
       .filter(o => o.isActive !== false)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    if (section && typeof section === 'string') {
+      const sec = section.toLowerCase().trim();
+      if (sec === 'adventure' || sec === 'ent' || sec === 'entertainment') {
+        active = active.filter(o => 
+          (o.section && (o.section.toLowerCase() === 'adventure' || o.section.toLowerCase() === 'ent' || o.section.toLowerCase() === 'entertainment')) ||
+          (o.category && (o.category.toLowerCase().includes('adventure') || o.category.toLowerCase().includes('safari') || o.category.toLowerCase().includes('sports')))
+        );
+      } else if (sec === 'services' || sec === 'service') {
+        active = active.filter(o => 
+          !o.section || 
+          o.section.toLowerCase() === 'services' || 
+          o.section.toLowerCase() === 'service' ||
+          (o.section.toLowerCase() !== 'adventure' && o.section.toLowerCase() !== 'ent')
+        );
+      }
+    }
+
     return res.json({
       success: true,
       count: active.length,
@@ -247,4 +446,6 @@ router.delete(['/:id', '/admin/:id'], (req, res) => {
   }
 });
 
+router.readOffers = readOffers;
+router.calculateDiscount = calculateDiscount;
 module.exports = router;

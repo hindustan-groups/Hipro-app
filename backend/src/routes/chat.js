@@ -2,47 +2,28 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const {
+  createConversation,
+  sendMessage,
+  getConversationMessages,
+  getCustomerConversations,
+  customerHandoff
+} = require('../controllers/chat.controller');
+const { authenticate } = require('../middleware/auth');
+
+// Database-backed AI Chatbot & Customer Support Routes
+router.post('/conversations', authenticate, createConversation);
+router.get('/conversations', authenticate, getCustomerConversations);
+router.get('/conversations/:id/messages', authenticate, getConversationMessages);
+router.post('/message', authenticate, sendMessage);
+router.post('/conversations/:id/handoff', authenticate, customerHandoff);
 
 const CHATS_FILE = path.join(__dirname, '../../uploads/chats.json');
 
-// Default initial chat thread with welcome message
+// Default initial chat thread (empty - real chats only)
 const DEFAULT_CHATS = {
-  threads: [
-    {
-      id: 'thread_general',
-      customerName: 'Piyush Kumar',
-      customerPhone: '+91 94628 77757',
-      contextType: 'GENERAL',
-      contextTag: 'Hipro Technical Inquiry',
-      quoteNumber: '',
-      requestNumber: '',
-      lastMessage: 'Hello! I need an inspection for our terrace leakage.',
-      lastMessageTime: new Date(Date.now() - 3600000 * 2).toISOString(),
-      unreadCountAdmin: 1,
-      unreadCountCustomer: 0,
-      createdAt: new Date(Date.now() - 3600000 * 24).toISOString()
-    }
-  ],
-  messages: [
-    {
-      id: 'msg_1',
-      threadId: 'thread_general',
-      sender: 'customer',
-      senderName: 'Piyush Kumar',
-      text: 'Hello! I need an inspection for our terrace leakage.',
-      createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-      isRead: false
-    },
-    {
-      id: 'msg_2',
-      threadId: 'thread_general',
-      sender: 'admin',
-      senderName: 'Er. Vikram Sharma (Admin)',
-      text: 'Hello Piyush! We have received your query. A certified site engineer can visit tomorrow between 10 AM - 1 PM. Would that work for you?',
-      createdAt: new Date(Date.now() - 3600000 * 1.8).toISOString(),
-      isRead: true
-    }
-  ]
+  threads: [],
+  messages: []
 };
 
 function readChatData() {
@@ -209,8 +190,10 @@ router.post('/messages', (req, res) => {
           description: snippet,
           type: 'CHAT',
           referenceId: threadId,
+          threadId: threadId,
           quoteNumber: thread.quoteNumber || '',
           requestNumber: thread.requestNumber || '',
+          bookingNumber: thread.bookingNumber || '',
           projectName: thread.contextTag || 'Technical Consultation',
           unread: true,
           timestamp: nowIso

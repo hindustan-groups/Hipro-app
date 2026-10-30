@@ -40,6 +40,11 @@ io.on('connection', (socket) => {
       socket.to(`thread_${threadId}`).emit('user_typing', { threadId, senderName, isTyping });
     }
   });
+
+  // Admin: Join admin room for targeted notifications
+  socket.on('join_admin_room', () => {
+    socket.join('admin');
+  });
 });
 
 const PORT = process.env.PORT || 5000;
@@ -75,6 +80,17 @@ app.use('/api/v1/entertainment', require('./routes/ent'));
 app.use('/api/v1/api/v1/ent', require('./routes/ent'));
 app.use('/api/v1/direct-bookings', require('./routes/directBookings'));
 app.use('/api/v1/payments', require('./routes/payments'));
+app.use('/api/v1/partners', require('./routes/services'));
+app.use('/api/v1/activity', require('./routes/activity'));
+
+// AI Customer Support & Live Handoff System
+const { initializeChatSocket } = require('./sockets/chat.socket');
+initializeChatSocket(io);
+
+app.use('/api/v1/chat/support', require('./routes/chat.routes'));
+app.use('/api/chat', require('./routes/chat.routes'));
+app.use('/api/v1/admin/support', require('./routes/admin.routes'));
+app.use('/api/admin/support', require('./routes/admin.routes'));
 
 // Root endpoint - API Status
 app.get('/', (req, res) => {
