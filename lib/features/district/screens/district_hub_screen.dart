@@ -132,46 +132,57 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
+        leadingWidth: 44,
         leading: widget.isRootTab
             ? IconButton(
+                visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.menu_rounded, size: 24),
                 color: const Color(0xFF0F172A),
                 onPressed: widget.onOpenDrawer,
               )
             : (Navigator.of(context).canPop()
                 ? IconButton(
+                    visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
                     color: const Color(0xFF0F172A),
                     onPressed: () => Navigator.of(context).pop(),
                   )
                 : null),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFFE11D48), Color(0xFFF97316)]),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Text(
-                'ADVENTURE',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.8,
+        titleSpacing: 0,
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [Color(0xFFE11D48), Color(0xFFF97316)]),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'ADVENTURE',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.6,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Adventures & Enjoyment',
-              style: TextStyle(color: Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.w800),
-            ),
-          ],
+              const SizedBox(width: 8),
+              const Text(
+                'Adventures & Enjoyment',
+                maxLines: 1,
+                style: TextStyle(color: Color(0xFF0F172A), fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
         ),
         actions: [
           IconButton(
+            visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.confirmation_number_outlined, color: Color(0xFF1864E8)),
             tooltip: 'My Adventure Bookings',
             onPressed: () {
@@ -180,6 +191,7 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
               );
             },
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: RefreshIndicator(

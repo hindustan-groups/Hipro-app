@@ -127,59 +127,78 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             backgroundColor: Colors.white,
             elevation: 0,
             scrolledUnderElevation: 0,
+            leadingWidth: 42,
             leading: IconButton(
+              visualDensity: VisualDensity.compact,
               icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
               color: const Color(0xFF0F172A),
               onPressed: () => Navigator.of(context).pop(),
             ),
-            title: Row(
-              children: [
-                const Text(
-                  'Notifications',
-                  style: TextStyle(
-                    color: Color(0xFF0F172A),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (unreadCount > 0) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1864E8),
-                      borderRadius: BorderRadius.circular(10),
+            titleSpacing: 0,
+            title: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Notifications',
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: Color(0xFF0F172A),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
                     ),
-                    child: Text(
-                      '$unreadCount new',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                  ),
+                  if (unreadCount > 0) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1864E8),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$unreadCount new',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
             actions: [
               if (unreadCount > 0)
                 TextButton(
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   onPressed: () => appState.markAllNotificationsAsRead(),
                   child: const Text(
                     'Mark all read',
                     style: TextStyle(
                       color: Color(0xFF1864E8),
-                      fontSize: 12.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                constraints: const BoxConstraints(),
                 icon: const Icon(Icons.refresh_rounded, color: Color(0xFF64748B), size: 20),
                 tooltip: 'Refresh Notifications',
                 onPressed: () => appState.fetchNotifications(),
               ),
+              const SizedBox(width: 6),
             ],
             centerTitle: false,
           ),
