@@ -18,6 +18,10 @@ services:
         value: your_super_secret_jwt_key_here
       - key: DATABASE_URL
         sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
       - key: IMAGEKIT_PUBLIC_KEY
         sync: false
       - key: IMAGEKIT_PRIVATE_KEY

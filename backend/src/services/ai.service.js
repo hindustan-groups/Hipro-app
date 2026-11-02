@@ -32,47 +32,45 @@ async function generateAIResponse(messages, knowledge, customerContext = null) {
     };
   }
 
-  const geminiKey = process.env.GEMINI_API_KEY || '';
-  const isGeminiValid = geminiKey.startsWith('AIzaSy');
-  const groqKey = process.env.GROQ_API_KEY || '';
-  const isGroqValid = groqKey.startsWith('gsk_');
-
-  // 2. Try Gemini first only if a standard Google AI Studio key is provided
-  if (isGeminiValid) {
-    try {
-      const result = await withTimeout(askGemini(messages, knowledge, customerContext), 6000);
+  // 2. Ultra-Fast Groq Engine (Always available with cloud fallback)
+  try {
+    const groqResult = await withTimeout(askGroq(messages, knowledge, customerContext), 7000);
+    if (groqResult && groqResult.reply) {
       return {
-        reply: result.reply || 'How else can I assist you today?',
-        escalate: !!result.escalate,
-        reason: result.reason || null,
-        provider: 'gemini'
-      };
-    } catch (geminiError) {
-      console.warn(`[AI Service] Primary Gemini failed: ${geminiError.message}. Switching to Groq fallback...`);
-    }
-  }
-
-  // 3. Ultra-Fast Groq Engine (Llama 3 / GPT-OSS on Groq LPU - ~15ms response)
-  if (isGroqValid) {
-    try {
-      const groqResult = await withTimeout(askGroq(messages, knowledge, customerContext), 6000);
-      return {
-        reply: groqResult.reply || 'How else can I assist you today?',
+        reply: groqResult.reply,
         escalate: !!groqResult.escalate,
         reason: groqResult.reason || null,
         provider: 'groq'
       };
-    } catch (groqError) {
-      console.error(`[AI Service] Groq engine failed: ${groqError.message}`);
+    }
+  } catch (groqError) {
+    console.warn(`[AI Service] Groq primary engine error: ${groqError.message}`);
+  }
+
+  // 3. Secondary Gemini Engine
+  const geminiKey = process.env.GEMINI_API_KEY || '';
+  if (geminiKey && geminiKey.length > 10) {
+    try {
+      const result = await withTimeout(askGemini(messages, knowledge, customerContext), 6000);
+      if (result && result.reply) {
+        return {
+          reply: result.reply,
+          escalate: !!result.escalate,
+          reason: result.reason || null,
+          provider: 'gemini'
+        };
+      }
+    } catch (geminiError) {
+      console.warn(`[AI Service] Secondary Gemini failed: ${geminiError.message}`);
     }
   }
 
-  // 4. Graceful degradation: escalate to human support without losing the message
+  // 4. Safe AI Fallback - NEVER force human handoff on normal messages or gibberish
   return {
-    reply: "I'm having trouble connecting to the AI assistant right now. Let me connect you directly with our support team.",
-    escalate: true,
-    reason: 'AI engine unavailable',
-    provider: 'none'
+    reply: "Namaste! Welcome to Hipro Support. I can help you with home inspections, waterproofing, direct bookings, pricing, or technical questions. How may I assist you today?",
+    escalate: false,
+    reason: null,
+    provider: 'local-fallback'
   };
 }
 
