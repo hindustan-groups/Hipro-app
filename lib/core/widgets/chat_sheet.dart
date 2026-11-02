@@ -180,7 +180,7 @@ class _ChatSheetState extends State<ChatSheet> with SingleTickerProviderStateMix
   }
 
   /// Initialize or retrieve the active support conversation from backend
-  Future<void> _initConversation() async {
+  Future<void> _initConversation({bool forceNew = false}) async {
     setState(() => _isLoading = true);
     final session = UserSession();
     final guestId = session.userId ?? 'app_guest_${session.phone ?? 'guest'}';
@@ -195,6 +195,7 @@ class _ChatSheetState extends State<ChatSheet> with SingleTickerProviderStateMix
                   ? 'Query regarding Request #${widget.requestNumber}'
                   : (widget.contextTag ?? 'Mobile Customer Support'),
           'guestId': guestId,
+          'forceNew': forceNew,
         },
         options: Options(
           headers: {'x-guest-id': guestId},
@@ -220,6 +221,57 @@ class _ChatSheetState extends State<ChatSheet> with SingleTickerProviderStateMix
       if (mounted) {
         setState(() => _isLoading = false);
         _startPollTimer();
+      }
+    }
+  }
+
+  /// Start a fresh chat handled by AI
+  Future<void> _startNewChat() async {
+    _pollTimer?.cancel();
+    setState(() {
+      _isLoading = true;
+      _isRequestingHandoff = false;
+      _messages.clear();
+      _conversationStatus = 'AI_ACTIVE';
+    });
+    await _initConversation(forceNew: true);
+  }
+
+  /// Switch the active conversation back to AI Assistant
+  Future<void> _switchToAi() async {
+    if (_conversationId == null) {
+      await _startNewChat();
+      return;
+    }
+
+    final session = UserSession();
+    final guestId = session.userId ?? 'app_guest';
+
+    setState(() => _isLoading = true);
+    try {
+      final res = await ApiClient().dio.post(
+        '/chat/conversations/$_conversationId/reset-ai',
+        options: Options(
+          headers: {'x-guest-id': guestId},
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+
+      if (res.statusCode == 200 && mounted) {
+        setState(() {
+          _conversationStatus = 'AI_ACTIVE';
+          _isRequestingHandoff = false;
+        });
+        await _fetchMessages(silent: true);
+      } else {
+        await _startNewChat();
+      }
+    } catch (e) {
+      debugPrint('[ChatSheet] Switch to AI fallback: $e');
+      await _startNewChat();
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -605,6 +657,18 @@ class _ChatSheetState extends State<ChatSheet> with SingleTickerProviderStateMix
 
                 const SizedBox(width: 2),
 
+                // New AI Chat Button
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                  icon: const Icon(Icons.add_comment_outlined, color: Color(0xFF1864E8), size: 19),
+                  tooltip: 'Start New AI Chat',
+                  onPressed: _startNewChat,
+                ),
+
+                const SizedBox(width: 2),
+
                 // Close Button
                 IconButton(
                   visualDensity: VisualDensity.compact,
@@ -665,6 +729,75 @@ class _ChatSheetState extends State<ChatSheet> with SingleTickerProviderStateMix
                                 color: Colors.white,
                               ),
                             ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Transferred / Waiting Banner with Instant "Switch to AI" Button
+          if (_conversationStatus != 'AI_ACTIVE')
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+              decoration: BoxDecoration(
+                color: _conversationStatus == 'WAITING_FOR_AGENT'
+                    ? const Color(0xFFFFFBEB)
+                    : const Color(0xFFF0FDF4),
+                border: const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _conversationStatus == 'WAITING_FOR_AGENT'
+                        ? Icons.hourglass_top_rounded
+                        : Icons.support_agent_rounded,
+                    size: 15,
+                    color: _conversationStatus == 'WAITING_FOR_AGENT'
+                        ? const Color(0xFFD97706)
+                        : const Color(0xFF16A34A),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      _conversationStatus == 'WAITING_FOR_AGENT'
+                          ? 'Transferred to team • Waiting for agent'
+                          : 'Human Agent Connected',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: _conversationStatus == 'WAITING_FOR_AGENT'
+                            ? const Color(0xFFB45309)
+                            : const Color(0xFF15803D),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: _switchToAi,
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.auto_awesome, size: 11, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text(
+                            'Switch to AI',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

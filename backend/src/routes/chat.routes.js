@@ -5,7 +5,8 @@ const {
   sendMessage,
   getConversationMessages,
   getCustomerConversations,
-  customerHandoff
+  customerHandoff,
+  resetToAi
 } = require('../controllers/chat.controller');
 const { authenticate } = require('../middleware/auth');
 
@@ -17,6 +18,7 @@ router.get('/conversations', getCustomerConversations);
 router.get('/conversations/:id/messages', getConversationMessages);
 router.post('/message', sendMessage);
 router.post('/conversations/:id/handoff', customerHandoff);
+router.post('/conversations/:id/reset-ai', resetToAi);
 
 module.exports = router;
 

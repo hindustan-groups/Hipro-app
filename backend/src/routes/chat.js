@@ -2,12 +2,14 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const prisma = require('../prisma');
 const {
   createConversation,
   sendMessage,
   getConversationMessages,
   getCustomerConversations,
-  customerHandoff
+  customerHandoff,
+  resetToAi
 } = require('../controllers/chat.controller');
 const { authenticate } = require('../middleware/auth');
 
@@ -17,6 +19,7 @@ router.get('/conversations', authenticate, getCustomerConversations);
 router.get('/conversations/:id/messages', authenticate, getConversationMessages);
 router.post('/message', authenticate, sendMessage);
 router.post('/conversations/:id/handoff', authenticate, customerHandoff);
+router.post('/conversations/:id/reset-ai', authenticate, resetToAi);
 
 const CHATS_FILE = path.join(__dirname, '../../uploads/chats.json');
 
@@ -68,11 +71,57 @@ function resolveThreadId(body) {
 }
 
 // GET /api/v1/chat/threads - List all chat conversations (Admin View)
-router.get('/threads', (req, res) => {
+router.get('/threads', async (req, res) => {
   try {
     const data = readChatData();
+    let threads = [...(data.threads || [])];
+
+    // Bridge DB SupportConversations (especially those transferred to human support or waiting)
+    try {
+      const dbConversations = await prisma.supportConversation.findMany({
+        include: {
+          customer: {
+            select: { id: true, name: true, phoneNumber: true, email: true }
+          },
+          messages: {
+            orderBy: { createdAt: 'desc' },
+            take: 1
+          }
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 50
+      });
+
+      const dbThreads = dbConversations.map(conv => {
+        const lastMsg = conv.messages[0];
+        const isWaiting = conv.status === 'WAITING_FOR_AGENT';
+        const isHuman = conv.status === 'HUMAN_ACTIVE';
+        return {
+          id: conv.id,
+          customerName: conv.customer?.name || (conv.customerId ? `User (${conv.customerId.slice(0, 8)})` : 'Customer'),
+          customerPhone: conv.customer?.phoneNumber || '+91 94628 77757',
+          contextType: isWaiting ? 'SUPPORT_QUEUE' : (isHuman ? 'HUMAN_ACTIVE' : 'AI_ACTIVE'),
+          contextTag: conv.subject || 'Live Support Chat',
+          status: conv.status,
+          quoteNumber: '',
+          requestNumber: '',
+          lastMessage: lastMsg ? lastMsg.content : (isWaiting ? '⚠️ Transferred to human support desk' : 'Chat started'),
+          lastMessageTime: (lastMsg?.createdAt || conv.updatedAt || conv.createdAt).toISOString(),
+          unreadCountAdmin: isWaiting ? 1 : 0,
+          unreadCountCustomer: 0,
+          createdAt: conv.createdAt.toISOString(),
+          isDbConversation: true
+        };
+      });
+
+      // Merge: DB conversations first, then file threads
+      threads = [...dbThreads, ...threads];
+    } catch (dbErr) {
+      console.warn('Could not fetch DB support conversations for threads:', dbErr.message);
+    }
+
     // Sort threads by last message time descending
-    const threads = (data.threads || []).sort((a, b) => {
+    threads.sort((a, b) => {
       return new Date(b.lastMessageTime || b.createdAt) - new Date(a.lastMessageTime || a.createdAt);
     });
     res.json({ success: true, data: threads, total: threads.length });
@@ -82,11 +131,42 @@ router.get('/threads', (req, res) => {
 });
 
 // GET /api/v1/chat/threads/:threadId/messages - Get messages for a thread
-router.get('/threads/:threadId/messages', (req, res) => {
+router.get('/threads/:threadId/messages', async (req, res) => {
   try {
     const { threadId } = req.params;
-    const data = readChatData();
-    const threadMessages = (data.messages || []).filter(m => m.threadId === threadId);
+    let threadMessages = [];
+
+    // Check if threadId matches a DB SupportConversation
+    try {
+      const dbConv = await prisma.supportConversation.findUnique({
+        where: { id: threadId },
+        include: {
+          messages: {
+            orderBy: { createdAt: 'asc' }
+          }
+        }
+      });
+
+      if (dbConv && dbConv.messages && dbConv.messages.length > 0) {
+        threadMessages = dbConv.messages.map(m => ({
+          id: m.id,
+          threadId: threadId,
+          sender: m.senderType === 'CUSTOMER' ? 'customer' : (m.senderType === 'AGENT' ? 'admin' : (m.senderType === 'AI' ? 'ai' : 'system')),
+          senderName: m.senderType === 'CUSTOMER' ? 'Customer' : (m.senderType === 'AGENT' ? 'Er. Vikram Sharma (Admin)' : (m.senderType === 'AI' ? 'Hipro AI' : 'System')),
+          text: m.content,
+          createdAt: m.createdAt.toISOString(),
+          isRead: true
+        }));
+      }
+    } catch (dbErr) {
+      // not a uuid or DB conversation
+    }
+
+    if (threadMessages.length === 0) {
+      const data = readChatData();
+      threadMessages = (data.messages || []).filter(m => m.threadId === threadId);
+    }
+
     res.json({
       success: true,
       threadId,
@@ -99,7 +179,7 @@ router.get('/threads/:threadId/messages', (req, res) => {
 });
 
 // POST /api/v1/chat/messages - Send a message (Customer or Admin)
-router.post('/messages', (req, res) => {
+router.post('/messages', async (req, res) => {
   try {
     const {
       sender, // 'customer' or 'admin'
@@ -110,14 +190,74 @@ router.post('/messages', (req, res) => {
       quoteNumber,
       requestNumber,
       customerName,
-      customerPhone
+      customerPhone,
+      threadId: rawThreadId
     } = req.body;
 
     if (!text || text.trim().length === 0) {
       return res.status(400).json({ success: false, message: 'Message text is required' });
     }
 
-    const threadId = resolveThreadId(req.body);
+    const threadId = rawThreadId || resolveThreadId(req.body);
+
+    // 1. Check if threadId matches a database SupportConversation
+    try {
+      const dbConv = await prisma.supportConversation.findUnique({
+        where: { id: threadId }
+      });
+
+      if (dbConv) {
+        const savedDbMessage = await prisma.supportMessage.create({
+          data: {
+            conversationId: threadId,
+            senderType: sender === 'admin' ? 'AGENT' : 'CUSTOMER',
+            content: text.trim()
+          }
+        });
+
+        if (sender === 'admin') {
+          await prisma.supportConversation.update({
+            where: { id: threadId },
+            data: { status: 'HUMAN_ACTIVE' }
+          });
+        }
+
+        const io = req.app.get('io');
+        if (io) {
+          io.to(`conversation:${threadId}`).emit('chat:new_message', savedDbMessage);
+          io.to(`thread_${threadId}`).emit('new_message', {
+            id: savedDbMessage.id,
+            threadId,
+            sender: sender || 'admin',
+            senderName: senderName || 'Er. Vikram Sharma (Admin)',
+            text: text.trim(),
+            createdAt: savedDbMessage.createdAt.toISOString(),
+            isRead: true
+          });
+          io.to('support:agents').emit('thread_updated', {
+            id: threadId,
+            lastMessage: text.trim(),
+            lastMessageTime: savedDbMessage.createdAt.toISOString()
+          });
+        }
+
+        return res.json({
+          success: true,
+          data: {
+            id: savedDbMessage.id,
+            threadId,
+            sender: sender || 'admin',
+            senderName: senderName || 'Er. Vikram Sharma (Admin)',
+            text: text.trim(),
+            createdAt: savedDbMessage.createdAt.toISOString(),
+            isRead: true
+          }
+        });
+      }
+    } catch (dbErr) {
+      // not a uuid, continue to file
+    }
+
     const data = readChatData();
 
     // Find or create thread
