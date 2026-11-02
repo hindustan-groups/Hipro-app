@@ -15,6 +15,23 @@ function withTimeout(promise, ms = 7000) {
   return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
 }
 
+function generateContextualFallback(latestMessage) {
+  const lower = (latestMessage || '').toLowerCase();
+  if (lower.includes('slot') || lower.includes('time') || lower.includes('timing') || lower.includes('available') || lower.includes('schedule') || lower.includes('when')) {
+    return "Our inspection and consultation slots are available daily in two shifts: Morning (10:00 AM – 1:00 PM) and Afternoon (2:00 PM – 6:00 PM). Which slot and city works best for you?";
+  }
+  if (lower.includes('cost') || lower.includes('price') || lower.includes('rate') || lower.includes('charge') || lower.includes('fee') || lower.includes('kitna')) {
+    return "Visiting and technical audit charges start at ₹199 for all civil inspections, waterproofing assessments, and structural checks across Jaipur, Jodhpur, Udaipur, and Bhilwara. Which service would you like to explore?";
+  }
+  if (lower.includes('waterproof') || lower.includes('leak') || lower.includes('damp') || lower.includes('seepage') || lower.includes('crack')) {
+    return "Hipro provides certified waterproofing treatments including Dr. Fixit PU coating, crystalline crack injection, and roof waterproofing with up to 10-year warranty. What issue are you observing in your property?";
+  }
+  if (lower.includes('city') || lower.includes('where') || lower.includes('location') || lower.includes('kaha')) {
+    return "Hipro currently serves Jaipur, Jodhpur, Udaipur, and Bhilwara with verified engineering teams and local partner centers. Which city are you located in?";
+  }
+  return "Namaste! Welcome to Hipro Support. I can help you with home inspections, waterproofing, direct bookings, pricing, or technical questions. How may I assist you today?";
+}
+
 /**
  * AI Response Router with Intelligent Provider Selection and Automatic Fallback
  * Strictly Read-Only: Never executes database writes.
@@ -34,7 +51,7 @@ async function generateAIResponse(messages, knowledge, customerContext = null) {
 
   // 2. Ultra-Fast Groq Engine (Always available with cloud fallback)
   try {
-    const groqResult = await withTimeout(askGroq(messages, knowledge, customerContext), 7000);
+    const groqResult = await withTimeout(askGroq(messages, knowledge, customerContext), 12000);
     if (groqResult && groqResult.reply) {
       return {
         reply: groqResult.reply,
@@ -51,7 +68,7 @@ async function generateAIResponse(messages, knowledge, customerContext = null) {
   const geminiKey = process.env.GEMINI_API_KEY || '';
   if (geminiKey && geminiKey.length > 10) {
     try {
-      const result = await withTimeout(askGemini(messages, knowledge, customerContext), 6000);
+      const result = await withTimeout(askGemini(messages, knowledge, customerContext), 8000);
       if (result && result.reply) {
         return {
           reply: result.reply,
@@ -65,12 +82,12 @@ async function generateAIResponse(messages, knowledge, customerContext = null) {
     }
   }
 
-  // 4. Safe AI Fallback - NEVER force human handoff on normal messages or gibberish
+  // 4. Safe Context-Aware Fallback (Answers user's specific query without generic repetition)
   return {
-    reply: "Namaste! Welcome to Hipro Support. I can help you with home inspections, waterproofing, direct bookings, pricing, or technical questions. How may I assist you today?",
+    reply: generateContextualFallback(latestMessage),
     escalate: false,
     reason: null,
-    provider: 'local-fallback'
+    provider: 'contextual-fallback'
   };
 }
 
