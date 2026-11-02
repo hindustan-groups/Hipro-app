@@ -163,7 +163,7 @@ class _ExperienceDetailsScreenState extends State<ExperienceDetailsScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1864E8),
+                        color: const Color(0xFFE11D48),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -195,12 +195,12 @@ class _ExperienceDetailsScreenState extends State<ExperienceDetailsScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
+                          color: const Color(0xFFFFF1F2),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           exp.category.toUpperCase(),
-                          style: const TextStyle(color: Color(0xFF1864E8), fontSize: 11, fontWeight: FontWeight.w800),
+                          style: const TextStyle(color: Color(0xFFE11D48), fontSize: 11, fontWeight: FontWeight.w800),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -260,7 +260,7 @@ class _ExperienceDetailsScreenState extends State<ExperienceDetailsScreen> {
                         Container(height: 20, width: 1, color: const Color(0xFFE2E8F0)),
                         Row(
                           children: [
-                            const Icon(Icons.schedule_rounded, color: Color(0xFF1864E8), size: 18),
+                            const Icon(Icons.schedule_rounded, color: Color(0xFFE11D48), size: 18),
                             const SizedBox(width: 6),
                             Text(
                               exp.duration,
@@ -287,10 +287,10 @@ class _ExperienceDetailsScreenState extends State<ExperienceDetailsScreen> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1864E8).withValues(alpha: 0.1),
+                            color: const Color(0xFFE11D48).withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.pin_drop_rounded, color: Color(0xFF1864E8), size: 20),
+                          child: const Icon(Icons.pin_drop_rounded, color: Color(0xFFE11D48), size: 20),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -396,15 +396,15 @@ class _ExperienceDetailsScreenState extends State<ExperienceDetailsScreen> {
                       ),
                       TextButton.icon(
                         onPressed: _showAddReviewModal,
-                        icon: const Icon(Icons.edit_note_rounded, size: 16, color: Color(0xFF1864E8)),
-                        label: const Text('Write Review', style: TextStyle(color: Color(0xFF1864E8), fontWeight: FontWeight.bold, fontSize: 12.5)),
+                        icon: const Icon(Icons.edit_note_rounded, size: 16, color: Color(0xFFE11D48)),
+                        label: const Text('Write Review', style: TextStyle(color: Color(0xFFE11D48), fontWeight: FontWeight.bold, fontSize: 12.5)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
 
                   if (_loadingReviews)
-                    const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1864E8))))
+                    const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFE11D48))))
                   else if (_reviews.isEmpty)
                     Container(
                       width: double.infinity,
@@ -492,7 +492,7 @@ class _ExperienceDetailsScreenState extends State<ExperienceDetailsScreen> {
                 icon: const Icon(Icons.flash_on_rounded, size: 18),
                 label: const Text('Book Activity', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1864E8),
+                  backgroundColor: const Color(0xFFE11D48),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   elevation: 0,

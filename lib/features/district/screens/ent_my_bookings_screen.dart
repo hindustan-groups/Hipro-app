@@ -163,7 +163,7 @@ class _EntMyBookingsScreenState extends State<EntMyBookingsScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF1864E8)),
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFFE11D48)),
             onPressed: _loadBookings,
             tooltip: 'Refresh',
           ),
@@ -171,7 +171,7 @@ class _EntMyBookingsScreenState extends State<EntMyBookingsScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _loadBookings,
-        color: const Color(0xFF1864E8),
+        color: const Color(0xFFE11D48),
         child: _buildBody(),
       ),
     );
@@ -180,7 +180,7 @@ class _EntMyBookingsScreenState extends State<EntMyBookingsScreen> {
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF1864E8)),
+        child: CircularProgressIndicator(color: Color(0xFFE11D48)),
       );
     }
 
@@ -204,7 +204,7 @@ class _EntMyBookingsScreenState extends State<EntMyBookingsScreen> {
                 icon: const Icon(Icons.refresh_rounded, size: 16),
                 label: const Text('Try Again'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1864E8),
+                  backgroundColor: const Color(0xFFE11D48),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
@@ -225,13 +225,13 @@ class _EntMyBookingsScreenState extends State<EntMyBookingsScreen> {
               width: 90,
               height: 90,
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: const Color(0xFFFFF1F2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.confirmation_number_outlined,
                 size: 42,
-                color: Color(0xFF1864E8),
+                color: Color(0xFFE11D48),
               ),
             ),
           ),
@@ -256,7 +256,7 @@ class _EntMyBookingsScreenState extends State<EntMyBookingsScreen> {
             child: ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1864E8),
+                backgroundColor: const Color(0xFFE11D48),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -323,7 +323,7 @@ class _EntMyBookingsScreenState extends State<EntMyBookingsScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.confirmation_number_rounded, size: 16, color: Color(0xFF1864E8)),
+                    const Icon(Icons.confirmation_number_rounded, size: 16, color: Color(0xFFE11D48)),
                     const SizedBox(width: 6),
                     Text(
                       bookingCode,
@@ -341,7 +341,7 @@ class _EntMyBookingsScreenState extends State<EntMyBookingsScreen> {
                   decoration: BoxDecoration(
                     color: isCancelled
                         ? const Color(0xFFFEE2E2)
-                        : (isConfirmed ? const Color(0xFFECFDF5) : const Color(0xFFEFF6FF)),
+                        : (isConfirmed ? const Color(0xFFECFDF5) : const Color(0xFFFFF1F2)),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -349,7 +349,7 @@ class _EntMyBookingsScreenState extends State<EntMyBookingsScreen> {
                     style: TextStyle(
                       color: isCancelled
                           ? const Color(0xFFDC2626)
-                          : (isConfirmed ? const Color(0xFF059669) : const Color(0xFF2563EB)),
+                          : (isConfirmed ? const Color(0xFF059669) : const Color(0xFFE11D48)),
                       fontSize: 10.5,
                       fontWeight: FontWeight.w800,
                     ),
@@ -424,7 +424,7 @@ class _EntMyBookingsScreenState extends State<EntMyBookingsScreen> {
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          const Icon(Icons.calendar_today_rounded, size: 12, color: Color(0xFF1864E8)),
+                          const Icon(Icons.calendar_today_rounded, size: 12, color: Color(0xFFE11D48)),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -432,7 +432,7 @@ class _EntMyBookingsScreenState extends State<EntMyBookingsScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                color: Color(0xFF1864E8),
+                                color: Color(0xFFE11D48),
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w600,
                               ),

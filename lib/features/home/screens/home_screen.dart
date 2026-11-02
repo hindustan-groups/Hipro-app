@@ -18,7 +18,6 @@ import '../../services/models/service_model.dart';
 import '../../services/widgets/cart_sheet.dart';
 import '../../services/widgets/service_subservices_sheet.dart';
 import '../data/service_api_service.dart';
-import '../models/city_model.dart';
 import '../models/slide_model.dart';
 import '../../../core/widgets/city_selection_sheet.dart';
 import '../../../core/widgets/offers_section.dart';

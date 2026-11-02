@@ -123,13 +123,13 @@ class _DistrictExperiencesSectionState extends State<DistrictExperiencesSection>
                     Text(
                       'View All',
                       style: TextStyle(
-                        color: Color(0xFF1864E8),
+                        color: Color(0xFFE11D48),
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     SizedBox(width: 3),
-                    Icon(Icons.arrow_forward_ios_rounded, size: 11, color: Color(0xFF1864E8)),
+                    Icon(Icons.arrow_forward_ios_rounded, size: 11, color: Color(0xFFE11D48)),
                   ],
                 ),
               ),
@@ -363,7 +363,7 @@ class _DistrictExperiencesSectionState extends State<DistrictExperiencesSection>
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1864E8),
+                            color: const Color(0xFFE11D48),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Row(

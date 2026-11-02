@@ -183,7 +183,7 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
         actions: [
           IconButton(
             visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.confirmation_number_outlined, color: Color(0xFF1864E8)),
+            icon: const Icon(Icons.confirmation_number_outlined, color: Color(0xFFE11D48)),
             tooltip: 'My Adventure Bookings',
             onPressed: () {
               Navigator.of(context).push(
@@ -196,7 +196,7 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _refreshAllData,
-        color: const Color(0xFF1864E8),
+        color: const Color(0xFFE11D48),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 40),
@@ -207,8 +207,8 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
               const Padding(
                 padding: EdgeInsets.only(bottom: 10),
                 child: LinearProgressIndicator(
-                  color: Color(0xFF1864E8),
-                  backgroundColor: Color(0xFFDBEAFE),
+                  color: Color(0xFFE11D48),
+                  backgroundColor: Color(0xFFFFE4E6),
                   minHeight: 2.5,
                 ),
               ),
@@ -232,7 +232,7 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
                 decoration: InputDecoration(
                   hintText: 'Search paragliding, desert safari, rafting...',
                   hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
-                  prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF1864E8), size: 22),
+                  prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFFE11D48), size: 22),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear_rounded, size: 18),
@@ -273,9 +273,9 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: isSel ? const Color(0xFF1864E8) : Colors.white,
+                              color: isSel ? const Color(0xFFE11D48) : Colors.white,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: isSel ? const Color(0xFF1864E8) : const Color(0xFFE2E8F0)),
+                              border: Border.all(color: isSel ? const Color(0xFFE11D48) : const Color(0xFFE2E8F0)),
                             ),
                             child: Text(
                               city,
@@ -332,7 +332,10 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
             // Promotional Banner Slider (when not searching)
             if (_searchQuery.isEmpty && _slides.isNotEmpty) ...[
               const SizedBox(height: 18),
-              PromoSlider(slides: _slides),
+              PromoSlider(
+                slides: _slides,
+                activeDotColor: const Color(0xFFE11D48),
+              ),
             ],
 
             // Offers & Deals Section (when not searching)
@@ -474,7 +477,7 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1864E8),
+                        color: const Color(0xFFE11D48),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -584,7 +587,7 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1864E8),
+                            backgroundColor: const Color(0xFFE11D48),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

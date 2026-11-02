@@ -16,6 +16,7 @@ class PromoSlider extends StatefulWidget {
   final ValueChanged<int>? onSwitchTab;
   final void Function(SlideItem)? onSlideTap;
   final double height;
+  final Color? activeDotColor;
 
   const PromoSlider({
     super.key,
@@ -23,6 +24,7 @@ class PromoSlider extends StatefulWidget {
     this.onSwitchTab,
     this.onSlideTap,
     this.height = 180,
+    this.activeDotColor,
   });
 
   @override
@@ -175,7 +177,7 @@ class _PromoSliderState extends State<PromoSlider> {
                 height: 5,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFF1864E8)
+                      ? (widget.activeDotColor ?? const Color(0xFF1864E8))
                       : const Color(0xFFCBD5E1),
                   borderRadius: BorderRadius.circular(3),
                 ),
@@ -220,7 +222,7 @@ class _PromoSliderState extends State<PromoSlider> {
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Color(0xFF1864E8),
+                        color: widget.activeDotColor ?? const Color(0xFF1864E8),
                       ),
                     ),
                   ),

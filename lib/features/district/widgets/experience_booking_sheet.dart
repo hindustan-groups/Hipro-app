@@ -215,7 +215,7 @@ class _ExperienceBookingSheetState extends State<ExperienceBookingSheet> {
               Text(
                 'Booking ID: ${booking.bookingId}',
                 style: const TextStyle(
-                  color: Color(0xFF1864E8),
+                  color: Color(0xFFE11D48),
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   fontFamily: 'monospace',
@@ -255,7 +255,7 @@ class _ExperienceBookingSheetState extends State<ExperienceBookingSheet> {
                             const Text('Date & Slot', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10.5)),
                             const SizedBox(height: 2),
                             Text(booking.selectedDate, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-                            Text(booking.selectedTimeSlot, style: const TextStyle(color: Color(0xFF1864E8), fontSize: 11, fontWeight: FontWeight.w600)),
+                            Text(booking.selectedTimeSlot, style: const TextStyle(color: Color(0xFFE11D48), fontSize: 11, fontWeight: FontWeight.w600)),
                           ],
                         ),
                         Column(
@@ -276,7 +276,7 @@ class _ExperienceBookingSheetState extends State<ExperienceBookingSheet> {
               ElevatedButton(
                 onPressed: () => Navigator.of(ctx).pop(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1864E8),
+                  backgroundColor: const Color(0xFFE11D48),
                   foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(48),
                   elevation: 0,
@@ -333,13 +333,13 @@ class _ExperienceBookingSheetState extends State<ExperienceBookingSheet> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1864E8).withValues(alpha: 0.1),
+                            color: const Color(0xFFE11D48).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             'ENT • ${widget.experience.city.toUpperCase()}',
                             style: const TextStyle(
-                              color: Color(0xFF1864E8),
+                              color: Color(0xFFE11D48),
                               fontSize: 10.5,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.5,
@@ -391,10 +391,10 @@ class _ExperienceBookingSheetState extends State<ExperienceBookingSheet> {
                       child: Container(
                         width: 58,
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF1864E8) : const Color(0xFFF8FAFC),
+                          color: isSelected ? const Color(0xFFE11D48) : const Color(0xFFF8FAFC),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected ? const Color(0xFF1864E8) : const Color(0xFFE2E8F0),
+                            color: isSelected ? const Color(0xFFE11D48) : const Color(0xFFE2E8F0),
                           ),
                         ),
                         child: Column(
@@ -444,17 +444,17 @@ class _ExperienceBookingSheetState extends State<ExperienceBookingSheet> {
                     onSelected: (val) {
                       if (val) setState(() => _selectedSlot = slot);
                     },
-                    selectedColor: const Color(0xFFEFF6FF),
+                    selectedColor: const Color(0xFFFFF1F2),
                     backgroundColor: Colors.white,
                     labelStyle: TextStyle(
-                      color: isSelected ? const Color(0xFF1864E8) : const Color(0xFF334155),
+                      color: isSelected ? const Color(0xFFE11D48) : const Color(0xFF334155),
                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                       fontSize: 12,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                       side: BorderSide(
-                        color: isSelected ? const Color(0xFF1864E8) : const Color(0xFFE2E8F0),
+                        color: isSelected ? const Color(0xFFE11D48) : const Color(0xFFE2E8F0),
                         width: isSelected ? 1.5 : 1,
                       ),
                     ),
@@ -580,7 +580,7 @@ class _ExperienceBookingSheetState extends State<ExperienceBookingSheet> {
                     ElevatedButton(
                       onPressed: _isBooking ? null : _confirmBooking,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1864E8),
+                        backgroundColor: const Color(0xFFE11D48),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
