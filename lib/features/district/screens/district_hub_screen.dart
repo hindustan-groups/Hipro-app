@@ -156,7 +156,7 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [Color(0xFFE11D48), Color(0xFFF97316)]),
                   borderRadius: BorderRadius.circular(6),
@@ -165,17 +165,18 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
                   'ADVENTURE',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 9.5,
+                    fontSize: 9,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 0.6,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               const Text(
                 'Adventures & Enjoyment',
                 maxLines: 1,
-                style: TextStyle(color: Color(0xFF0F172A), fontSize: 15, fontWeight: FontWeight.w800),
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: Color(0xFF0F172A), fontSize: 14.5, fontWeight: FontWeight.w800),
               ),
             ],
           ),

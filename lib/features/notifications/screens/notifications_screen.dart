@@ -144,16 +144,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   const Text(
                     'Notifications',
                     maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: Color(0xFF0F172A),
-                      fontSize: 17,
+                      fontSize: 16.5,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   if (unreadCount > 0) ...[
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1864E8),
                         borderRadius: BorderRadius.circular(10),
@@ -162,7 +163,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         '$unreadCount new',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 10,
+                          fontSize: 9.5,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -176,7 +177,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 TextButton(
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
@@ -185,7 +186,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     'Mark all read',
                     style: TextStyle(
                       color: Color(0xFF1864E8),
-                      fontSize: 12,
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

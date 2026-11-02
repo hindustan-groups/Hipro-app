@@ -216,7 +216,7 @@ class _PromoSliderState extends State<PromoSlider> {
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
                   color: const Color(0xFFF1F5F9),
-                  child: const Center(
+                  child: Center(
                     child: SizedBox(
                       width: 24,
                       height: 24,
