@@ -9,7 +9,7 @@ const prisma = require('../prisma');
 /**
  * Retrieves the compiled system knowledge base including services, pricing, and FAQs
  */
-async function getSystemKnowledge(cityName = 'Udaipur') {
+async function getSystemKnowledge() {
   try {
     const [services, cities, knowledgeDocs] = await Promise.all([
       prisma.service.findMany({
@@ -58,7 +58,7 @@ async function getSystemKnowledge(cityName = 'Udaipur') {
     return `${citySummary}\n\n=== VERIFIED SERVICES & PRICING ===\n${serviceSummary}\n\n=== POLICIES & KNOWLEDGE ===\n${customDocs}`;
   } catch (err) {
     console.error('Error fetching system knowledge for AI:', err);
-    return 'Hipro provides certified home inspection, waterproofing, plumbing, painting, and construction care in Udaipur and Bhilwara.';
+    return 'Hipro provides certified home inspection, waterproofing, plumbing, painting, and construction care.';
   }
 }
 

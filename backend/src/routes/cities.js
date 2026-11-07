@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../prisma');
 
+// All-India states and cities catalog
+router.use('/india', require('./locations'));
+
 // ==========================================
 // DYNAMIC CITY HUBS API
 // Manage operational cities where services are provided

@@ -32,7 +32,7 @@ model SubService {
     desc            String
     image           String?
     checklist       String[]
-    visitingCharge  Float           @default(199.0)
+    visitingCharge  Float           @default(0.0)
     bookNowEnabled  Boolean         @default(true)
     getQuoteEnabled Boolean         @default(true)
     isActive        Boolean         @default(true)
@@ -185,7 +185,7 @@ model DirectBooking {
     technicianRating     Float?
     assignedAt           DateTime?
 
-    visitingCharge       Float       @default(199.0)
+    visitingCharge       Float       @default(0.0)
     onlinePaidAmount     Float       @default(199.0)
     additionalWorkAmount Float       @default(0.0)
     totalAmount          Float       @default(199.0)
@@ -405,6 +405,7 @@ model Vendor {
     email           String?   @unique
     password        String?  // Optional vendor password
     passcode        String?  // 6-digit security PIN (hashed)
+    state           String?  // Indian state / UT (e.g. "Rajasthan", "Maharashtra")
     city            String
     cityId          String?  // Links vendor to a specific city for multi-city routing
     category        String   @default("Services") // "Services" | "Adventure"
@@ -453,7 +454,7 @@ model VendorQuote {
     vendorBusiness   String?
     quotePrice       Float
     notes            String?
-    estimatedTimeline String  @default("1-2 Working Days")
+    estimatedTimeline String  @default("")
     status           String   @default("submitted") // submitted, accepted, rejected, assigned
     submittedBy      String?
     createdAt        DateTime @default(now())

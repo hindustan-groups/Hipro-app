@@ -39,11 +39,12 @@ const getVendorCategories = async (req, res) => {
 // GET /api/v1/vendors - List all vendors (with optional filters)
 const getVendors = async (req, res) => {
   try {
-    const { city, specialization, category, status, search } = req.query;
+    const { city, state, specialization, category, status, search } = req.query;
     const where = {};
     const andConditions = [];
 
     if (city) where.city = city;
+    if (state) where.state = state;
     
     if (category && category.toLowerCase() !== 'all') {
       const catLower = category.toLowerCase();
@@ -69,6 +70,7 @@ const getVendors = async (req, res) => {
           { name: { contains: search, mode: 'insensitive' } },
           { businessName: { contains: search, mode: 'insensitive' } },
           { city: { contains: search, mode: 'insensitive' } },
+          { state: { contains: search, mode: 'insensitive' } },
           { specialization: { contains: search, mode: 'insensitive' } },
           { category: { contains: search, mode: 'insensitive' } },
         ]
@@ -102,6 +104,7 @@ const getVendors = async (req, res) => {
           businessName: true,
           phone: true,
           email: true,
+          state: true,
           city: true,
           category: true,
           specialization: true,
@@ -181,6 +184,7 @@ const getVendorById = async (req, res) => {
         businessName: true,
         phone: true,
         email: true,
+        state: true,
         city: true,
         category: true,
         specialization: true,
@@ -228,7 +232,7 @@ const DEFAULT_CAPACITY_LIMITS = {
 // POST /api/v1/vendors - Create a new vendor
 const createVendor = async (req, res) => {
   try {
-    const { name, businessName, phone, email, city, cityId, category, specialization, experience, status, capacity, rating, minCharge, imageUrl, maxConcurrentJobs } = req.body;
+    const { name, businessName, phone, email, state, city, cityId, category, specialization, experience, status, capacity, rating, minCharge, imageUrl, maxConcurrentJobs } = req.body;
 
     if (!name || !businessName || !phone || !city || !specialization) {
       return res.status(400).json({ success: false, message: 'Name, business name, phone, city, and specialization are required' });
@@ -257,6 +261,7 @@ const createVendor = async (req, res) => {
         businessName,
         phone,
         email: email || null,
+        state: state || null,
         city,
         cityId: cityId || null,
         category: determinedCategory,
@@ -284,13 +289,14 @@ const createVendor = async (req, res) => {
 // PUT /api/v1/vendors/:id - Update vendor
 const updateVendor = async (req, res) => {
   try {
-    const { name, businessName, phone, email, city, cityId, category, specialization, experience, status, capacity, rating, minCharge, imageUrl, maxConcurrentJobs } = req.body;
+    const { name, businessName, phone, email, state, city, cityId, category, specialization, experience, status, capacity, rating, minCharge, imageUrl, maxConcurrentJobs } = req.body;
 
     const updateData = {
       name: name || undefined,
       businessName: businessName || undefined,
       phone: phone || undefined,
       email: email || null,
+      state: state !== undefined ? state : undefined,
       city: city || undefined,
       cityId: cityId !== undefined ? cityId : undefined,
       category: category || undefined,
@@ -524,8 +530,8 @@ const createVendorQuote = async (req, res) => {
         type: 'QUOTATION',
         referenceId: quote.id,
         requestId,
-        projectName: request.servicecode || 'Service Request',
-        location: request.addressline || request.location || 'Site Location',
+        projectName: request.servicecode || '',
+        location: request.addressline || request.location || '',
         unread: true,
         timestamp: new Date().toISOString()
       }, io);
@@ -692,8 +698,8 @@ const assignVendorToRequest = async (req, res) => {
           type: 'ASSIGNMENT',
           referenceId: request.id,
           requestId,
-          projectName: request.servicecode || 'Service Request',
-          location: request.addressline || request.location || 'Site Location',
+          projectName: request.servicecode || '',
+          location: request.addressline || request.location || '',
           unread: true,
           timestamp: new Date().toISOString()
         }, io);

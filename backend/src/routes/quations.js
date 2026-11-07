@@ -387,8 +387,8 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
         advancePercentage: finalAdvPct,
         advanceAmount: finalAdvAmt,
         termsAndConditions: termsAndConditions || `Standard service scope applies. ${finalAdvPct}% advance (₹${finalAdvAmt.toLocaleString('en-IN')}) to start work, remaining on completion.`,
-        created_by: created_by || 'Hipro Technical Admin Desk',
-        estimatedTimeline: estimatedTimeline || '1-2 Working Days'
+        created_by: created_by || '',
+        estimatedTimeline: estimatedTimeline || ''
       }
     });
 
@@ -406,8 +406,8 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
         : null;
 
       const formattedTotal = Math.round(quotation.grandtotal || 0).toLocaleString('en-IN');
-      const projectName = request.servicecode || request.propertyType || 'Waterproofing & Civil Scope';
-      const projectLocation = request.addressline || request.location || 'Site Location';
+      const projectName = request.servicecode || request.propertyType || '';
+      const projectLocation = request.addressline || request.location || '';
       const io = req.app.get('io');
 
       addNotification({

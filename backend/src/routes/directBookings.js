@@ -369,7 +369,7 @@ router.post('/', authenticate, async (req, res) => {
     // Bug #10 fix: Use authenticated userId from JWT, not from request body
     const validUserId = req.user.id;
 
-    const bookingCity = (city || 'Udaipur').trim();
+    const bookingCity = (city || '').trim();
 
     // Bug #7 fix: Only assign local-city providers, never cross-city fallback
     let assignedProvider = null;
@@ -388,7 +388,7 @@ router.post('/', authenticate, async (req, res) => {
           phone: activeVendor.phone,
           role: `${activeVendor.businessName} • ${activeVendor.specialization}`,
           photo: activeVendor.imageUrl || null,
-          rating: activeVendor.rating || 4.8
+          rating: activeVendor.rating || 0
         };
       }
     } catch (vErr) {
@@ -409,7 +409,7 @@ router.post('/', authenticate, async (req, res) => {
           id: partner.id,
           name: partner.name,
           phone: partner.phone,
-          role: partner.role || 'Field Service Specialist',
+          role: partner.role || '',
           photo: partner.photo || null,
           rating: partner.rating || 4.9
         };
@@ -954,7 +954,7 @@ router.post('/:id/rate', optionalAuth, async (req, res) => {
       return res.status(403).json({ success: false, message: 'You are not authorized to rate this booking' });
     }
 
-    const customerName = req.user?.name || booking.customerName || 'Valued Customer';
+    const customerName = req.user?.name || booking.customerName || 'Customer';
     const customerPhone = req.user?.phone || booking.customerPhone || null;
 
     // Resolve assigned Vendor (technician)

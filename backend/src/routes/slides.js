@@ -6,90 +6,12 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 
 const SLIDES_FILE = path.join(__dirname, '../../uploads/slides.json');
 
-// Default initial slides
-const DEFAULT_SLIDES = [
-  // --- Service Slides ---
-  {
-    id: 'slide_1',
-    title: 'Waterproofing & Leakage Audit',
-    subtitle: 'Get flat 20% off on advanced terrace & bathroom scanning',
-    badgeText: 'LIMITED OFFER',
-    imageUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80',
-    targetRoute: 'create_inspection',
-    section: 'services',
-    isActive: true,
-    order: 1,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'slide_2',
-    title: 'Complete Civil & Structural Repairs',
-    subtitle: 'Certified engineers for crack stitching & foundation care',
-    badgeText: 'CERTIFIED PROS',
-    imageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb18015f6?auto=format&fit=crop&w=800&q=80',
-    targetRoute: 'services',
-    section: 'services',
-    isActive: true,
-    order: 2,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'slide_3',
-    title: 'Instant Transparent Quotations',
-    subtitle: 'Track inspection progress & line-item estimates in real time',
-    badgeText: 'QUICK ESTIMATE',
-    imageUrl: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=800&q=80',
-    targetRoute: 'requests',
-    section: 'services',
-    isActive: true,
-    order: 3,
-    createdAt: new Date().toISOString()
-  },
-  // --- Adventure / Entertainment Slides ---
-  {
-    id: 'slide_adv_1',
-    title: 'Tandem Paragliding in Rishikesh',
-    subtitle: 'Soar with DGCA certified pilots across Himalayan views',
-    badgeText: 'TOP ADVENTURE',
-    imageUrl: 'https://images.unsplash.com/photo-1516298773066-c48f8e9bd92b?auto=format&fit=crop&w=800&q=80',
-    targetRoute: 'adventure',
-    section: 'adventure',
-    isActive: true,
-    order: 4,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'slide_adv_2',
-    title: 'Desert Safari & Starry Dunes',
-    subtitle: 'Camp under the stars with sunset camel rides in Jaisalmer',
-    badgeText: 'DESERT CLUB',
-    imageUrl: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
-    targetRoute: 'adventure',
-    section: 'adventure',
-    isActive: true,
-    order: 5,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'slide_adv_3',
-    title: 'White Water River Rafting',
-    subtitle: 'Conquer Grade III & IV rapids on the Holy Ganges River',
-    badgeText: 'HIGH THRILL',
-    imageUrl: 'https://images.unsplash.com/photo-1530866495561-507c9faab2ed?auto=format&fit=crop&w=800&q=80',
-    targetRoute: 'adventure',
-    section: 'adventure',
-    isActive: true,
-    order: 6,
-    createdAt: new Date().toISOString()
-  }
-];
-
 function readSlides() {
   try {
     if (!fs.existsSync(SLIDES_FILE)) {
       fs.mkdirSync(path.dirname(SLIDES_FILE), { recursive: true });
-      fs.writeFileSync(SLIDES_FILE, JSON.stringify(DEFAULT_SLIDES, null, 2), 'utf-8');
-      return DEFAULT_SLIDES;
+      fs.writeFileSync(SLIDES_FILE, '[]', 'utf-8');
+      return [];
     }
     const data = fs.readFileSync(SLIDES_FILE, 'utf-8');
     const parsed = JSON.parse(data);
@@ -184,7 +106,7 @@ router.post('/admin', authenticate, requireAdmin, (req, res) => {
       title: title.trim(),
       subtitle: (subtitle || '').trim(),
       imageUrl: imageUrl.trim(),
-      targetRoute: (targetRoute || 'create_inspection').trim(),
+      targetRoute: (targetRoute || '').trim(),
       badgeText: (badgeText || '').trim().toUpperCase(),
       isActive: isActive !== false,
       order: typeof order === 'number' ? order : slides.length + 1,

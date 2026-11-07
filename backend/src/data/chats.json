@@ -57,7 +57,7 @@
       "senderName": "pkctech",
       "text": "Hello Super Admin Desk! Testing real-time vendor chat connection.",
       "createdAt": "2026-11-07T08:31:09.095Z",
-      "isRead": false
+      "isRead": true
     },
     {
       "id": "msg_1794040282853_113",

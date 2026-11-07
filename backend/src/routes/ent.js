@@ -24,416 +24,18 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Initial Curated ENT Dynamic Categories
-const DEFAULT_ENT_CATEGORIES = [
-  {
-    id: 'cat_air_sports',
-    name: 'Air Sports',
-    slug: 'air-sports',
-    tagline: 'Paragliding, Paramotor & Skydiving',
-    icon: 'paragliding',
-    color: '#0284C7',
-    imageUrl: 'https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80',
-    displayOrder: 1,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'cat_desert_safari',
-    name: 'Desert Safari',
-    slug: 'desert-safari',
-    tagline: 'Dune Bashing, Camel Ride & Desert Camps',
-    icon: 'wb_sunny',
-    color: '#D97706',
-    imageUrl: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
-    displayOrder: 2,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'cat_water_sports',
-    name: 'Water Sports',
-    slug: 'water-sports',
-    tagline: 'River Rafting, Kayaking & Cliff Jumps',
-    icon: 'water',
-    color: '#0D9488',
-    imageUrl: 'https://images.unsplash.com/photo-1530866495561-507c9faab2ed?auto=format&fit=crop&w=800&q=80',
-    displayOrder: 3,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'cat_adventure',
-    name: 'Adventure',
-    slug: 'adventure',
-    tagline: 'Bungee Jumping, Trekking & Ziplining',
-    icon: 'terrain',
-    color: '#E11D48',
-    imageUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
-    displayOrder: 4,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'cat_sightseeing',
-    name: 'Sightseeing',
-    slug: 'sightseeing',
-    tagline: 'Scenic Mountain & Heritage Excursions',
-    icon: 'explore',
-    color: '#7C3AED',
-    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-    displayOrder: 5,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-];
-
-// Initial Curated ENT Items (Entertainment / Adventure Outings)
-const DEFAULT_ENT_ITEMS = [
-  {
-    id: 'ent_ddn_01',
-    title: 'Maldevta Tandem Paragliding Flight',
-    tagline: 'Soar high over the Doon Valley with certified gliders',
-    city: 'Dehradun',
-    locationDetails: 'Maldevta Foothills, 18km from Dehradun Clock Tower',
-    categoryId: 'cat_air_sports',
-    category: 'Air Sports',
-    rating: 4.9,
-    reviewsCount: 382,
-    startingPrice: 3200,
-    originalPrice: 4200,
-    discountBadge: '24% OFF',
-    duration: '20-25 Mins',
-    groupSize: '1-6 Travelers',
-    minAge: 12,
-    difficulty: 'Moderate',
-    imageUrl: 'https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80',
-    gallery: [
-      'https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1516245834210-c4c142787335?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80',
-    ],
-    inclusions: [
-      '15-20 mins tandem flight with certified pilot',
-      'High-definition GoPro video & aerial photos',
-      'Complete safety harness & helmet',
-      'Pickup from Maldevta Base Camp to take-off point',
-      'First aid & safety briefing',
-    ],
-    safetyGuidelines: [
-      'Weight limit: 35 kg to 95 kg',
-      'Wear sturdy sneakers and comfortable windbreaker jacket',
-      'Not recommended for people with severe heart conditions or vertigo',
-      'Flights are subject to wind and weather clearance',
-    ],
-    slots: [
-      '06:30 AM (Sunrise Thermal)',
-      '09:00 AM (Morning Breeze)',
-      '11:30 AM (Midday Flight)',
-      '03:30 PM (Sunset Soar)',
-    ],
-    reportingPoint: 'Maldevta Adventure Base Camp, Raipur Road, Dehradun, Uttarakhand - 248008',
-    isFeatured: true,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'ent_jsm_01',
-    title: 'Sam Sand Dunes Safari & Dune Bashing',
-    tagline: 'High-octane 4x4 Thar ride with sunset camel trek & cultural night',
-    city: 'Jaisalmer',
-    locationDetails: 'Sam Sand Dunes, Thar Desert, Jaisalmer',
-    categoryId: 'cat_desert_safari',
-    category: 'Desert Safari',
-    rating: 4.9,
-    reviewsCount: 641,
-    startingPrice: 2499,
-    originalPrice: 3500,
-    discountBadge: '28% OFF',
-    duration: '4-5 Hours',
-    groupSize: '1-12 Travelers',
-    minAge: 5,
-    difficulty: 'Easy',
-    imageUrl: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
-    gallery: [
-      'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1547234935-80c7145ec969?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80',
-    ],
-    inclusions: [
-      '30 Mins high adrenaline 4x4 dune bashing',
-      'Sunset camel safari across golden dunes',
-      'Traditional Rajasthani folk dance & fire show',
-      'Evening tea, snacks, and royal buffet dinner at luxury desert camp',
-    ],
-    safetyGuidelines: [
-      'Fasten seatbelts during 4x4 dune bashing',
-      'Carry sunglasses and a scarf for dust protection',
-      'Keep hydrated during the desert excursion',
-    ],
-    slots: [
-      '03:30 PM (Sunset Dune Bashing)',
-      '04:30 PM (Safari & Camp Evening Combo)',
-    ],
-    reportingPoint: 'Hipro Desert Camp Milestone, Sam Sand Dunes Road, Jaisalmer, Rajasthan - 345001',
-    isFeatured: true,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'ent_rsk_bungee',
-    title: 'Mohan Chatti 83m Bungee Jump',
-    tagline: 'India’s highest fixed cantilever bungee jump over the Hall river valley',
-    city: 'Rishikesh',
-    locationDetails: 'Mohan Chatti, Jump Zone, Rishikesh, Uttarakhand',
-    categoryId: 'cat_adventure',
-    category: 'Adventure',
-    rating: 4.9,
-    reviewsCount: 885,
-    startingPrice: 3700,
-    originalPrice: 4500,
-    discountBadge: '18% OFF',
-    duration: '1.5 Hours Experience',
-    groupSize: 'Individual Jumpers',
-    minAge: 12,
-    difficulty: 'Extreme Adrenaline',
-    imageUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
-    gallery: [
-      'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1530866495561-507c9faab2ed?auto=format&fit=crop&w=800&q=80',
-    ],
-    inclusions: [
-      '83m Cantilever Bungee Jump designed by SANZ (New Zealand)',
-      'Jump badge and Dare to Jump certificate',
-      'Experienced jump masters with safety tether inspection',
-      'Safety harness & recovery team at river bed',
-    ],
-    safetyGuidelines: [
-      'Weight range: 40 kg to 110 kg strictly enforced',
-      'Not allowed for people with high BP, heart conditions, or back injuries',
-      'Wear comfortable clothing and closed trainers/shoes',
-    ],
-    slots: [
-      '09:30 AM (Morning Dare)',
-      '11:30 AM (Valley Jump)',
-      '01:30 PM (Afternoon Leap)',
-      '03:30 PM (Sunset Thrill)',
-    ],
-    reportingPoint: 'Mohan Chatti Jump Base, Rishikesh, Uttarakhand - 249304',
-    isFeatured: true,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'ent_jsm_02',
-    title: 'Desert Paramotoring & Parashoot Sky Ride',
-    tagline: 'Fly 500-1000 ft above the Thar golden desert with powered trike parashoot',
-    city: 'Jaisalmer',
-    locationDetails: 'Kanoi Air Strip, Sam Road, Jaisalmer',
-    categoryId: 'cat_air_sports',
-    category: 'Air Sports',
-    rating: 4.8,
-    reviewsCount: 224,
-    startingPrice: 2999,
-    originalPrice: 3999,
-    discountBadge: '25% OFF',
-    duration: '15 Mins',
-    groupSize: '1 Traveler (Tandem)',
-    minAge: 10,
-    difficulty: 'Easy',
-    imageUrl: 'https://images.unsplash.com/photo-1519074069444-1ba4ea16e604?auto=format&fit=crop&w=800&q=80',
-    gallery: [
-      'https://images.unsplash.com/photo-1519074069444-1ba4ea16e604?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
-    ],
-    inclusions: [
-      '10-12 Mins powered paramotor flight',
-      'Tandem flight with commercial rated pilot',
-      'GoPro video recording & aerial snapshot',
-      'Flight certificate and safety goggles',
-    ],
-    safetyGuidelines: [
-      'Maximum body weight 90 kg',
-      'Comfortable clothing and closed shoes required',
-      'Weather-dependent activity',
-    ],
-    slots: [
-      '06:45 AM (Golden Hour Sunrise)',
-      '08:30 AM (Morning Desert Flight)',
-      '04:45 PM (Sunset Horizon Flight)',
-    ],
-    reportingPoint: 'Kanoi Aero Ground, Near Sam Village, Jaisalmer, Rajasthan',
-    isFeatured: true,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'ent_rsk_01',
-    title: 'Shivpuri to Marine Drive Ganga Rafting',
-    tagline: 'Conquer Grade III & IV rapids (Roller Coaster, Golf Course, Clubhouse)',
-    city: 'Rishikesh',
-    locationDetails: 'Shivpuri Base, Badrinath National Highway, Rishikesh',
-    categoryId: 'cat_water_sports',
-    category: 'Water Sports',
-    rating: 4.9,
-    reviewsCount: 712,
-    startingPrice: 1199,
-    originalPrice: 1699,
-    discountBadge: '29% OFF',
-    duration: '3.5 Hours',
-    groupSize: '6-8 per raft',
-    minAge: 14,
-    difficulty: 'Challenging',
-    imageUrl: 'https://images.unsplash.com/photo-1530866495561-507c9faab2ed?auto=format&fit=crop&w=800&q=80',
-    gallery: [
-      'https://images.unsplash.com/photo-1530866495561-507c9faab2ed?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
-    ],
-    inclusions: [
-      '16 KM river rafting stretch',
-      'Certified river guides & rescue kayaker',
-      'Grade 5 PFD life jacket, helmet, paddle',
-      'Cliff jumping & body surfing stop with lifejackets',
-    ],
-    safetyGuidelines: [
-      'Basic swimming is helpful but life jackets make you fully float',
-      'No loose footwear (wear strap sandals or water shoes)',
-      'Dry bag provided on raft for basic essentials',
-    ],
-    slots: [
-      '08:00 AM (Early River Slot)',
-      '11:00 AM (Midday Adventure)',
-      '02:00 PM (Afternoon Rapid Rush)',
-    ],
-    reportingPoint: 'Tapovan Adventure Center, Laxman Jhula Road, Rishikesh, Uttarakhand - 249192',
-    isFeatured: true,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'ent_ddn_02',
-    title: 'Dehradun Valley Hot Air Balloon Flight',
-    tagline: 'Float serenely over Doon tea gardens, Shivalik ridges, and pine hills',
-    city: 'Dehradun',
-    locationDetails: 'Sahastradhara Helipad Grounds, Dehradun',
-    categoryId: 'cat_air_sports',
-    category: 'Air Sports',
-    rating: 4.8,
-    reviewsCount: 147,
-    startingPrice: 8500,
-    originalPrice: 11000,
-    discountBadge: '22% OFF',
-    duration: '60 Mins',
-    groupSize: '2-8 Travelers',
-    minAge: 8,
-    difficulty: 'Easy',
-    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-    gallery: [
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-    ],
-    inclusions: [
-      '45 to 60 minutes sunrise flight',
-      'Pilot safety briefing & orientation',
-      'Post-flight toast & breakfast box',
-      'Flight completion certificate',
-    ],
-    safetyGuidelines: [
-      'Pregnant women and children under 8 are not permitted',
-      'Flights operate strictly subject to wind speeds below 12 km/h',
-    ],
-    slots: [
-      '05:45 AM (Sunrise Calm Wind Slot)',
-    ],
-    reportingPoint: 'Sahastradhara Airfield Grounds, Dehradun, Uttarakhand',
-    isFeatured: false,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'ent_jsm_03',
-    title: 'Thar Sunset Quad Biking (ATV)',
-    tagline: 'Take control of 500cc Polaris ATVs on untamed desert dunes',
-    city: 'Jaisalmer',
-    locationDetails: 'Sam Sand Dunes Track 4, Jaisalmer',
-    categoryId: 'cat_desert_safari',
-    category: 'Desert Safari',
-    rating: 4.7,
-    reviewsCount: 310,
-    startingPrice: 1799,
-    originalPrice: 2400,
-    discountBadge: '25% OFF',
-    duration: '30 Mins',
-    groupSize: '1 Rider per ATV',
-    minAge: 16,
-    difficulty: 'Moderate',
-    imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80',
-    gallery: [
-      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80',
-    ],
-    inclusions: [
-      '30 Mins ATV ride on exclusive sand track',
-      'Polaris 500cc automatic Quad Bike',
-      'Motocross helmet, goggles, and chest guard',
-      'Lead marshal guidance',
-    ],
-    safetyGuidelines: [
-      'Follow instructor signals strictly',
-      'Do not attempt high-speed jumps on unapproved dunes',
-    ],
-    slots: [
-      '07:30 AM',
-      '09:00 AM',
-      '04:00 PM',
-      '05:30 PM (Sunset Run)',
-    ],
-    reportingPoint: 'Sam ATV Track Station, Near Desert National Park Boundary, Jaisalmer',
-    isFeatured: false,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-];
-
-// Initial Seed Reviews
-const DEFAULT_REVIEWS = [
-  {
-    id: 'rev_001',
-    entId: 'ent_ddn_01',
-    userName: 'Vikram Rawat',
-    rating: 5,
-    comment: 'Unbelievable flight over Maldevta! Pilot was very experienced and video quality was crisp.',
-    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-  },
-  {
-    id: 'rev_002',
-    entId: 'ent_jsm_01',
-    userName: 'Sneha Agarwal',
-    rating: 5,
-    comment: 'Dune bashing was exhilarating and the Rajasthani cultural dinner at night was top-tier!',
-    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-  },
-  {
-    id: 'rev_003',
-    entId: 'ent_rsk_01',
-    userName: 'Aman Sharma',
-    rating: 5,
-    comment: 'Roller Coaster rapid was insane! Safety standards and guides were world class.',
-    createdAt: new Date(Date.now() - 8 * 86400000).toISOString(),
-  },
-];
-
 // --- Helpers for Persistence ---
 function loadCategories() {
   try {
     if (fs.existsSync(ENT_CATEGORIES_FILE)) {
       const raw = fs.readFileSync(ENT_CATEGORIES_FILE, 'utf8');
       const data = JSON.parse(raw);
-      if (Array.isArray(data) && data.length > 0) return data;
+      if (Array.isArray(data)) return data;
     }
   } catch (err) {
     console.error('Error reading ent_categories.json:', err.message);
   }
-  saveCategories(DEFAULT_ENT_CATEGORIES);
-  return DEFAULT_ENT_CATEGORIES;
+  return [];
 }
 
 function saveCategories(categories) {
@@ -446,64 +48,42 @@ function saveCategories(categories) {
 
 function loadEntItems() {
   try {
-    let items = null;
     if (fs.existsSync(ENT_DATA_FILE)) {
       const raw = fs.readFileSync(ENT_DATA_FILE, 'utf8');
       const data = JSON.parse(raw);
-      if (Array.isArray(data) && data.length > 0) items = data;
-    }
-    if (!items) {
-      items = DEFAULT_ENT_ITEMS;
-      saveEntItems(items);
-    }
+      if (!Array.isArray(data)) return [];
 
-    // Ensure every sport/experience is formally linked to categoryId and category
-    const categories = loadCategories();
-    let updated = false;
-    items.forEach((item) => {
-      if (!item.categoryId && item.category) {
-        const found = categories.find(
-          (c) => c.name.toLowerCase() === item.category.toLowerCase()
-        );
-        item.categoryId = found
-          ? found.id
-          : `cat_${item.category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-        updated = true;
-      } else if (item.categoryId && !item.category) {
-        const found = categories.find(
-          (c) => c.id === item.categoryId || c.slug === item.categoryId
-        );
-        item.category = found ? found.name : 'Adventure';
-        updated = true;
-      }
-      if (!item.vendorId) {
-        if ((item.city || '').toLowerCase() === 'dehradun') {
-          item.vendorId = 'v_adv_01';
-          item.vendorName = 'Captain Arvind Negi';
-          item.vendorBusiness = 'Himalayan Sky Gliders & Air Safari';
-          item.vendorPhone = '+91 98290 88801';
-        } else if ((item.city || '').toLowerCase() === 'jaisalmer') {
-          item.vendorId = 'v_adv_02';
-          item.vendorName = 'Fateh Singh Bhati';
-          item.vendorBusiness = 'Thar Royal Desert Safari & Camps';
-          item.vendorPhone = '+91 94141 77702';
-        } else {
-          item.vendorId = 'v_adv_03';
-          item.vendorName = 'Rakesh Rawat';
-          item.vendorBusiness = 'Ganga White Water Adventure Club';
-          item.vendorPhone = '+91 98370 66603';
+      // Ensure every sport/experience is formally linked to categoryId and category
+      const categories = loadCategories();
+      let updated = false;
+      data.forEach((item) => {
+        if (!item.categoryId && item.category) {
+          const found = categories.find(
+            (c) => c.name.toLowerCase() === item.category.toLowerCase()
+          );
+          if (found) {
+            item.categoryId = found.id;
+            updated = true;
+          }
+        } else if (item.categoryId && !item.category) {
+          const found = categories.find(
+            (c) => c.id === item.categoryId || c.slug === item.categoryId
+          );
+          if (found) {
+            item.category = found.name;
+            updated = true;
+          }
         }
-        updated = true;
+      });
+      if (updated) {
+        saveEntItems(data);
       }
-    });
-    if (updated) {
-      saveEntItems(items);
+      return data;
     }
-    return items;
   } catch (err) {
     console.error('Error reading ent_experiences.json:', err.message);
-    return DEFAULT_ENT_ITEMS;
   }
+  return [];
 }
 
 function saveEntItems(data) {
@@ -524,72 +104,7 @@ function loadBookings() {
   } catch (err) {
     console.error('Error reading ent_bookings.json:', err.message);
   }
-  const defaultBookings = [
-    {
-      id: 'booking_adv_01',
-      bookingCode: 'ENT-SKY-821',
-      entId: 'ent_ddn_01',
-      experienceId: 'ent_ddn_01',
-      experienceTitle: 'Maldevta Tandem Paragliding Flight',
-      title: 'Maldevta Tandem Paragliding Flight',
-      city: 'Dehradun',
-      category: 'Air Sports',
-      imageUrl: 'https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80',
-      reportingPoint: 'Maldevta Adventure Base Camp, Raipur Road, Dehradun',
-      vendorId: 'v_adv_01',
-      vendorName: 'Captain Arvind Negi',
-      vendorBusiness: 'Himalayan Sky Gliders & Air Safari',
-      vendorPhone: '+91 98290 88801',
-      userId: 'user_101',
-      travelerName: 'Amit Sharma',
-      travelerPhone: '+91 94628 77757',
-      travelDate: '16 Nov 2026',
-      timeSlot: '09:00 AM (Morning Breeze)',
-      guestsCount: 2,
-      unitPrice: 3200,
-      baseAmount: 6400,
-      taxGST: 320,
-      totalAmount: 6720,
-      currency: 'INR',
-      notes: 'Please arrange GoPro 4K recording.',
-      status: 'CONFIRMED',
-      paymentStatus: 'PAID',
-      createdAt: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-      id: 'booking_adv_02',
-      bookingCode: 'ENT-DES-419',
-      entId: 'ent_jsm_01',
-      experienceId: 'ent_jsm_01',
-      experienceTitle: 'Sam Sand Dunes Safari & Dune Bashing',
-      title: 'Sam Sand Dunes Safari & Dune Bashing',
-      city: 'Jaisalmer',
-      category: 'Desert Safari',
-      imageUrl: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
-      reportingPoint: 'Hipro Desert Camp Milestone, Sam Sand Dunes Road, Jaisalmer',
-      vendorId: 'v_adv_02',
-      vendorName: 'Fateh Singh Bhati',
-      vendorBusiness: 'Thar Royal Desert Safari & Camps',
-      vendorPhone: '+91 94141 77702',
-      userId: 'user_102',
-      travelerName: 'Pooja Rawat',
-      travelerPhone: '+91 98290 33344',
-      travelDate: '18 Nov 2026',
-      timeSlot: '04:30 PM (Safari & Camp Evening Combo)',
-      guestsCount: 4,
-      unitPrice: 2499,
-      baseAmount: 9996,
-      taxGST: 500,
-      totalAmount: 10496,
-      currency: 'INR',
-      notes: 'Vegetarian dinner for 4 people.',
-      status: 'CONFIRMED',
-      paymentStatus: 'PAID',
-      createdAt: new Date(Date.now() - 7200000).toISOString(),
-    }
-  ];
-  saveBookings(defaultBookings);
-  return defaultBookings;
+  return [];
 }
 
 function saveBookings(bookings) {
@@ -610,8 +125,7 @@ function loadReviews() {
   } catch (err) {
     console.error('Error reading ent_reviews.json:', err.message);
   }
-  saveReviews(DEFAULT_REVIEWS);
-  return DEFAULT_REVIEWS;
+  return [];
 }
 
 function saveReviews(reviews) {
@@ -621,10 +135,6 @@ function saveReviews(reviews) {
     console.error('Error writing ent_reviews.json:', err.message);
   }
 }
-
-// Auto-initialize on module load
-loadEntItems();
-loadReviews();
 
 // -------------------------------------------------------------
 // 1. GET ENT Items: / , /items , /list , /experiences
@@ -783,10 +293,10 @@ router.post('/categories', authenticate, requireAdmin, (req, res) => {
       id,
       name: cleanName,
       slug,
-      tagline: tagline ? tagline.trim() : `Exciting ${cleanName} adventures and experiences`,
-      icon: icon || 'terrain',
-      color: color || '#E11D48',
-      imageUrl: imageUrl || 'https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80',
+      tagline: tagline ? tagline.trim() : '',
+      icon: icon || '',
+      color: color || '',
+      imageUrl: imageUrl || '',
       displayOrder: categories.length + 1,
       isActive: true,
       createdAt: new Date().toISOString(),
@@ -1037,11 +547,11 @@ router.post('/bookings', authenticate, async (req, res) => {
       category: ent.category,
       imageUrl: ent.imageUrl,
       reportingPoint: ent.reportingPoint,
-      vendorId: ent.vendorId || 'v_adv_01',
-      vendorName: ent.vendorName || 'Captain Arvind Negi',
-      vendorBusiness: ent.vendorBusiness || 'Himalayan Sky Gliders & Air Safari',
-      vendorPhone: ent.vendorPhone || '+91 98290 88801',
-      userId: userId || 'guest_user',
+      vendorId: ent.vendorId || '',
+      vendorName: ent.vendorName || '',
+      vendorBusiness: ent.vendorBusiness || '',
+      vendorPhone: ent.vendorPhone || '',
+      userId,
       travelerName,
       travelerPhone,
       travelDate: date,
@@ -1181,7 +691,7 @@ router.patch('/bookings/:id/cancel', authenticate, (req, res) => {
     }
 
     bookings[idx].status = 'CANCELLED';
-    bookings[idx].cancelReason = reason || 'Cancelled by user';
+    bookings[idx].cancelReason = reason || '';
     bookings[idx].refundStatus = 'INITIATED';
     bookings[idx].cancelledAt = new Date().toISOString();
     saveBookings(bookings);
@@ -1438,8 +948,8 @@ const createEntHandler = (req, res) => {
         finalCategoryId = `cat_${finalCategoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
       }
     } else {
-      finalCategoryId = 'cat_adventure';
-      finalCategoryName = 'Adventure';
+      finalCategoryId = '';
+      finalCategoryName = '';
     }
 
     const items = loadEntItems();
@@ -1451,28 +961,28 @@ const createEntHandler = (req, res) => {
       title: title.trim(),
       tagline: tagline || '',
       city: city.trim(),
-      locationDetails: locationDetails || `${city}, India`,
+      locationDetails: locationDetails || '',
       categoryId: finalCategoryId,
       category: finalCategoryName,
-      rating: 5.0,
-      reviewsCount: 1,
+      rating: 0,
+      reviewsCount: 0,
       startingPrice: Number(startingPrice),
       originalPrice: originalPrice ? Number(originalPrice) : null,
-      discountBadge: discountBadge || 'NEW',
-      duration: duration || '1-2 Hours',
-      groupSize: groupSize || '1-6 Travelers',
-      minAge: minAge ? Number(minAge) : 10,
-      difficulty: difficulty || 'Moderate',
-      imageUrl: imageUrl || 'https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80',
-      gallery: Array.isArray(gallery) && gallery.length > 0 ? gallery : [imageUrl || ''],
-      inclusions: Array.isArray(inclusions) ? inclusions : ['Certified guide', 'Safety gear'],
-      safetyGuidelines: Array.isArray(safetyGuidelines) ? safetyGuidelines : ['Follow safety instructions'],
-      slots: Array.isArray(slots) && slots.length > 0 ? slots : ['09:00 AM', '02:00 PM', '04:30 PM'],
-      reportingPoint: reportingPoint || `${city} Adventure Base`,
-      vendorId: req.body.vendorId || 'v_adv_01',
-      vendorName: req.body.vendorName || 'Captain Arvind Negi',
-      vendorBusiness: req.body.vendorBusiness || 'Himalayan Sky Gliders & Air Safari',
-      vendorPhone: req.body.vendorPhone || '+91 98290 88801',
+      discountBadge: discountBadge || '',
+      duration: duration || '',
+      groupSize: groupSize || '',
+      minAge: minAge ? Number(minAge) : null,
+      difficulty: difficulty || '',
+      imageUrl: imageUrl || '',
+      gallery: Array.isArray(gallery) ? gallery : [],
+      inclusions: Array.isArray(inclusions) ? inclusions : [],
+      safetyGuidelines: Array.isArray(safetyGuidelines) ? safetyGuidelines : [],
+      slots: Array.isArray(slots) ? slots : [],
+      reportingPoint: reportingPoint || '',
+      vendorId: req.body.vendorId || '',
+      vendorName: req.body.vendorName || '',
+      vendorBusiness: req.body.vendorBusiness || '',
+      vendorPhone: req.body.vendorPhone || '',
       isFeatured: !!isFeatured,
       isActive: true,
       createdAt: new Date().toISOString(),

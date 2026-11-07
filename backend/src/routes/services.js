@@ -6,6 +6,32 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 // 1. Dynamic Operational Cities Router (GET, POST, PUT, DELETE, TOGGLE)
 router.use('/cities', require('./cities'));
 
+// Map of legacy/broken 404 Unsplash image URLs to valid, active 200 OK images
+const BROKEN_IMAGE_MAP = {
+  'https://images.unsplash.com/photo-1541888946425-d0fbb18615f3?auto=format&fit=crop&w=800&q=80': 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=800&q=80': 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1508873696983-2df570464756?auto=format&fit=crop&w=800&q=80': 'https://images.unsplash.com/photo-1559302504-64aae6ca6b6d?auto=format&fit=crop&w=800&q=80',
+};
+
+const sanitizeImageUrl = (url) => {
+  if (!url) return '';
+  return BROKEN_IMAGE_MAP[url] || url;
+};
+
+// Self-healing database update for legacy broken image links
+(async () => {
+  try {
+    for (const [broken, fixed] of Object.entries(BROKEN_IMAGE_MAP)) {
+      await prisma.subService.updateMany({
+        where: { image: broken },
+        data: { image: fixed }
+      });
+    }
+  } catch (err) {
+    console.warn('Subservice image self-healing deferred:', err.message);
+  }
+})();
+
 // 2. GET /api/v1/services/partners - Get verified partners/technicians dynamically from database
 router.get('/partners', async (req, res) => {
     try {
@@ -72,7 +98,10 @@ router.get('/', async (req, res) => {
             }
             return {
                 ...s,
-                subServices: filteredSubs
+                subServices: filteredSubs.map(sub => ({
+                    ...sub,
+                    image: sanitizeImageUrl(sub.image)
+                }))
             };
         });
 
@@ -122,7 +151,10 @@ router.get('/:id', async (req, res) => {
             success: true,
             data: {
                 ...service,
-                subServices: filteredSubs
+                subServices: filteredSubs.map(sub => ({
+                    ...sub,
+                    image: sanitizeImageUrl(sub.image)
+                }))
             }
         });
     } catch (error) {
@@ -134,8 +166,8 @@ router.get('/:id', async (req, res) => {
 router.post('/', authenticate, requireAdmin, async (req, res) => {
     try {
         const { code, name, description, icon, iconImage, imageUrl, rating, cities } = req.body;
-        const iconVal = iconImage || imageUrl || icon || 'https://cdn-icons-png.flaticon.com/512/2830/2830305.png';
-        const parsedCities = Array.isArray(cities) ? cities : (cities ? [cities] : ['Udaipur', 'Bhilwara']);
+        const iconVal = iconImage || imageUrl || icon || '';
+        const parsedCities = Array.isArray(cities) ? cities : (cities ? [cities] : []);
 
         const newService = await prisma.service.create({
             data: {

@@ -618,6 +618,7 @@ router.post('/vendor/register', authLimiter, async (req, res) => {
       phone,
       email,
       category, // 'Adventure' | 'Services'
+      state,
       city,
       specialization,
       experience,
@@ -713,6 +714,7 @@ router.post('/vendor/register', authLimiter, async (req, res) => {
         phone: phone.trim(),
         email: (email && email.trim()) || null,
         category: selectedCategory,
+        state: (state && state.trim()) || null,
         city: city.trim(),
         specialization: (specialization && specialization.trim()) || (selectedCategory === 'Adventure' ? 'Adventure Activities & Tours' : 'Construction & Home Services'),
         experience: (experience && experience.trim()) || '1+ Years',

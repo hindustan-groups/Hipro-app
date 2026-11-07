@@ -150,7 +150,7 @@ router.get('/threads', optionalAuth, async (req, res) => {
         return {
           id: conv.id,
           customerName: conv.customer?.name || (conv.customerId ? `User (${conv.customerId.slice(0, 8)})` : 'Customer'),
-          customerPhone: conv.customer?.phoneNumber || '+91 94628 77757',
+          customerPhone: conv.customer?.phoneNumber || '',
           contextType: isWaiting ? 'SUPPORT_QUEUE' : (isHuman ? 'HUMAN_ACTIVE' : 'AI_ACTIVE'),
           contextTag: conv.subject || 'Live Support Chat',
           status: conv.status,
@@ -230,7 +230,7 @@ router.get('/threads/:threadId/messages', optionalAuth, async (req, res) => {
             id: m.id,
             threadId: threadId,
             sender: m.senderType === 'CUSTOMER' ? 'customer' : (m.senderType === 'AGENT' ? 'admin' : (m.senderType === 'AI' ? 'ai' : 'system')),
-            senderName: m.senderType === 'CUSTOMER' ? 'Customer' : (m.senderType === 'AGENT' ? 'Er. Vikram Sharma (Admin)' : (m.senderType === 'AI' ? 'Hipro AI' : 'System')),
+            senderName: m.senderType === 'CUSTOMER' ? 'Customer' : (m.senderType === 'AGENT' ? 'Admin Desk' : (m.senderType === 'AI' ? 'Hipro AI' : 'System')),
             text: m.content,
             createdAt: m.createdAt.toISOString(),
             isRead: true
@@ -331,7 +331,7 @@ router.post('/messages', optionalAuth, chatMessageLimiter, async (req, res) => {
             id: savedDbMessage.id,
             threadId,
             sender: effectiveSender,
-            senderName: senderName || (isAdmin ? 'Er. Vikram Sharma (Admin Desk)' : 'User'),
+            senderName: senderName || (isAdmin ? 'Admin Desk' : 'User'),
             text: text.trim(),
             createdAt: savedDbMessage.createdAt.toISOString(),
             isRead: true
@@ -340,7 +340,7 @@ router.post('/messages', optionalAuth, chatMessageLimiter, async (req, res) => {
             id: savedDbMessage.id,
             threadId,
             sender: effectiveSender,
-            senderName: senderName || (isAdmin ? 'Er. Vikram Sharma (Admin Desk)' : 'User'),
+            senderName: senderName || (isAdmin ? 'Admin Desk' : 'User'),
             text: text.trim(),
             createdAt: savedDbMessage.createdAt.toISOString(),
             isRead: true
@@ -358,7 +358,7 @@ router.post('/messages', optionalAuth, chatMessageLimiter, async (req, res) => {
             id: savedDbMessage.id,
             threadId,
             sender: effectiveSender,
-            senderName: senderName || (isAdmin ? 'Er. Vikram Sharma (Admin Desk)' : 'User'),
+            senderName: senderName || (isAdmin ? 'Admin Desk' : 'User'),
             text: text.trim(),
             createdAt: savedDbMessage.createdAt.toISOString(),
             isRead: true
@@ -386,7 +386,7 @@ router.post('/messages', optionalAuth, chatMessageLimiter, async (req, res) => {
       thread = {
         id: threadId,
         customerName: customerName || (effectiveSender === 'vendor' ? (senderName || 'Vendor Partner') : 'Client'),
-        customerPhone: customerPhone || '+91 94628 77757',
+        customerPhone: customerPhone || '',
         contextType: contextType || (effectiveSender === 'vendor' ? 'VENDOR' : (quoteNumber ? 'QUOTATION' : requestNumber ? 'REQUEST' : 'GENERAL')),
         contextTag: derivedTag,
         quoteNumber: quoteNumber || '',
@@ -421,7 +421,7 @@ router.post('/messages', optionalAuth, chatMessageLimiter, async (req, res) => {
       id: `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
       threadId,
       sender: effectiveSender,
-      senderName: senderName || (effectiveSender === 'admin' ? 'Er. Vikram Sharma (Admin Desk)' : (effectiveSender === 'vendor' ? 'Vendor Desk' : 'Client')),
+      senderName: senderName || (effectiveSender === 'admin' ? 'Admin Desk' : (effectiveSender === 'vendor' ? 'Vendor Desk' : 'Client')),
       text: text.trim(),
       createdAt: nowIso,
       isRead: false
@@ -447,7 +447,7 @@ router.post('/messages', optionalAuth, chatMessageLimiter, async (req, res) => {
         const { addNotification } = require('./notifications');
         const snippet = text.trim().length > 100 ? text.trim().substring(0, 97) + '...' : text.trim();
         addNotification({
-          title: `💬 New Message from ${senderName || 'Hipro Technical Lead'}`,
+          title: `💬 New Message from ${senderName || 'Support Team'}`,
           description: snippet,
           type: 'CHAT',
           referenceId: threadId,

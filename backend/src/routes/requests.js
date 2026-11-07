@@ -134,7 +134,7 @@ router.post('/', authenticateUser,
     } = req.body;
 
     const phone = String(customerPhone || phoneNumber || '').trim();
-    const name = String(customerName || 'Customer App User').trim();
+    const name = String(customerName || '').trim();
 
     let user = null;
     if (req.userId) {
@@ -164,7 +164,7 @@ router.post('/', authenticateUser,
         const securePasswordHash = await bcrypt.hash(randomSecret, 10);
         user = await prisma.user.create({
           data: {
-            name: name || "Customer App User",
+            name: name || phone,
             phoneNumber: phone,
             password: securePasswordHash,
             authProvider: 'phone'
@@ -233,9 +233,11 @@ router.post('/', authenticateUser,
         }
       }
     }
-    if (mediaList.length === 0 && req.files && req.files.length > 0) {
-      mediaList = req.files.map(file => `${baseURL}/uploads/${file.filename}`);
+    if (req.files && req.files.length > 0) {
+      const fileUrls = req.files.map(file => `${baseURL}/uploads/${file.filename}`);
+      mediaList = [...mediaList, ...fileUrls];
     }
+    mediaList = Array.from(new Set(mediaList.filter(Boolean)));
 
     const requestNumber = `REQ-${(Date.now())+ Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -245,20 +247,20 @@ router.post('/', authenticateUser,
         userId: user.id,
         serviceId: req.body.serviceId || null,
         subServiceId: req.body.subServiceId || null,
-        servicecode: servicecode || req.body.categoryName || req.body.categoryId || 'General Service',
-        subServiceCode: subServiceCode || req.body.subServiceName || 'Site Inspection',
-        issueDescription: issueDescription || 'General site inspection requested.',
+        servicecode: servicecode || req.body.categoryName || req.body.categoryId || '',
+        subServiceCode: subServiceCode || req.body.subServiceName || '',
+        issueDescription: issueDescription || '',
         urgency: req.body.urgency || 'NORMAL',
         status: status || 'SUBMITTED',
         mediaUrl: mediaList,
-        propertyType: propertyType || 'Residential',
-        propertySize: propertySize || 'Standard Area',
-        location: location || addressline || req.body.address || 'Bhilwara, Rajasthan',
+        propertyType: propertyType || '',
+        propertySize: propertySize || '',
+        location: location || addressline || req.body.address || '',
         latitude: req.body.latitude ? parseFloat(req.body.latitude) : null,
         longitude: req.body.longitude ? parseFloat(req.body.longitude) : null,
         preferredDate: preferredDate || new Date().toISOString().split('T')[0],
-        preferredTime: preferredTime || 'Morning (09:00 AM - 12:00 PM)',
-        addressline: addressline || req.body.address || 'Site Address'
+        preferredTime: preferredTime || '',
+        addressline: addressline || req.body.address || ''
       },
       include: {
         user: {
@@ -521,7 +523,7 @@ router.patch('/:id/status', authenticate, async (req, res) => {
       const { addNotification } = require('./notifications');
       const io = req.app.get('io');
       const reqNum = updated.requestNumber || updated.id.slice(0, 8);
-      const serviceName = updated.servicecode || 'Service Request';
+      const serviceName = updated.servicecode || '';
       const notificationImageUrl = (updated.mediaUrl && Array.isArray(updated.mediaUrl) && updated.mediaUrl.length > 0)
         ? updated.mediaUrl[0]
         : null;
@@ -570,7 +572,7 @@ router.patch('/:id/status', authenticate, async (req, res) => {
         referenceId: updated.id,
         requestId: updated.id,
         projectName: serviceName,
-        location: updated.addressline || updated.location || 'Site Location',
+        location: updated.addressline || updated.location || '',
         unread: true,
         timestamp: new Date().toISOString()
       }, io);
@@ -650,8 +652,8 @@ router.patch('/:id/assign', authenticate, requireAdmin, async (req, res) => {
         referenceId: updated.id,
         requestId: updated.id,
         requestNumber: updated.requestNumber,
-        projectName: updated.servicecode || 'Site Inspection',
-        location: updated.addressline || updated.location || 'Site Location',
+        projectName: updated.servicecode || '',
+        location: updated.addressline || updated.location || '',
         unread: true,
         timestamp: new Date().toISOString()
       }, io);
@@ -1059,8 +1061,8 @@ router.patch('/:id/share-vendor', authenticate, requireAdmin, async (req, res) =
         type: 'ASSIGNMENT',
         referenceId: request.id,
         requestId: request.id,
-        projectName: request.servicecode || 'Service Request',
-        location: request.addressline || request.location || 'Site Location',
+        projectName: request.servicecode || '',
+        location: request.addressline || request.location || '',
         unread: true,
         timestamp: new Date().toISOString()
       }, io);
@@ -1271,7 +1273,7 @@ router.post('/:id/rate', optionalAuth, async (req, res) => {
       return res.status(403).json({ success: false, message: 'You are not authorized to rate this request' });
     }
 
-    const customerName = req.user?.name || request.user?.name || request.userName || 'Valued Customer';
+    const customerName = req.user?.name || request.user?.name || request.userName || 'Customer';
     const customerPhone = req.user?.phone || req.user?.phoneNumber || request.user?.phone || request.user?.phoneNumber || request.userPhone || null;
 
     // Resolve assigned Vendor

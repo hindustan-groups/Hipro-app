@@ -281,9 +281,12 @@ router.post('/create-order', authenticate, async (req, res) => {
       }
     }
 
-    // Fallback order ID if gateway API call failed or timed out
+    // Do not fabricate a payment order ID if the gateway call failed
     if (!orderId) {
-      orderId = `order_test_${Date.now()}`;
+      return res.status(502).json({
+        success: false,
+        message: 'Payment gateway is temporarily unavailable. Please try again.'
+      });
     }
 
     return res.json({

@@ -6,144 +6,12 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 
 const OFFERS_FILE = path.join(__dirname, '../../uploads/offers.json');
 
-// Default initial offers
-const DEFAULT_OFFERS = [
-  // --- Service Coupons & Offers ---
-  {
-    id: 'offer_1',
-    title: 'Flat 20% OFF on Waterproofing Audits',
-    subtitle: 'Advanced infrared terrace & bathroom leakage scanning',
-    category: 'Waterproofing',
-    section: 'services',
-    discount: '20% OFF',
-    code: 'HIPRO20',
-    badge: 'POPULAR',
-    imageUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80',
-    minAmount: 1500,
-    validTill: '30 Nov 2026',
-    targetRoute: 'service:Waterproofing',
-    terms: 'Applicable on residential and commercial inspections.',
-    isActive: true,
-    order: 1,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'offer_2',
-    title: 'Flat ₹500 OFF on Structural Repairs',
-    subtitle: 'Certified engineers for crack stitching & foundation care',
-    category: 'Civil',
-    section: 'services',
-    discount: '₹500 OFF',
-    code: 'CIVIL500',
-    badge: 'EXCLUSIVE',
-    imageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb18015f6?auto=format&fit=crop&w=800&q=80',
-    minAmount: 2500,
-    validTill: '15 Dec 2026',
-    targetRoute: 'service:Civil',
-    terms: 'Valid once per user for inspection bookings above ₹2,500.',
-    isActive: true,
-    order: 2,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'offer_3',
-    title: 'Free Initial Site Consultation',
-    subtitle: 'Expert site evaluation for new home constructions & renovations',
-    category: 'Trending',
-    section: 'services',
-    discount: 'FREE VISIT',
-    code: 'FIRSTFREE',
-    badge: 'NEW USER',
-    imageUrl: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=800&q=80',
-    minAmount: 0,
-    validTill: '31 Dec 2026',
-    targetRoute: 'create_inspection',
-    terms: 'Valid for first-time customers in Bhilwara & surrounding areas.',
-    isActive: true,
-    order: 3,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'offer_4',
-    title: 'Save 15% on Full Home Renovation',
-    subtitle: 'Comprehensive architectural planning and modern elevation',
-    category: 'Renovation',
-    section: 'services',
-    discount: '15% OFF',
-    code: 'RENO15',
-    badge: 'LIMITED TIME',
-    imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
-    minAmount: 5000,
-    validTill: '10 Jan 2027',
-    targetRoute: 'service:Renovation',
-    terms: 'Applies to full renovation and structural remodelling packages.',
-    isActive: true,
-    order: 4,
-    createdAt: new Date().toISOString()
-  },
-  // --- Adventure / Entertainment Coupons & Offers ---
-  {
-    id: 'offer_adv_1',
-    title: 'Flat 20% OFF on River Rafting & Sky Adventures',
-    subtitle: 'Valid on Ganga river rafting, tandem paragliding & paramotor passes',
-    category: 'Adventure',
-    section: 'adventure',
-    discount: '20% OFF',
-    code: 'THRILL20',
-    badge: 'TOP ADVENTURE',
-    imageUrl: 'https://images.unsplash.com/photo-1516298773066-c48f8e9bd92b?auto=format&fit=crop&w=800&q=80',
-    minAmount: 1000,
-    validTill: '31 Dec 2026',
-    targetRoute: 'adventure',
-    terms: 'Applicable on adventure passes in Rishikesh & Dehradun.',
-    isActive: true,
-    order: 5,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'offer_adv_2',
-    title: 'Flat ₹300 OFF on Jaisalmer Desert Camps',
-    subtitle: 'Camp under the stars with sunset camel ride & Rajasthani folk night',
-    category: 'Desert Safari',
-    section: 'adventure',
-    discount: '₹300 OFF',
-    code: 'DESERT300',
-    badge: 'DESERT SPECIAL',
-    imageUrl: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
-    minAmount: 1200,
-    validTill: '31 Jan 2027',
-    targetRoute: 'adventure',
-    terms: 'Valid on desert safari & tent stay packages in Sam Dunes.',
-    isActive: true,
-    order: 6,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'offer_adv_3',
-    title: 'Save 10% on Group Adventure Passes',
-    subtitle: 'Special concession for groups of 3 or more adventurers',
-    category: 'Air Sports',
-    section: 'adventure',
-    discount: '10% OFF',
-    code: 'GROUP10',
-    badge: 'GROUP PASS',
-    imageUrl: 'https://images.unsplash.com/photo-1530866495561-507c9faab2ed?auto=format&fit=crop&w=800&q=80',
-    minAmount: 1500,
-    validTill: '28 Feb 2027',
-    targetRoute: 'adventure',
-    terms: 'Minimum booking of ₹1,500 required.',
-    isActive: true,
-    order: 7,
-    createdAt: new Date().toISOString()
-  }
-];
-
 function readOffers() {
   try {
     if (!fs.existsSync(OFFERS_FILE)) {
       fs.mkdirSync(path.dirname(OFFERS_FILE), { recursive: true });
-      fs.writeFileSync(OFFERS_FILE, JSON.stringify(DEFAULT_OFFERS, null, 2), 'utf-8');
-      return DEFAULT_OFFERS;
+      fs.writeFileSync(OFFERS_FILE, '[]', 'utf-8');
+      return [];
     }
     const data = fs.readFileSync(OFFERS_FILE, 'utf-8');
     const parsed = JSON.parse(data);
@@ -276,7 +144,7 @@ router.post('/validate', (req, res) => {
         originalAmount: orderAmount,
         finalAmount,
         minAmount,
-        terms: offer.terms || 'Standard terms apply.'
+        terms: offer.terms || ''
       },
       message: `Coupon "${trimmedCode}" applied successfully! You save ₹${discountAmount.toLocaleString('en-IN')}.`
     });
@@ -363,15 +231,15 @@ router.post(['/', '/admin'], authenticate, requireAdmin, (req, res) => {
       id: `offer_${Date.now()}`,
       title: title.trim(),
       subtitle: subtitle ? subtitle.trim() : '',
-      category: category ? category.trim() : 'Trending',
-      discount: discount ? discount.trim() : 'SPECIAL OFFER',
+      category: category ? category.trim() : '',
+      discount: discount ? discount.trim() : '',
       code: code.trim().toUpperCase(),
       badge: badge ? badge.trim() : '',
       imageUrl: imageUrl ? imageUrl.trim() : '',
       minAmount: Number(minAmount) || 0,
-      validTill: validTill ? validTill.trim() : 'Limited Period',
-      targetRoute: targetRoute ? targetRoute.trim() : 'create_inspection',
-      terms: terms ? terms.trim() : 'Standard terms & conditions apply.',
+      validTill: validTill ? validTill.trim() : '',
+      targetRoute: targetRoute ? targetRoute.trim() : '',
+      terms: terms ? terms.trim() : '',
       order: Number(order) || (offers.length + 1),
       isActive: isActive !== false,
       createdAt: new Date().toISOString()

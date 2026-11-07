@@ -38,11 +38,7 @@ async function askGroq(messages, knowledge, customerContext = null) {
     : null;
 
   if (!apiKey) {
-    return {
-      reply: 'Hello! I am Hipro Support Assistant. A support representative will be with you shortly.',
-      escalate: true,
-      reason: 'AI service key not configured'
-    };
+    return null;
   }
 
   let model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
@@ -53,12 +49,10 @@ async function askGroq(messages, knowledge, customerContext = null) {
   const systemPrompt = `
 You are the official Hipro Home & Civil Services Customer Support AI Assistant.
 Rules:
-1. Answer customer queries politely, accurately, and concisely based on Hipro services (Waterproofing, Home Inspection, Structural Repairs, Civil Audits, Painting, Tile & Flooring).
-2. For visiting charges: Inspection visits start at ₹199 across Jaipur, Jodhpur, Udaipur, and Bhilwara.
-3. For slots: Inform the customer that inspection and service slots are available daily in two shifts: Morning (10:00 AM – 1:00 PM) and Afternoon (2:00 PM – 6:00 PM).
-4. Strictly READ-ONLY: Never execute or promise database writes, cancellations, or payment refunds.
-5. If customer requests a human or real agent, escalate immediately.
-6. Return a valid JSON object matching:
+1. Answer customer queries politely, accurately, and concisely using only the verified services, pricing, slots, and policies in the Knowledge Base below.
+2. Strictly READ-ONLY: Never execute or promise database writes, cancellations, or payment refunds.
+3. If customer requests a human or real agent, escalate immediately.
+4. Return a valid JSON object matching:
 {
   "reply": "Your response to customer",
   "escalate": false,
@@ -66,7 +60,7 @@ Rules:
 }
 
 Knowledge Base:
-${knowledge || 'Hipro provides reliable civil engineering, home inspection, waterproofing, plumbing, painting, and construction care across Rajasthan.'}
+${knowledge || ''}
 
 ${customerContext ? `Customer Context (Read-Only):\n${JSON.stringify(customerContext, null, 2)}` : ''}
 `;
@@ -96,11 +90,7 @@ ${customerContext ? `Customer Context (Read-Only):\n${JSON.stringify(customerCon
     });
   } catch (err) {
     console.warn(`[Groq] API call failed (${err.message})`);
-    return {
-      reply: 'Thank you for reaching out to Hipro Support. A representative will connect with you shortly.',
-      escalate: true,
-      reason: err.message
-    };
+    throw err;
   }
 
   const rawContent = response?.choices?.[0]?.message?.content;

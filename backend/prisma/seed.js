@@ -12,7 +12,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/1048/1048953.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/1048/1048953.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/1048/1048953.png",
-      rating: 4.9,
+      rating: 0,
       subServices: [
         {
           titleEn: "RCC Slab & Beam Casting",
@@ -47,7 +47,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/2913/2913520.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/2913/2913520.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/2913/2913520.png",
-      rating: 4.9,
+      rating: 0,
       subServices: [
         {
           titleEn: "Roof & Terrace Waterproofing",
@@ -82,7 +82,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/2910/2910795.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/2910/2910795.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/2910/2910795.png",
-      rating: 4.9,
+      rating: 0,
       subServices: [
         {
           titleEn: "Sagging Slab & Beam Rehabilitation",
@@ -111,7 +111,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/1546/1546115.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/1546/1546115.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/1546/1546115.png",
-      rating: 4.8,
+      rating: 0,
       subServices: [
         {
           titleEn: "Helical Rebar Wall Stitching",
@@ -140,7 +140,7 @@ async function main() {
       icon: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
       iconImage: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
       imageUrl: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
-      rating: 4.8,
+      rating: 0,
       subServices: [
         {
           titleEn: "Shora & Salt Efflorescence Treatment",
@@ -169,7 +169,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/814/814210.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/814/814210.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/814/814210.png",
-      rating: 4.8,
+      rating: 0,
       subServices: [
         {
           titleEn: "Acoustic & Thermal Leak Detection",
@@ -204,7 +204,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/2910/2910768.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/2910/2910768.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/2910/2910768.png",
-      rating: 4.8,
+      rating: 0,
       subServices: [
         {
           titleEn: "Short Circuit & MCB Trip Diagnosis",
@@ -233,7 +233,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/1048/1048949.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/1048/1048949.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/1048/1048949.png",
-      rating: 4.9,
+      rating: 0,
       subServices: [
         {
           titleEn: "Exterior Waterproof Weathercoat",
@@ -268,7 +268,7 @@ async function main() {
       icon: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
       iconImage: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
       imageUrl: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-      rating: 4.9,
+      rating: 0,
       subServices: [
         {
           titleEn: "Vitrified Floor & Wall Tiling",
@@ -303,7 +303,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/2413/2413004.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/2413/2413004.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/2413/2413004.png",
-      rating: 4.8,
+      rating: 0,
       subServices: [
         {
           titleEn: "Gypsum Designer False Ceiling",
@@ -332,7 +332,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/1055/1055666.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/1055/1055666.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/1055/1055666.png",
-      rating: 5.0,
+      rating: 0,
       subServices: [
         {
           titleEn: "2D Floor Plan & Vastu Layout",
@@ -361,7 +361,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/2873/2873836.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/2873/2873836.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/2873/2873836.png",
-      rating: 4.9,
+      rating: 0,
       subServices: [
         {
           titleEn: "Post-Construction Drill & Inject Defense",
@@ -390,7 +390,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/3100/3100570.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/3100/3100570.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/3100/3100570.png",
-      rating: 4.9,
+      rating: 0,
       subServices: [
         {
           titleEn: "Underground Sump High-Pressure Clean",
@@ -419,7 +419,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/1533/1533907.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/1533/1533907.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/1533/1533907.png",
-      rating: 4.8,
+      rating: 0,
       subServices: [
         {
           titleEn: "Soundproof UPVC Sliding Windows",
@@ -448,7 +448,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/2910/2910777.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/2910/2910777.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/2910/2910777.png",
-      rating: 4.9,
+      rating: 0,
       subServices: [
         {
           titleEn: "Rooftop On-Grid Solar Plant",
@@ -477,7 +477,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/2910/2910786.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/2910/2910786.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/2910/2910786.png",
-      rating: 4.8,
+      rating: 0,
       subServices: [
         {
           titleEn: "Main Door & Digital Smart Lock",
@@ -506,7 +506,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/2910/2910761.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/2910/2910761.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/2910/2910761.png",
-      rating: 4.9,
+      rating: 0,
       subServices: [
         {
           titleEn: "HD IP CCTV Camera Installation",
@@ -535,7 +535,7 @@ async function main() {
       icon: "https://cdn-icons-png.flaticon.com/512/2910/2910763.png",
       iconImage: "https://cdn-icons-png.flaticon.com/512/2910/2910763.png",
       imageUrl: "https://cdn-icons-png.flaticon.com/512/2910/2910763.png",
-      rating: 5.0,
+      rating: 0,
       subServices: [
         {
           titleEn: "Pre-Possession Snagging Inspection",
@@ -561,7 +561,7 @@ async function main() {
 
   const SUBSERVICE_IMAGES = {
     // Civil Construction
-    "RCC Slab & Beam Casting": "https://images.unsplash.com/photo-1541888946425-d0fbb18615f3?auto=format&fit=crop&w=800&q=80",
+    "RCC Slab & Beam Casting": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80",
     "Column Jacketing & Retrofitting": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=800&q=80",
     "Boundary Wall & Plinth Work": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=800&q=80",
     "Core Cutting & Alterations": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80",
@@ -573,7 +573,7 @@ async function main() {
     "Basement & Retaining Wall Defense": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
 
     // Structure Repair
-    "Sagging Slab & Beam Rehabilitation": "https://images.unsplash.com/photo-1541888946425-d0fbb18615f3?auto=format&fit=crop&w=800&q=80",
+    "Sagging Slab & Beam Rehabilitation": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80",
     "Rebar Rust Removal & Anti-Corrosion": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80",
     "Foundation Settlement Audit": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=800&q=80",
 
@@ -636,9 +636,9 @@ async function main() {
     "Balcony Glass Railings & Spiders": "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=800&q=80",
 
     // Solar & Inverter Setup
-    "Rooftop On-Grid Solar Plant": "https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=800&q=80",
-    "Solar Water Heater Setup & Repair": "https://images.unsplash.com/photo-1508873696983-2df570464756?auto=format&fit=crop&w=800&q=80",
-    "Hybrid Inverter & Lithium Battery Sync": "https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=800&q=80",
+    "Rooftop On-Grid Solar Plant": "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&w=800&q=80",
+    "Solar Water Heater Setup & Repair": "https://images.unsplash.com/photo-1559302504-64aae6ca6b6d?auto=format&fit=crop&w=800&q=80",
+    "Hybrid Inverter & Lithium Battery Sync": "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&w=800&q=80",
 
     // Carpentry & Doors
     "Main Door & Digital Smart Lock": "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80",
@@ -652,11 +652,9 @@ async function main() {
 
     // Home Quality Inspection
     "Pre-Possession Snagging Inspection": "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=800&q=80",
-    "Concrete Rebound Hammer Test": "https://images.unsplash.com/photo-1541888946425-d0fbb18615f3?auto=format&fit=crop&w=800&q=80",
+    "Concrete Rebound Hammer Test": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80",
     "Thermal Thermal Heat & Moisture Audit": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80"
   };
-
-  const DEFAULT_SUB_IMAGE = "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80";
 
   for (const s of servicesData) {
     const { subServices, ...serviceFields } = s;
@@ -670,8 +668,8 @@ async function main() {
 
     // 2. Safely Upsert SubServices (preserves foreign keys on existing bookings/requests)
     for (const sub of subServices) {
-      const imgUrl = sub.image || SUBSERVICE_IMAGES[sub.titleEn] || DEFAULT_SUB_IMAGE;
-      const charge = sub.visitingCharge !== undefined ? sub.visitingCharge : 199.0;
+      const imgUrl = sub.image || SUBSERVICE_IMAGES[sub.titleEn] || '';
+      const charge = sub.visitingCharge !== undefined ? sub.visitingCharge : 0;
 
       const existingSub = await prisma.subService.findFirst({
         where: { serviceId: service.id, titleEn: sub.titleEn }
@@ -704,93 +702,7 @@ async function main() {
     console.log(`✅ Upserted ${service.name} with ${subServices.length} subservices with high-res imagery`);
   }
 
-  // 3. Seed Demo User
-  let demoUser = await prisma.user.findFirst();
-  if (!demoUser) {
-    demoUser = await prisma.user.create({
-      data: {
-        name: "Piyush Sharma",
-        phoneNumber: "+91 94628 77757",
-        email: "piyush@example.com",
-        authProvider: "local",
-      }
-    });
-    console.log(`✅ Created demo user: ${demoUser.name}`);
-  }
-
-  // 4. Direct Bookings (Only real user bookings are kept; no demo bookings)
-
-  // 5. Seed Demo Service Request & Quotation
-  const civilService = await prisma.service.findUnique({
-    where: { code: "CIVIL_CONSTRUCTION" },
-    include: { subServices: true }
-  });
-
-  if (civilService && civilService.subServices.length > 0) {
-    const civilSub = civilService.subServices[0];
-    let req1 = await prisma.serviceRequest.findUnique({
-      where: { requestNumber: "REQ-2026-101" }
-    });
-
-    if (!req1) {
-      req1 = await prisma.serviceRequest.create({
-        data: {
-          requestNumber: "REQ-2026-101",
-          userId: demoUser.id,
-          serviceId: civilService.id,
-          subServiceId: civilSub.id,
-          servicecode: civilService.code,
-          subServiceCode: civilSub.titleEn,
-          issueDescription: "Cracks observed on beam and slab during monsoon season.",
-          urgency: "HIGH",
-          status: "QUOTED",
-          mediaUrl: ["https://images.unsplash.com/photo-1541888946425-d0fbb18615f3?auto=format&fit=crop&w=800&q=80"],
-          propertyType: "Residential Villa",
-          propertySize: "1800 sq ft",
-          location: "Bhilwara, Rajasthan",
-          latitude: 25.3463,
-          longitude: 74.6364,
-          preferredDate: "2026-10-25",
-          preferredTime: "11:00 AM",
-          addressline: "Plot 88, Near Lake View Colony"
-        }
-      });
-      console.log('✅ Seeded demo ServiceRequest REQ-2026-101');
-
-      const existingQ1 = await prisma.quotation.findUnique({
-        where: { quoteNumber: "QTE-2026-501" }
-      });
-
-      if (!existingQ1) {
-        await prisma.quotation.create({
-          data: {
-            quoteNumber: "QTE-2026-501",
-            requestId: req1.id,
-            status: "PENDING_APPROVAL",
-            lineItem: [
-              { item: "Polymer modified micro-concrete", quantity: "4 bags", rate: 850, amount: 3400 },
-              { item: "Rust converter & rebar coating", quantity: "2 liters", rate: 1200, amount: 2400 },
-              { item: "Skilled structural masonry labor", quantity: "3 days", rate: 1500, amount: 4500 }
-            ],
-            materialCost: 5800.0,
-            laborCost: 4500.0,
-            totalCost: 10300.0,
-            discount: 500.0,
-            subtotal: 9800.0,
-            taxGST: 1764.0,
-            grandtotal: 11564.0,
-            taxRate: 18.0,
-            termsAndConditions: "1. 50% advance on material mobilization.\n2. Work executed according to standard engineering specifications.",
-            created_by: "Er. Vikram Sharma",
-            estimatedTimeline: "4 Working Days"
-          }
-        });
-        console.log('✅ Seeded demo Quotation QTE-2026-501');
-      }
-    }
-  }
-
-  console.log('🎉 All 18 Services, SubServices with high-res images, and demo Data seeded into Neon / Aiven DB!');
+  console.log('🎉 All 18 Services and SubServices with high-res images seeded into the database!');
 }
 
 main()
