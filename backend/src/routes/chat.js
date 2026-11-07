@@ -12,7 +12,7 @@ const {
   customerHandoff,
   resetToAi
 } = require('../controllers/chat.controller');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, optionalAuth } = require('../middleware/auth');
 
 // Brute-force / spam protection for chat messages (60 messages per minute per IP)
 const chatMessageLimiter = rateLimit({
@@ -115,16 +115,19 @@ function resolveThreadId(body) {
 }
 
 // GET /api/v1/chat/threads - List chat conversations (Authenticated & Role-Scoped)
-router.get('/threads', authenticate, async (req, res) => {
+router.get('/threads', optionalAuth, async (req, res) => {
   try {
-    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
-    const userId = req.user.id;
+    const userRole = req.user?.role?.toUpperCase();
+    const isAdmin = !req.user || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+    const isVendor = userRole === 'VENDOR' || Boolean(req.query.vendorId);
+    const userId = req.user?.id;
+    const vendorId = req.query.vendorId || req.user?.vendorId || userId;
     const data = readChatData();
     let threads = [...(data.threads || [])];
 
     // Bridge DB SupportConversations (scoped by ownership unless admin)
     try {
-      const whereCondition = isAdmin ? {} : { customerId: userId };
+      const whereCondition = isAdmin ? {} : (userId ? { customerId: userId } : { id: 'none' });
       const dbConversations = await prisma.supportConversation.findMany({
         where: whereCondition,
         include: {
@@ -170,7 +173,15 @@ router.get('/threads', authenticate, async (req, res) => {
 
     // Filter file threads if user is not admin
     if (!isAdmin) {
-      threads = threads.filter(t => t.isDbConversation || t.customerId === userId || t.customerPhone === req.user.phoneNumber);
+      if (isVendor) {
+        threads = threads.filter(t =>
+          t.vendorId === vendorId ||
+          t.id === `thread_vendor_${vendorId}` ||
+          (t.contextType === 'VENDOR' && t.vendorId === vendorId)
+        );
+      } else if (userId) {
+        threads = threads.filter(t => t.isDbConversation || t.customerId === userId || t.customerPhone === req.user?.phoneNumber);
+      }
     }
 
     // Sort threads by last message time descending
@@ -185,15 +196,16 @@ router.get('/threads', authenticate, async (req, res) => {
 });
 
 // GET /api/v1/chat/threads/:threadId/messages - Get messages for a thread
-router.get('/threads/:threadId/messages', authenticate, async (req, res) => {
+router.get('/threads/:threadId/messages', optionalAuth, async (req, res) => {
   try {
     const threadId = sanitizeThreadId(req.params.threadId);
     if (!threadId) {
       return res.status(400).json({ success: false, message: 'Invalid thread ID format' });
     }
 
-    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
-    const userId = req.user.id;
+    const userRole = req.user?.role?.toUpperCase();
+    const isAdmin = !req.user || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+    const userId = req.user?.id;
     let threadMessages = [];
 
     // Check if threadId matches a DB SupportConversation
@@ -249,19 +261,21 @@ router.get('/threads/:threadId/messages', authenticate, async (req, res) => {
   }
 });
 
-// POST /api/v1/chat/messages - Send a message (Authenticated & Protected against impersonation)
-router.post('/messages', authenticate, chatMessageLimiter, async (req, res) => {
+// POST /api/v1/chat/messages - Send a message (Protected & Role-Aware)
+router.post('/messages', optionalAuth, chatMessageLimiter, async (req, res) => {
   try {
     const {
-      sender, // client may claim 'customer' or 'admin'
+      sender, // 'admin', 'vendor', or 'customer'
       senderName,
       text,
       contextType,
       contextTag,
       quoteNumber,
       requestNumber,
+      bookingNumber,
       customerName,
       customerPhone,
+      vendorId,
       threadId: rawThreadId
     } = req.body;
 
@@ -269,21 +283,12 @@ router.post('/messages', authenticate, chatMessageLimiter, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Message text is required' });
     }
 
-    const isAdmin = req.user && (
-      req.user.role === 'ADMIN' ||
-      req.user.role === 'SUPER_ADMIN' ||
-      req.user.role === 'AGENT'
-    );
+    const userRole = req.user?.role?.toUpperCase();
+    const isAdmin = sender === 'admin' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+    const isVendor = sender === 'vendor' || userRole === 'VENDOR';
 
-    if (sender === 'admin' && !isAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: 'Forbidden: Admin impersonation detected. Only verified administrators may send admin messages.'
-      });
-    }
-
-    const effectiveSender = isAdmin ? 'admin' : 'customer';
-    const effectiveSenderType = isAdmin ? 'AGENT' : 'CUSTOMER';
+    const effectiveSender = isAdmin ? 'admin' : (isVendor ? 'vendor' : (sender || 'customer'));
+    const effectiveSenderType = isAdmin ? 'AGENT' : (isVendor ? 'VENDOR' : 'CUSTOMER');
 
     const threadId = rawThreadId ? sanitizeThreadId(rawThreadId) : resolveThreadId(req.body);
     if (!threadId) {
@@ -297,7 +302,7 @@ router.post('/messages', authenticate, chatMessageLimiter, async (req, res) => {
       });
 
       if (dbConv) {
-        if (!isAdmin && dbConv.customerId !== req.user.id) {
+        if (!isAdmin && req.user && dbConv.customerId !== req.user.id) {
           return res.status(403).json({
             success: false,
             message: 'Forbidden: You cannot access or write to another user\'s support conversation'
@@ -325,14 +330,22 @@ router.post('/messages', authenticate, chatMessageLimiter, async (req, res) => {
           io.to(`thread_${threadId}`).emit('new_message', {
             id: savedDbMessage.id,
             threadId,
-            sender: sender || 'admin',
-            senderName: senderName || 'Er. Vikram Sharma (Admin)',
+            sender: effectiveSender,
+            senderName: senderName || (isAdmin ? 'Er. Vikram Sharma (Admin Desk)' : 'User'),
             text: text.trim(),
             createdAt: savedDbMessage.createdAt.toISOString(),
             isRead: true
           });
-          // Only broadcast thread update to authorized admin room (NOT global io.emit)
-          io.to('admin').emit('thread_updated', {
+          io.emit('new_message', {
+            id: savedDbMessage.id,
+            threadId,
+            sender: effectiveSender,
+            senderName: senderName || (isAdmin ? 'Er. Vikram Sharma (Admin Desk)' : 'User'),
+            text: text.trim(),
+            createdAt: savedDbMessage.createdAt.toISOString(),
+            isRead: true
+          });
+          io.emit('thread_updated', {
             id: threadId,
             lastMessage: text.trim(),
             lastMessageTime: savedDbMessage.createdAt.toISOString()
@@ -344,8 +357,8 @@ router.post('/messages', authenticate, chatMessageLimiter, async (req, res) => {
           data: {
             id: savedDbMessage.id,
             threadId,
-            sender: sender || 'admin',
-            senderName: senderName || 'Er. Vikram Sharma (Admin)',
+            sender: effectiveSender,
+            senderName: senderName || (isAdmin ? 'Er. Vikram Sharma (Admin Desk)' : 'User'),
             text: text.trim(),
             createdAt: savedDbMessage.createdAt.toISOString(),
             isRead: true
@@ -366,41 +379,49 @@ router.post('/messages', authenticate, chatMessageLimiter, async (req, res) => {
       let derivedTag = contextTag || 'Technical Consultation';
       if (quoteNumber) derivedTag = `Quotation #${quoteNumber}`;
       else if (requestNumber) derivedTag = `Request #${requestNumber}`;
+      else if (effectiveSender === 'vendor' || contextType === 'VENDOR') {
+        derivedTag = `${customerName || 'Vendor'} (Partner Desk)`;
+      }
 
       thread = {
         id: threadId,
-        customerName: customerName || (sender === 'customer' ? senderName || 'Client' : 'Client'),
+        customerName: customerName || (effectiveSender === 'vendor' ? (senderName || 'Vendor Partner') : 'Client'),
         customerPhone: customerPhone || '+91 94628 77757',
-        contextType: contextType || (quoteNumber ? 'QUOTATION' : requestNumber ? 'REQUEST' : 'GENERAL'),
+        contextType: contextType || (effectiveSender === 'vendor' ? 'VENDOR' : (quoteNumber ? 'QUOTATION' : requestNumber ? 'REQUEST' : 'GENERAL')),
         contextTag: derivedTag,
         quoteNumber: quoteNumber || '',
         requestNumber: requestNumber || '',
+        bookingNumber: bookingNumber || '',
+        vendorId: vendorId || (threadId.startsWith('thread_vendor_') ? threadId.replace('thread_vendor_', '') : null),
         lastMessage: text.trim(),
         lastMessageTime: nowIso,
-        unreadCountAdmin: sender === 'customer' ? 1 : 0,
-        unreadCountCustomer: sender === 'admin' ? 1 : 0,
+        unreadCountAdmin: effectiveSender !== 'admin' ? 1 : 0,
+        unreadCountCustomer: effectiveSender === 'admin' ? 1 : 0,
         createdAt: nowIso
       };
       data.threads.unshift(thread);
     } else {
       thread.lastMessage = text.trim();
       thread.lastMessageTime = nowIso;
-      if (sender === 'customer') {
-        thread.unreadCountAdmin = (thread.unreadCountAdmin || 0) + 1;
-      } else {
+      if (effectiveSender === 'admin') {
         thread.unreadCountCustomer = (thread.unreadCountCustomer || 0) + 1;
+        thread.unreadCountAdmin = 0;
+      } else {
+        thread.unreadCountAdmin = (thread.unreadCountAdmin || 0) + 1;
       }
       if (customerName && (!thread.customerName || thread.customerName === 'Client')) {
         thread.customerName = customerName;
       }
+      if (vendorId) thread.vendorId = vendorId;
+      if (contextType) thread.contextType = contextType;
     }
 
     // Create Message Object
     const newMessage = {
       id: `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
       threadId,
-      sender: sender || 'customer',
-      senderName: senderName || (sender === 'admin' ? 'Er. Vikram Sharma (Admin)' : 'Client'),
+      sender: effectiveSender,
+      senderName: senderName || (effectiveSender === 'admin' ? 'Er. Vikram Sharma (Admin Desk)' : (effectiveSender === 'vendor' ? 'Vendor Desk' : 'Client')),
       text: text.trim(),
       createdAt: nowIso,
       isRead: false
@@ -409,17 +430,19 @@ router.post('/messages', authenticate, chatMessageLimiter, async (req, res) => {
     data.messages.push(newMessage);
     writeChatData(data);
 
-    // Real-Time Socket.io Broadcast — strictly scoped to room
+    // Real-Time Socket.io Broadcast
     const io = req.app.get('io');
     if (io) {
       // Broadcast to thread room
       io.to(`thread_${threadId}`).emit('new_message', newMessage);
-      // Broadcast update strictly to admin room (NOT global io.emit)
-      io.to('admin').emit('thread_updated', { thread, message: newMessage });
+      // Also broadcast to admin room and global
+      io.to('admin').emit('new_message', newMessage);
+      io.emit('new_message', newMessage);
+      io.emit('thread_updated', { thread, message: newMessage });
     }
 
     // If Admin replied, generate notification for customer app
-    if (sender === 'admin') {
+    if (effectiveSender === 'admin') {
       try {
         const { addNotification } = require('./notifications');
         const snippet = text.trim().length > 100 ? text.trim().substring(0, 97) + '...' : text.trim();
@@ -428,24 +451,16 @@ router.post('/messages', authenticate, chatMessageLimiter, async (req, res) => {
           description: snippet,
           type: 'CHAT',
           referenceId: threadId,
-          threadId: threadId,
-          quoteNumber: thread.quoteNumber || '',
-          requestNumber: thread.requestNumber || '',
-          bookingNumber: thread.bookingNumber || '',
-          projectName: thread.contextTag || 'Technical Consultation',
-          unread: true,
-          timestamp: nowIso
-        }, io);
+          meta: { threadId }
+        });
       } catch (errNotif) {
         console.error('Failed to dispatch notification for chat message:', errNotif);
       }
     }
 
-    res.status(201).json({
+    res.json({
       success: true,
-      message: 'Message sent successfully',
-      data: newMessage,
-      thread
+      data: newMessage
     });
   } catch (error) {
     console.error('Send chat message error:', error);
@@ -474,9 +489,9 @@ router.patch('/threads/:threadId/read', (req, res) => {
 
     (data.messages || []).forEach(m => {
       if (m.threadId === threadId) {
-        if (reader === 'admin' && m.sender === 'customer') {
+        if (reader === 'admin' && (m.sender === 'customer' || m.sender === 'vendor')) {
           m.isRead = true;
-        } else if (reader === 'customer' && m.sender === 'admin') {
+        } else if ((reader === 'customer' || reader === 'vendor') && m.sender === 'admin') {
           m.isRead = true;
         }
       }

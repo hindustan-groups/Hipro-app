@@ -1,6 +1,22 @@
 {
   "threads": [
     {
+      "id": "thread_vendor_v_01",
+      "customerName": "pkctech",
+      "customerPhone": "94850348545",
+      "contextType": "VENDOR",
+      "contextTag": "pkctech (Partner Desk)",
+      "quoteNumber": "",
+      "requestNumber": "",
+      "bookingNumber": "",
+      "vendorId": "v_01",
+      "lastMessage": "Hello pkctech! Admin desk received your message loud and clear.",
+      "lastMessageTime": "2026-11-07T08:31:22.853Z",
+      "unreadCountAdmin": 0,
+      "unreadCountCustomer": 1,
+      "createdAt": "2026-11-07T08:31:09.095Z"
+    },
+    {
       "id": "thread_general",
       "customerName": "Piyush Kumar",
       "customerPhone": "+91 94628 77757",
@@ -33,6 +49,24 @@
       "text": "Hello Piyush! We have received your query. A certified site engineer can visit tomorrow between 10 AM - 1 PM. Would that work for you?",
       "createdAt": "2026-10-20T09:11:18.491Z",
       "isRead": true
+    },
+    {
+      "id": "msg_1794040269095_551",
+      "threadId": "thread_vendor_v_01",
+      "sender": "vendor",
+      "senderName": "pkctech",
+      "text": "Hello Super Admin Desk! Testing real-time vendor chat connection.",
+      "createdAt": "2026-11-07T08:31:09.095Z",
+      "isRead": false
+    },
+    {
+      "id": "msg_1794040282853_113",
+      "threadId": "thread_vendor_v_01",
+      "sender": "admin",
+      "senderName": "Er. Vikram Sharma (Admin Desk)",
+      "text": "Hello pkctech! Admin desk received your message loud and clear.",
+      "createdAt": "2026-11-07T08:31:22.853Z",
+      "isRead": false
     }
   ]
 }
