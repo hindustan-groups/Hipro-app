@@ -171,7 +171,7 @@ MaterialPageRoute(
   builder: (context) => AddPhoneScreen(
     onphoneSaved: () {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => _getNextScreen()),
+        MaterialPageRoute(builder: (context) => const SelectLocationScreen()),
       );
     },
   ),
@@ -286,7 +286,7 @@ MaterialPageRoute(
           if (mounted) {
             _showSuccessSnackBar(resData['message']?.toString() ?? 'Account created successfully!');
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => _getNextScreen()),
+              MaterialPageRoute(builder: (context) => const SelectLocationScreen()),
             );
           }
         } else {

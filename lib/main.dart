@@ -6,6 +6,7 @@ import 'core/services/push_notification_service.dart';
 import 'core/session/user_session.dart';
 import 'core/state/app_state.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'features/auth/screens/login_screen.dart';
 import 'features/home/screens/select_location_screen.dart';
 import 'features/navigation/main_nav_screen.dart';
 
@@ -55,9 +56,17 @@ class Hipro extends StatelessWidget {
       theme: AppTheme.lightTheme,
       themeMode: ThemeMode.light,
       debugShowCheckedModeBanner: false,
-      home: UserSession().hasSelectedCity
-          ? const MainNavScreen()
-          : const SelectLocationScreen(),
+      home: _resolveInitialScreen(),
     );
+  }
+
+  Widget _resolveInitialScreen() {
+    if (!UserSession().isLoggedIn) {
+      return const LoginScreen();
+    }
+    if (!UserSession().hasSelectedCity) {
+      return const SelectLocationScreen();
+    }
+    return const MainNavScreen();
   }
 }
