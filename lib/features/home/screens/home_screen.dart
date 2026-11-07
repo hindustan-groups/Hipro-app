@@ -51,11 +51,19 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!mounted) return;
         for (final s in services) {
           if (s.imageUrl.isNotEmpty && s.imageUrl.startsWith('http')) {
-            precacheImage(CachedNetworkImageProvider(s.imageUrl), context);
+            precacheImage(
+              CachedNetworkImageProvider(s.imageUrl),
+              context,
+              onError: (e, s) {},
+            );
           }
           for (final sub in s.subServices) {
             if (sub.image != null && sub.image!.isNotEmpty && sub.image!.startsWith('http')) {
-              precacheImage(CachedNetworkImageProvider(sub.image!), context);
+              precacheImage(
+                CachedNetworkImageProvider(sub.image!),
+                context,
+                onError: (e, s) {},
+              );
             }
           }
         }
