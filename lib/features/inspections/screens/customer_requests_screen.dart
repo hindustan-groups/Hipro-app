@@ -323,6 +323,32 @@ class _CustomerRequestsScreenState extends State<CustomerRequestsScreen> {
                                 Row(
                                   children: [
                                     _buildStatusBadge(req.status),
+                                    if (req.customerRating != null) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFEF3C7),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: const Color(0xFFFDE68A)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.star_rounded, size: 13, color: Color(0xFFD97706)),
+                                            const SizedBox(width: 2),
+                                            Text(
+                                              req.customerRating!.toStringAsFixed(1),
+                                              style: const TextStyle(
+                                                color: Color(0xFF92400E),
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                     const SizedBox(width: 8),
                                     InkWell(
                                       onTap: () async {

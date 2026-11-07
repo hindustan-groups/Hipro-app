@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 /**
  * POST /api/v1/activity/track
@@ -110,11 +111,10 @@ router.post('/track', async (req, res) => {
       }
     });
 
-    // Real-Time Socket.io broadcast to admin room
+    // Real-Time Socket.io broadcast to admin room only
     const io = req.app.get('io');
     if (io) {
-      io.to('admin').emit('customer_activity_event', activityRecord);
-      io.emit('customer_activity_event', activityRecord);
+      io.to('admin_room').emit('customer_activity_event', activityRecord);
     }
 
     return res.status(201).json({
@@ -136,7 +136,7 @@ router.post('/track', async (req, res) => {
  * GET /api/v1/activity/admin/stream
  * Returns chronological feed of customer activity logs with optional filtering.
  */
-router.get('/admin/stream', async (req, res) => {
+router.get('/admin/stream', authenticate, requireAdmin, async (req, res) => {
   try {
     const { city, eventType, search, limit = 100, offset = 0 } = req.query;
 
@@ -192,7 +192,7 @@ router.get('/admin/stream', async (req, res) => {
  * GET /api/v1/activity/admin/leads
  * Aggregates exploration logs into customer leads with active carts and recently explored services.
  */
-router.get('/admin/leads', async (req, res) => {
+router.get('/admin/leads', authenticate, requireAdmin, async (req, res) => {
   try {
     const { city, search } = req.query;
 
@@ -348,7 +348,7 @@ router.get('/admin/leads', async (req, res) => {
  * DELETE /api/v1/activity/admin/clear
  * Clear all activities or activities older than N days.
  */
-router.delete('/admin/clear', async (req, res) => {
+router.delete('/admin/clear', authenticate, requireAdmin, async (req, res) => {
   try {
     const { days } = req.query;
     let deleteWhere = {};

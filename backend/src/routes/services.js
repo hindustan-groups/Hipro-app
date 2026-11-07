@@ -1,25 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../prisma');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
-// 1. GET /api/v1/services/cities - Get supported operational cities dynamically from database
-router.get('/cities', async (req, res) => {
-    try {
-        const dbCities = await prisma.city.findMany({
-            where: { isActive: true },
-            orderBy: { name: 'asc' }
-        });
-
-        res.json({
-            success: true,
-            message: "Supported cities fetched successfully from database",
-            total: dbCities.length,
-            cities: dbCities
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
+// 1. Dynamic Operational Cities Router (GET, POST, PUT, DELETE, TOGGLE)
+router.use('/cities', require('./cities'));
 
 // 2. GET /api/v1/services/partners - Get verified partners/technicians dynamically from database
 router.get('/partners', async (req, res) => {
@@ -146,7 +131,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // 5. POST /api/v1/services - Create new service (with cities support)
-router.post('/', async (req, res) => {
+router.post('/', authenticate, requireAdmin, async (req, res) => {
     try {
         const { code, name, description, icon, iconImage, imageUrl, rating, cities } = req.body;
         const iconVal = iconImage || imageUrl || icon || 'https://cdn-icons-png.flaticon.com/512/2830/2830305.png';
@@ -171,7 +156,7 @@ router.post('/', async (req, res) => {
 });
 
 // 6. PUT /api/v1/services/:id - Update service (including cities)
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticate, requireAdmin, async (req, res) => {
     try {
         const { name, description, icon, iconImage, imageUrl, rating, cities, isActive } = req.body;
         const updateData = {};
@@ -197,7 +182,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // 7. PUT /api/v1/services/:id/cities - Specific endpoint to dynamically update allowed cities for a service
-router.put('/:id/cities', async (req, res) => {
+router.put('/:id/cities', authenticate, requireAdmin, async (req, res) => {
     try {
         const { cities } = req.body;
         if (!Array.isArray(cities)) {

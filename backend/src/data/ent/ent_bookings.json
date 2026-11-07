@@ -1,0 +1,28 @@
+[
+  {
+    "id": "booking_1792648934383",
+    "bookingCode": "ENT-MVJ4W2CV-532",
+    "experienceId": "ent_ddn_01",
+    "experienceTitle": "Maldevta Tandem Paragliding Flight",
+    "city": "Dehradun",
+    "category": "Air Sports",
+    "imageUrl": "https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80",
+    "reportingPoint": "Maldevta Adventure Base Camp, Raipur Road, Dehradun, Uttarakhand - 248008",
+    "userId": "guest_user",
+    "travelerName": "Test Traveler",
+    "travelerPhone": "9876543210",
+    "travelDate": "Fri, 24 Oct 2026",
+    "timeSlot": "09:00 AM (Morning Breeze)",
+    "guestsCount": 2,
+    "unitPrice": 3200,
+    "baseAmount": 6400,
+    "taxGST": 320,
+    "totalAmount": 6720,
+    "currency": "INR",
+    "notes": "",
+    "status": "CHECKED_IN",
+    "paymentStatus": "PAID",
+    "createdAt": "2026-10-22T06:02:14.383Z",
+    "updatedAt": "2026-11-04T06:55:59.410Z"
+  }
+]

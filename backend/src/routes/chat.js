@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 const prisma = require('../prisma');
 const {
   createConversation,
@@ -13,17 +14,43 @@ const {
 } = require('../controllers/chat.controller');
 const { authenticate } = require('../middleware/auth');
 
+// Brute-force / spam protection for chat messages (60 messages per minute per IP)
+const chatMessageLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { success: false, message: 'Too many chat messages. Please wait a moment before sending more.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // Database-backed AI Chatbot & Customer Support Routes
 router.post('/conversations', authenticate, createConversation);
 router.get('/conversations', authenticate, getCustomerConversations);
 router.get('/conversations/:id/messages', authenticate, getConversationMessages);
-router.post('/message', authenticate, sendMessage);
+router.post('/message', authenticate, chatMessageLimiter, sendMessage);
 router.post('/conversations/:id/handoff', authenticate, customerHandoff);
 router.post('/conversations/:id/reset-ai', authenticate, resetToAi);
 
-const CHATS_FILE = path.join(__dirname, '../../uploads/chats.json');
+// Move chat storage outside publicly accessible /uploads folder to protected data folder
+const DATA_DIR = path.join(__dirname, '../data');
+const CHATS_FILE = path.join(DATA_DIR, 'chats.json');
+const OLD_CHATS_FILE = path.join(__dirname, '../../uploads/chats.json');
 
-// Default initial chat thread (empty - real chats only)
+// Auto-migrate from public uploads folder if exists
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+  if (fs.existsSync(OLD_CHATS_FILE) && !fs.existsSync(CHATS_FILE)) {
+    fs.copyFileSync(OLD_CHATS_FILE, CHATS_FILE);
+    fs.unlinkSync(OLD_CHATS_FILE);
+    console.log('✅ Migrated chats.json from uploads to secure data directory');
+  }
+} catch (migErr) {
+  console.warn('Chat data directory check warning:', migErr.message);
+}
+
+// Default initial chat thread
 const DEFAULT_CHATS = {
   threads: [],
   messages: []
@@ -44,19 +71,36 @@ function readChatData() {
   }
 }
 
+// Atomic file write to avoid race conditions and file corruption
 function writeChatData(data) {
   try {
-    fs.mkdirSync(path.dirname(CHATS_FILE), { recursive: true });
-    fs.writeFileSync(CHATS_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    const dir = path.dirname(CHATS_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const tmpFile = `${CHATS_FILE}.${Date.now()}.${Math.random().toString(36).substring(7)}.tmp`;
+    fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
+    fs.renameSync(tmpFile, CHATS_FILE);
   } catch (err) {
-    console.error('Error writing chats file:', err);
+    console.error('Error atomically writing chats file:', err);
   }
+}
+
+// Validate and sanitize thread ID to prevent injection / path traversal
+function sanitizeThreadId(rawId) {
+  if (!rawId || typeof rawId !== 'string') return null;
+  const clean = rawId.trim();
+  if (clean.length > 64 || !/^[a-zA-Z0-9_\-:]+$/.test(clean)) {
+    return null;
+  }
+  return clean;
 }
 
 // Generate or resolve thread ID based on context
 function resolveThreadId(body) {
   if (body.threadId && body.threadId.trim().length > 0) {
-    return body.threadId.trim();
+    const sanitized = sanitizeThreadId(body.threadId);
+    if (sanitized) return sanitized;
   }
   if (body.quoteNumber && body.quoteNumber.trim().length > 0) {
     return `thread_quote_${body.quoteNumber.trim().replace(/[^a-zA-Z0-9_-]/g, '_')}`;
@@ -70,15 +114,19 @@ function resolveThreadId(body) {
   return 'thread_general';
 }
 
-// GET /api/v1/chat/threads - List all chat conversations (Admin View)
-router.get('/threads', async (req, res) => {
+// GET /api/v1/chat/threads - List chat conversations (Authenticated & Role-Scoped)
+router.get('/threads', authenticate, async (req, res) => {
   try {
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+    const userId = req.user.id;
     const data = readChatData();
     let threads = [...(data.threads || [])];
 
-    // Bridge DB SupportConversations (especially those transferred to human support or waiting)
+    // Bridge DB SupportConversations (scoped by ownership unless admin)
     try {
+      const whereCondition = isAdmin ? {} : { customerId: userId };
       const dbConversations = await prisma.supportConversation.findMany({
+        where: whereCondition,
         include: {
           customer: {
             select: { id: true, name: true, phoneNumber: true, email: true }
@@ -120,10 +168,16 @@ router.get('/threads', async (req, res) => {
       console.warn('Could not fetch DB support conversations for threads:', dbErr.message);
     }
 
+    // Filter file threads if user is not admin
+    if (!isAdmin) {
+      threads = threads.filter(t => t.isDbConversation || t.customerId === userId || t.customerPhone === req.user.phoneNumber);
+    }
+
     // Sort threads by last message time descending
     threads.sort((a, b) => {
       return new Date(b.lastMessageTime || b.createdAt) - new Date(a.lastMessageTime || a.createdAt);
     });
+
     res.json({ success: true, data: threads, total: threads.length });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch chat threads' });
@@ -131,9 +185,15 @@ router.get('/threads', async (req, res) => {
 });
 
 // GET /api/v1/chat/threads/:threadId/messages - Get messages for a thread
-router.get('/threads/:threadId/messages', async (req, res) => {
+router.get('/threads/:threadId/messages', authenticate, async (req, res) => {
   try {
-    const { threadId } = req.params;
+    const threadId = sanitizeThreadId(req.params.threadId);
+    if (!threadId) {
+      return res.status(400).json({ success: false, message: 'Invalid thread ID format' });
+    }
+
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+    const userId = req.user.id;
     let threadMessages = [];
 
     // Check if threadId matches a DB SupportConversation
@@ -147,16 +207,23 @@ router.get('/threads/:threadId/messages', async (req, res) => {
         }
       });
 
-      if (dbConv && dbConv.messages && dbConv.messages.length > 0) {
-        threadMessages = dbConv.messages.map(m => ({
-          id: m.id,
-          threadId: threadId,
-          sender: m.senderType === 'CUSTOMER' ? 'customer' : (m.senderType === 'AGENT' ? 'admin' : (m.senderType === 'AI' ? 'ai' : 'system')),
-          senderName: m.senderType === 'CUSTOMER' ? 'Customer' : (m.senderType === 'AGENT' ? 'Er. Vikram Sharma (Admin)' : (m.senderType === 'AI' ? 'Hipro AI' : 'System')),
-          text: m.content,
-          createdAt: m.createdAt.toISOString(),
-          isRead: true
-        }));
+      if (dbConv) {
+        // Enforce ownership: non-admin can only access own conversation
+        if (!isAdmin && dbConv.customerId && dbConv.customerId !== userId) {
+          return res.status(403).json({ success: false, message: 'Access denied to this conversation' });
+        }
+
+        if (dbConv.messages && dbConv.messages.length > 0) {
+          threadMessages = dbConv.messages.map(m => ({
+            id: m.id,
+            threadId: threadId,
+            sender: m.senderType === 'CUSTOMER' ? 'customer' : (m.senderType === 'AGENT' ? 'admin' : (m.senderType === 'AI' ? 'ai' : 'system')),
+            senderName: m.senderType === 'CUSTOMER' ? 'Customer' : (m.senderType === 'AGENT' ? 'Er. Vikram Sharma (Admin)' : (m.senderType === 'AI' ? 'Hipro AI' : 'System')),
+            text: m.content,
+            createdAt: m.createdAt.toISOString(),
+            isRead: true
+          }));
+        }
       }
     } catch (dbErr) {
       // not a uuid or DB conversation
@@ -164,6 +231,10 @@ router.get('/threads/:threadId/messages', async (req, res) => {
 
     if (threadMessages.length === 0) {
       const data = readChatData();
+      const thread = (data.threads || []).find(t => t.id === threadId);
+      if (thread && !isAdmin && thread.customerId && thread.customerId !== userId) {
+        return res.status(403).json({ success: false, message: 'Access denied to this thread' });
+      }
       threadMessages = (data.messages || []).filter(m => m.threadId === threadId);
     }
 
@@ -178,11 +249,11 @@ router.get('/threads/:threadId/messages', async (req, res) => {
   }
 });
 
-// POST /api/v1/chat/messages - Send a message (Customer or Admin)
-router.post('/messages', async (req, res) => {
+// POST /api/v1/chat/messages - Send a message (Authenticated & Protected against impersonation)
+router.post('/messages', authenticate, chatMessageLimiter, async (req, res) => {
   try {
     const {
-      sender, // 'customer' or 'admin'
+      sender, // client may claim 'customer' or 'admin'
       senderName,
       text,
       contextType,
@@ -198,7 +269,26 @@ router.post('/messages', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Message text is required' });
     }
 
-    const threadId = rawThreadId || resolveThreadId(req.body);
+    const isAdmin = req.user && (
+      req.user.role === 'ADMIN' ||
+      req.user.role === 'SUPER_ADMIN' ||
+      req.user.role === 'AGENT'
+    );
+
+    if (sender === 'admin' && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Admin impersonation detected. Only verified administrators may send admin messages.'
+      });
+    }
+
+    const effectiveSender = isAdmin ? 'admin' : 'customer';
+    const effectiveSenderType = isAdmin ? 'AGENT' : 'CUSTOMER';
+
+    const threadId = rawThreadId ? sanitizeThreadId(rawThreadId) : resolveThreadId(req.body);
+    if (!threadId) {
+      return res.status(400).json({ success: false, message: 'Invalid thread ID format' });
+    }
 
     // 1. Check if threadId matches a database SupportConversation
     try {
@@ -207,15 +297,22 @@ router.post('/messages', async (req, res) => {
       });
 
       if (dbConv) {
+        if (!isAdmin && dbConv.customerId !== req.user.id) {
+          return res.status(403).json({
+            success: false,
+            message: 'Forbidden: You cannot access or write to another user\'s support conversation'
+          });
+        }
+
         const savedDbMessage = await prisma.supportMessage.create({
           data: {
             conversationId: threadId,
-            senderType: sender === 'admin' ? 'AGENT' : 'CUSTOMER',
+            senderType: effectiveSenderType,
             content: text.trim()
           }
         });
 
-        if (sender === 'admin') {
+        if (isAdmin) {
           await prisma.supportConversation.update({
             where: { id: threadId },
             data: { status: 'HUMAN_ACTIVE' }
@@ -234,7 +331,8 @@ router.post('/messages', async (req, res) => {
             createdAt: savedDbMessage.createdAt.toISOString(),
             isRead: true
           });
-          io.to('support:agents').emit('thread_updated', {
+          // Only broadcast thread update to authorized admin room (NOT global io.emit)
+          io.to('admin').emit('thread_updated', {
             id: threadId,
             lastMessage: text.trim(),
             lastMessageTime: savedDbMessage.createdAt.toISOString()
@@ -311,13 +409,13 @@ router.post('/messages', async (req, res) => {
     data.messages.push(newMessage);
     writeChatData(data);
 
-    // Real-Time Socket.io Broadcast
+    // Real-Time Socket.io Broadcast — strictly scoped to room
     const io = req.app.get('io');
     if (io) {
       // Broadcast to thread room
       io.to(`thread_${threadId}`).emit('new_message', newMessage);
-      // Broadcast globally to all connected admins/monitors
-      io.emit('thread_updated', { thread, message: newMessage });
+      // Broadcast update strictly to admin room (NOT global io.emit)
+      io.to('admin').emit('thread_updated', { thread, message: newMessage });
     }
 
     // If Admin replied, generate notification for customer app
@@ -358,7 +456,10 @@ router.post('/messages', async (req, res) => {
 // PATCH /api/v1/chat/threads/:threadId/read - Mark messages as read
 router.patch('/threads/:threadId/read', (req, res) => {
   try {
-    const { threadId } = req.params;
+    const threadId = sanitizeThreadId(req.params.threadId);
+    if (!threadId) {
+      return res.status(400).json({ success: false, message: 'Invalid thread ID format' });
+    }
     const { reader } = req.body; // 'admin' or 'customer'
     const data = readChatData();
 
@@ -385,7 +486,8 @@ router.patch('/threads/:threadId/read', (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.emit('messages_read', { threadId, reader });
+      io.to(`thread_${threadId}`).emit('messages_read', { threadId, reader });
+      io.to('admin').emit('messages_read', { threadId, reader });
     }
 
     res.json({ success: true, message: 'Messages marked as read' });

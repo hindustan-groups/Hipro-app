@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 const NOTIFICATIONS_FILE = path.join(__dirname, '../../uploads/notifications.json');
 
@@ -155,7 +156,14 @@ async function sendPushNotificationToTokens(notification) {
     const tokens = readFcmTokens();
     if (!tokens || tokens.length === 0) return;
 
-    const tokenList = tokens.map(t => t.token).filter(t => t && typeof t === 'string' && t.trim().length > 10);
+    let targetTokens = tokens;
+    if (notification.userId) {
+      targetTokens = tokens.filter(t => t.userId && String(t.userId).trim() === String(notification.userId).trim());
+    } else if (!notification.isBroadcast) {
+      return;
+    }
+
+    const tokenList = targetTokens.map(t => t.token).filter(t => t && typeof t === 'string' && t.trim().length > 10);
     if (tokenList.length === 0) return;
 
     const payload = {
@@ -216,6 +224,8 @@ function addNotification(notification, io = null) {
     description: notification.description || '',
     imageUrl: notification.imageUrl || '',
     type: notification.type || 'GENERAL',
+    userId: notification.userId || notification.targetUserId || null,
+    isBroadcast: !!notification.isBroadcast,
     referenceId: notification.referenceId || notification.threadId || '',
     threadId: notification.threadId || notification.referenceId || '',
     quoteNumber: notification.quoteNumber || '',
@@ -233,9 +243,14 @@ function addNotification(notification, io = null) {
   writeNotifications(list.slice(0, 100));
 
   if (io) {
-    io.to('admin').emit('push_notification', item);
+    io.to('admin_room').emit('push_notification', item);
     if (item.type === 'QUOTATION') {
-      io.to('admin').emit('new_quotation_alert', item);
+      io.to('admin_room').emit('new_quotation_alert', item);
+    }
+    if (item.userId) {
+      io.to(`user_${item.userId}`).emit('push_notification', item);
+    } else if (item.isBroadcast) {
+      io.emit('push_notification', item);
     }
   }
 
@@ -246,15 +261,19 @@ function addNotification(notification, io = null) {
 }
 
 // GET /api/v1/notifications
-router.get('/', (req, res) => {
+router.get('/', authenticate, (req, res) => {
   try {
     const list = readNotifications();
-    const unreadCount = list.filter(n => n.unread).length;
+    const isAdmin = req.user.role === 'ADMIN';
+    const filtered = isAdmin
+      ? list
+      : list.filter(n => n.userId === req.user.id || !n.userId || n.isBroadcast);
+    const unreadCount = filtered.filter(n => n.unread).length;
     res.json({
       success: true,
-      total: list.length,
+      total: filtered.length,
       unreadCount,
-      data: list
+      data: filtered
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch notifications' });
@@ -262,9 +281,12 @@ router.get('/', (req, res) => {
 });
 
 // POST /api/v1/notifications
-router.post('/', (req, res) => {
+router.post('/', authenticate, requireAdmin, (req, res) => {
   try {
-    const item = addNotification(req.body);
+    const item = addNotification({
+      ...req.body,
+      isBroadcast: req.body.isBroadcast !== false
+    }, req.app.get('io'));
     res.status(201).json({
       success: true,
       message: 'Notification created successfully',
@@ -284,6 +306,10 @@ const markReadHandler = (req, res) => {
     if (!item) {
       return res.status(404).json({ success: false, message: 'Notification not found' });
     }
+    const isAdmin = req.user.role === 'ADMIN';
+    if (item.userId && item.userId !== req.user.id && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Forbidden: You cannot modify this notification' });
+    }
     item.unread = false;
     writeNotifications(list);
     res.json({ success: true, message: 'Notification marked as read', data: item });
@@ -291,14 +317,19 @@ const markReadHandler = (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to update notification' });
   }
 };
-router.patch('/:id/read', markReadHandler);
-router.post('/:id/read', markReadHandler);
+router.patch('/:id/read', authenticate, markReadHandler);
+router.post('/:id/read', authenticate, markReadHandler);
 
 // POST /api/v1/notifications/mark-all-read
-router.post('/mark-all-read', (req, res) => {
+router.post('/mark-all-read', authenticate, (req, res) => {
   try {
     const list = readNotifications();
-    list.forEach(n => { n.unread = false; });
+    const isAdmin = req.user.role === 'ADMIN';
+    list.forEach(n => {
+      if (isAdmin || n.userId === req.user.id || !n.userId) {
+        n.unread = false;
+      }
+    });
     writeNotifications(list);
     res.json({ success: true, message: 'All notifications marked as read' });
   } catch (error) {
@@ -307,7 +338,7 @@ router.post('/mark-all-read', (req, res) => {
 });
 
 // DELETE /api/v1/notifications/:id
-router.delete('/:id', (req, res) => {
+router.delete('/:id', authenticate, requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
     let list = readNotifications();
@@ -359,13 +390,13 @@ function saveFcmToken(token, userId, platform = 'android') {
 }
 
 // POST /api/v1/notifications/fcm-token
-router.post('/fcm-token', (req, res) => {
+router.post('/fcm-token', authenticate, (req, res) => {
   try {
-    const { token, userId, platform } = req.body;
+    const { token, platform } = req.body;
     if (!token) {
       return res.status(400).json({ success: false, message: 'FCM token is required' });
     }
-    const saved = saveFcmToken(token, userId, platform);
+    const saved = saveFcmToken(token, req.user.id, platform);
     res.json({ success: true, message: 'FCM token registered successfully', data: saved });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to save FCM token' });
@@ -373,7 +404,7 @@ router.post('/fcm-token', (req, res) => {
 });
 
 // GET /api/v1/notifications/fcm-tokens
-router.get('/fcm-tokens', (req, res) => {
+router.get('/fcm-tokens', authenticate, requireAdmin, (req, res) => {
   try {
     const tokens = readFcmTokens();
     res.json({ success: true, total: tokens.length, data: tokens });

@@ -315,4 +315,24 @@ class InspectionApiService {
       throw Exception(text);
     }
   }
+
+  /// Rates a completed inspection request and its assigned vendor
+  Future<bool> rateRequest({
+    required String requestId,
+    required double rating,
+    String? review,
+  }) async {
+    try {
+      final response = await apiClient.dio.post(
+        '/requests/$requestId/rate',
+        data: {
+          'rating': rating,
+          if (review != null && review.trim().isNotEmpty) 'review': review.trim(),
+        },
+      );
+      return response.statusCode == 200 && response.data['success'] == true;
+    } catch (e) {
+      return false;
+    }
+  }
 }

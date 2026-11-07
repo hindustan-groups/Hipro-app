@@ -7,6 +7,7 @@ import '../../home/data/service_api_service.dart';
 import '../../home/models/slide_model.dart';
 import '../../offers/models/offer_model.dart';
 import '../data/ent_api_service.dart';
+import '../models/adventure_category_model.dart';
 import '../models/experience_model.dart';
 import 'ent_my_bookings_screen.dart';
 import 'experience_details_screen.dart';
@@ -33,12 +34,13 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   List<ExperienceItem> _backendExperiences = [];
+  List<AdventureCategory> _dynamicCategories = AdventureCategory.defaultCategories;
   List<SlideItem> _slides = [];
   List<OfferItem> _offers = [];
   bool _isLoading = false;
 
   List<String> _cities = ['All', 'Dehradun', 'Jaisalmer', 'Rishikesh'];
-  List<String> _categories = ['All', 'Air Sports', 'Desert Safari', 'Water Sports', 'Adventure'];
+  List<String> _categories = ['All', 'Air Sports', 'Desert Safari', 'Water Sports', 'Adventure', 'Sightseeing'];
 
   @override
   void initState() {
@@ -90,12 +92,15 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
   Future<void> _fetchMetadata() async {
     try {
       final cities = await EntApiService().fetchCities();
-      final categories = await EntApiService().fetchCategories();
+      final dynamicCats = await EntApiService().fetchDynamicCategories();
 
       if (mounted) {
         setState(() {
           if (cities.isNotEmpty) _cities = cities;
-          if (categories.isNotEmpty) _categories = categories;
+          if (dynamicCats.isNotEmpty) {
+            _dynamicCategories = dynamicCats;
+            _categories = ['All', ...dynamicCats.map((c) => c.name)];
+          }
         });
       }
     } catch (_) {}
@@ -113,10 +118,16 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
         : ExperienceItem.mockExperiences;
     return all.where((e) {
       final matchesCity = _selectedCity == 'All' || e.city.toLowerCase() == _selectedCity.toLowerCase();
-      final matchesCategory = _selectedCategory == 'All' || e.category.toLowerCase() == _selectedCategory.toLowerCase();
+      final matchesCategory = _selectedCategory == 'All' ||
+          e.category.toLowerCase() == _selectedCategory.toLowerCase() ||
+          e.categoryId.toLowerCase() == _selectedCategory.toLowerCase() ||
+          _dynamicCategories.any((dc) =>
+              dc.name.toLowerCase() == _selectedCategory.toLowerCase() &&
+              dc.id.toLowerCase() == e.categoryId.toLowerCase());
       final matchesQuery = _searchQuery.isEmpty ||
           e.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           e.city.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          e.category.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           e.tagline.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesCity && matchesCategory && matchesQuery;
     }).toList();
@@ -297,32 +308,68 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
 
             const SizedBox(height: 12),
 
-            // Category Filter Pills
+            // Dynamic Category Filter Pills
             SizedBox(
-              height: 32,
+              height: 34,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: _categories.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 6),
                 itemBuilder: (context, idx) {
                   final cat = _categories[idx];
-                  final isSel = cat == _selectedCategory;
+                  final isSel = cat.toLowerCase() == _selectedCategory.toLowerCase();
+                  final dynCat = _dynamicCategories.cast<AdventureCategory?>().firstWhere(
+                        (c) => c?.name.toLowerCase() == cat.toLowerCase(),
+                        orElse: () => null,
+                      );
+                  final Color activeColor = dynCat?.color ?? const Color(0xFFE11D48);
+
                   return InkWell(
                     onTap: () => setState(() => _selectedCategory = cat),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    borderRadius: BorderRadius.circular(9),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isSel ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
+                        color: isSel ? activeColor : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(9),
+                        boxShadow: isSel
+                            ? [
+                                BoxShadow(
+                                  color: activeColor.withValues(alpha: 0.3),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            : null,
                       ),
-                      child: Text(
-                        cat,
-                        style: TextStyle(
-                          color: isSel ? Colors.white : const Color(0xFF64748B),
-                          fontSize: 11.5,
-                          fontWeight: isSel ? FontWeight.w700 : FontWeight.w600,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (dynCat != null) ...[
+                            Icon(
+                              dynCat.iconData,
+                              size: 14,
+                              color: isSel ? Colors.white : activeColor,
+                            ),
+                            const SizedBox(width: 5),
+                          ] else if (cat == 'All') ...[
+                            Icon(
+                              Icons.grid_view_rounded,
+                              size: 13,
+                              color: isSel ? Colors.white : const Color(0xFF64748B),
+                            ),
+                            const SizedBox(width: 5),
+                          ],
+                          Text(
+                            cat,
+                            style: TextStyle(
+                              color: isSel ? Colors.white : const Color(0xFF334155),
+                              fontSize: 11.5,
+                              fontWeight: isSel ? FontWeight.w700 : FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );
@@ -512,6 +559,27 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF1F2),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Text(
+                            exp.category.toUpperCase(),
+                            style: const TextStyle(
+                              color: Color(0xFFE11D48),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

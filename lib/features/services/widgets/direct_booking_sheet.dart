@@ -336,6 +336,7 @@ class _DirectBookingSheetState extends State<DirectBookingSheet> {
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
     final paymentId = response.paymentId ?? 'PAY_${DateTime.now().millisecondsSinceEpoch}';
     final orderId = response.orderId;
+    final signature = response.signature;
 
     try {
       final session = UserSession();
@@ -346,7 +347,6 @@ class _DirectBookingSheetState extends State<DirectBookingSheet> {
         data: {
           'subServiceId': widget.subService.id,
           'couponCode': _appliedCoupon?.code,
-          'userId': session.id ?? session.phone ?? session.email,
           'customerName': _nameController.text.trim(),
           'customerPhone': _phoneController.text.trim(),
           'customerAddress': _addressController.text.trim(),
@@ -361,6 +361,7 @@ class _DirectBookingSheetState extends State<DirectBookingSheet> {
           'notes': 'Booked via Hipro Mobile App',
           'razorpayPaymentId': paymentId,
           'razorpayOrderId': orderId,
+          'razorpaySignature': signature,
         },
       );
 

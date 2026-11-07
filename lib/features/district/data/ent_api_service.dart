@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/session/user_session.dart';
+import '../models/adventure_category_model.dart';
 import '../models/experience_model.dart';
 
 class EntApiService {
@@ -14,6 +15,7 @@ class EntApiService {
   Future<List<ExperienceItem>> fetchExperiences({
     String? city,
     String? category,
+    String? categoryId,
     String? search,
     String? sortBy,
     bool? featured,
@@ -22,6 +24,9 @@ class EntApiService {
       final Map<String, dynamic> queryParams = {};
       if (city != null && city.isNotEmpty && city.toLowerCase() != 'all') {
         queryParams['city'] = city;
+      }
+      if (categoryId != null && categoryId.isNotEmpty && categoryId.toLowerCase() != 'all') {
+        queryParams['categoryId'] = categoryId;
       }
       if (category != null && category.isNotEmpty && category.toLowerCase() != 'all') {
         queryParams['category'] = category;
@@ -92,6 +97,24 @@ class EntApiService {
       debugPrint('[EntApiService] fetchCategories error: $e');
     }
     return ['All', 'Air Sports', 'Desert Safari', 'Water Sports', 'Adventure', 'Sightseeing'];
+  }
+
+  /// Fetches rich dynamic categories with icons, colors, taglines and sports counts
+  Future<List<AdventureCategory>> fetchDynamicCategories() async {
+    try {
+      final res = await _client.dio.get('/ent/categories');
+      if (res.data != null) {
+        final list = res.data['data'] ?? res.data['items'];
+        if (list is List && list.isNotEmpty) {
+          return list
+              .map((e) => AdventureCategory.fromJson(Map<String, dynamic>.from(e as Map)))
+              .toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('[EntApiService] fetchDynamicCategories error: $e');
+    }
+    return AdventureCategory.defaultCategories;
   }
 
   /// Creates a booking for an experience

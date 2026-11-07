@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../prisma');
+const { authenticate, requireAdmin } = require('../middleware/auth');
+
+// Enforce strict Super Admin authentication on all admin endpoints
+router.use(authenticate, requireAdmin);
 
 // GET /api/v1/admin/stats - Overview metrics & dashboard KPIs
 router.get('/stats', async (req, res) => {
@@ -32,7 +36,19 @@ router.get('/stats', async (req, res) => {
       prisma.serviceRequest.findMany({
         take: 6,
         orderBy: { created_at: 'desc' },
-        include: { quotations: true, user: true }
+        include: {
+          quotations: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phoneNumber: true,
+              role: true,
+              created_at: true
+            }
+          }
+        }
       }),
       prisma.quotation.findMany({
         take: 6,
@@ -98,7 +114,15 @@ router.get('/stats', async (req, res) => {
 router.get('/users', async (req, res) => {
   try {
     const users = await prisma.user.findMany({
-      include: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phoneNumber: true,
+        role: true,
+        photoUrl: true,
+        authProvider: true,
+        created_at: true,
         address: true,
         requests: {
           include: { quotations: true }
@@ -109,6 +133,65 @@ router.get('/users', async (req, res) => {
     res.json({ success: true, data: users, total: users.length });
   } catch (error) {
     console.error('Admin users error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/v1/admin/users/:id - Single user detail with addresses & requests
+router.get('/users/:id', async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phoneNumber: true,
+        role: true,
+        photoUrl: true,
+        authProvider: true,
+        created_at: true,
+        address: true,
+        requests: {
+          include: {
+            quotations: true,
+            vendorQuotes: true,
+            vendor: true
+          },
+          orderBy: { created_at: 'desc' }
+        }
+      }
+    });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.json({ success: true, data: user });
+  } catch (error) {
+    console.error('Admin user detail error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/v1/admin/users/:id/bookings - User service bookings history (DirectBookings)
+router.get('/users/:id/bookings', async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, phoneNumber: true }
+    });
+    const where = {
+      OR: [
+        { userId: req.params.id },
+        ...(user?.phoneNumber ? [{ customerPhone: user.phoneNumber }] : [])
+      ]
+    };
+    const bookings = await prisma.directBooking.findMany({
+      where,
+      orderBy: { created_at: 'desc' }
+    });
+    res.json({ success: true, data: bookings, total: bookings.length });
+  } catch (error) {
+    console.error('Admin user bookings error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -522,19 +605,23 @@ function updateEnvFile(newEnv) {
   });
 }
 
-// GET /api/v1/admin/settings - Get environment configuration
+// GET /api/v1/admin/settings - Get environment configuration (secrets masked)
 router.get('/settings', (req, res) => {
   try {
     const env = parseEnvFile();
+    const rawDbUrl = env.DATABASE_URL || process.env.DATABASE_URL || '';
+    // Mask database URL password if present
+    const maskedDbUrl = rawDbUrl.replace(/:\/\/([^:]+):([^@]+)@/, '://$1:********@');
+
     res.json({
       success: true,
       data: {
         PORT: env.PORT || process.env.PORT || '5000',
         NODE_ENV: env.NODE_ENV || process.env.NODE_ENV || 'development',
         BASE_URL: env.BASE_URL || process.env.BASE_URL || 'http://localhost:5000',
-        DATABASE_URL: env.DATABASE_URL || process.env.DATABASE_URL || '',
+        DATABASE_URL: maskedDbUrl,
         IMAGEKIT_PUBLIC_KEY: env.IMAGEKIT_PUBLIC_KEY || process.env.IMAGEKIT_PUBLIC_KEY || '',
-        IMAGEKIT_PRIVATE_KEY: env.IMAGEKIT_PRIVATE_KEY || process.env.IMAGEKIT_PRIVATE_KEY || '',
+        IMAGEKIT_CONFIGURED: Boolean(env.IMAGEKIT_PRIVATE_KEY || process.env.IMAGEKIT_PRIVATE_KEY),
         IMAGEKIT_URL_ENDPOINT: env.IMAGEKIT_URL_ENDPOINT || process.env.IMAGEKIT_URL_ENDPOINT || '',
         COMPANY_NAME: env.COMPANY_NAME || process.env.COMPANY_NAME || 'Hind Building Solutions',
         SUPPORT_PHONE: env.SUPPORT_PHONE || process.env.SUPPORT_PHONE || '+91 94628 77757',
@@ -542,7 +629,7 @@ router.get('/settings', (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Failed to retrieve configuration' });
   }
 });
 
@@ -576,10 +663,25 @@ router.post('/settings', (req, res) => {
 
     updateEnvFile(updates);
 
+    const env = parseEnvFile();
+    const rawDbUrl = env.DATABASE_URL || process.env.DATABASE_URL || '';
+    const maskedDbUrl = rawDbUrl.replace(/:\/\/([^:]+):([^@]+)@/, '://$1:********@');
+
     res.json({
       success: true,
-      message: 'Environment credentials updated successfully in .env',
-      data: parseEnvFile()
+      message: 'Environment credentials updated successfully',
+      data: {
+        PORT: env.PORT || process.env.PORT || '5000',
+        NODE_ENV: env.NODE_ENV || process.env.NODE_ENV || 'development',
+        BASE_URL: env.BASE_URL || process.env.BASE_URL || 'http://localhost:5000',
+        DATABASE_URL: maskedDbUrl,
+        IMAGEKIT_PUBLIC_KEY: env.IMAGEKIT_PUBLIC_KEY || process.env.IMAGEKIT_PUBLIC_KEY || '',
+        IMAGEKIT_CONFIGURED: Boolean(env.IMAGEKIT_PRIVATE_KEY || process.env.IMAGEKIT_PRIVATE_KEY),
+        IMAGEKIT_URL_ENDPOINT: env.IMAGEKIT_URL_ENDPOINT || process.env.IMAGEKIT_URL_ENDPOINT || '',
+        COMPANY_NAME: env.COMPANY_NAME || process.env.COMPANY_NAME || 'Hind Building Solutions',
+        SUPPORT_PHONE: env.SUPPORT_PHONE || process.env.SUPPORT_PHONE || '+91 94628 77757',
+        SUPPORT_EMAIL: env.SUPPORT_EMAIL || process.env.SUPPORT_EMAIL || 'support@hindbuilding.com'
+      }
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

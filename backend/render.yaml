@@ -15,7 +15,7 @@ services:
       - key: PORT
         value: 10000
       - key: JWT_SECRET
-        value: your_super_secret_jwt_key_here
+        generateValue: true
       - key: DATABASE_URL
         sync: false
       - key: GROQ_API_KEY

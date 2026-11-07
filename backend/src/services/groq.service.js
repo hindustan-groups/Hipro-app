@@ -1,8 +1,7 @@
 const Groq = require('groq-sdk');
 
-const VERIFIED_FALLBACK_KEY = String.fromCharCode(...[103,115,107,95,109,120,122,122,90,89,82,104,69,54,118,99,106,52,72,56,99,76,86,122,87,71,100,121,98,51,70,89,102,66,67,122,112,101,116,65,79,106,113,122,48,84,80,87,69,112,67,105,49,65,121,69]);
-
 function createClient(apiKey) {
+  if (!apiKey) return null;
   return new Groq({ apiKey });
 }
 
@@ -34,9 +33,17 @@ function parseModelJson(content) {
  * Read-Only knowledge evaluation with automatic failover.
  */
 async function askGroq(messages, knowledge, customerContext = null) {
-  let apiKey = (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.startsWith('gsk_'))
+  const apiKey = (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.startsWith('gsk_'))
     ? process.env.GROQ_API_KEY
-    : VERIFIED_FALLBACK_KEY;
+    : null;
+
+  if (!apiKey) {
+    return {
+      reply: 'Hello! I am Hipro Support Assistant. A support representative will be with you shortly.',
+      escalate: true,
+      reason: 'AI service key not configured'
+    };
+  }
 
   let model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
   if (!model || model.includes('llama') || model.includes('mixtral')) {
@@ -76,7 +83,7 @@ ${customerContext ? `Customer Context (Read-Only):\n${JSON.stringify(customerCon
     ...validMessages
   ];
 
-  let client = createClient(apiKey);
+  const client = createClient(apiKey);
   let response;
 
   try {
@@ -87,15 +94,13 @@ ${customerContext ? `Customer Context (Read-Only):\n${JSON.stringify(customerCon
       temperature: 0.3,
       max_tokens: 600
     });
-  } catch (firstErr) {
-    console.warn(`[Groq] Primary call failed (${firstErr.message}). Retrying with verified fallback...`);
-    client = createClient(VERIFIED_FALLBACK_KEY);
-    response = await client.chat.completions.create({
-      model: 'openai/gpt-oss-120b',
-      messages: formattedMessages,
-      temperature: 0.3,
-      max_tokens: 600
-    });
+  } catch (err) {
+    console.warn(`[Groq] API call failed (${err.message})`);
+    return {
+      reply: 'Thank you for reaching out to Hipro Support. A representative will connect with you shortly.',
+      escalate: true,
+      reason: err.message
+    };
   }
 
   const rawContent = response?.choices?.[0]?.message?.content;

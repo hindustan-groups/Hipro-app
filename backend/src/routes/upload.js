@@ -5,26 +5,30 @@ const fs = require('fs');
 
 const multer = require('multer');
 const { uploadToImageKit, GetAuthenticationParameters } = require('../services/imagekit');
+const { authenticate } = require('../middleware/auth');
+
+const ALLOWED_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|mp4|mov|mpeg|mp3|wav|m4a|aac|pdf)$/i;
+const ALLOWED_MIME_PREFIXES = ['image/', 'video/', 'audio/', 'application/pdf'];
 
 const storage = multer.memoryStorage();
 const upload = multer({
     storage,
-    limits: { fileSize: 60 * 1024 * 1024 },
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max (was 60 MB)
     fileFilter: (req, file, cb) => {
         const mime = file.mimetype || '';
-        if (mime.startsWith('image/') ||
-            mime.startsWith('video/') ||
-            mime.startsWith('audio/') ||
-            file.originalname.match(/\.(jpg|jpeg|png|gif|mp4|mov|mpeg|mp3|wav|m4a|aac)$/i)
-        ) {
+        const extMatch = file.originalname.match(ALLOWED_EXTENSIONS);
+        const mimeMatch = ALLOWED_MIME_PREFIXES.some(prefix => mime.startsWith(prefix));
+
+        if (mimeMatch && extMatch) {
             cb(null, true);
         } else {
-            cb(new Error('Unsupported file type. Please upload an image, short video, or audio file.'), false);
+            cb(new Error('Unsupported file type. Allowed: jpg, jpeg, png, gif, webp, mp4, mov, mp3, wav, m4a, aac, pdf.'), false);
         }
     }
 });
 
-router.post('/', upload.single('file'), async (req, res) => {
+// File upload — requires authentication
+router.post('/', authenticate, upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({
@@ -90,12 +94,13 @@ router.post('/', upload.single('file'), async (req, res) => {
         console.error('Upload Error:', error);
         res.status(500).json({
             success: false,
-            message: error.message || 'Failed to upload file'
+            message: 'Failed to upload file'
         });
     }
 });
 
-router.get('/auth', (req, res) => {
+// ImageKit auth params — requires authentication
+router.get('/auth', authenticate, (req, res) => {
     try {
         const authparams = GetAuthenticationParameters();
         res.json({
@@ -106,8 +111,8 @@ router.get('/auth', (req, res) => {
         console.error('ImageKit Auth Error:', error);
         res.status(500).json({
             success: false,
-            message: error.message || 'Failed to get authentication parameters from ImageKit'
-        });   
+            message: 'Failed to get authentication parameters'
+        });
     }
 });
 

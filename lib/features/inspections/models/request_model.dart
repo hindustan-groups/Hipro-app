@@ -33,6 +33,9 @@ class ServiceRequestModel {
   final String? technicianName;
   final String? technicianPhone;
   final String? technicianRole;
+  final double? customerRating;
+  final String? customerReview;
+  final DateTime? ratedAt;
 
   ServiceRequestModel({
     required this.id,
@@ -59,6 +62,9 @@ class ServiceRequestModel {
     this.technicianName,
     this.technicianPhone,
     this.technicianRole,
+    this.customerRating,
+    this.customerReview,
+    this.ratedAt,
   });
 
   ServiceRequestModel copyWith({
@@ -86,6 +92,9 @@ class ServiceRequestModel {
     String? technicianName,
     String? technicianPhone,
     String? technicianRole,
+    double? customerRating,
+    String? customerReview,
+    DateTime? ratedAt,
   }) {
     return ServiceRequestModel(
       id: id ?? this.id,
@@ -112,6 +121,9 @@ class ServiceRequestModel {
       technicianName: technicianName ?? this.technicianName,
       technicianPhone: technicianPhone ?? this.technicianPhone,
       technicianRole: technicianRole ?? this.technicianRole,
+      customerRating: customerRating ?? this.customerRating,
+      customerReview: customerReview ?? this.customerReview,
+      ratedAt: ratedAt ?? this.ratedAt,
     );
   }
 
@@ -141,6 +153,9 @@ class ServiceRequestModel {
       technicianName: json['technicianName']?.toString(),
       technicianPhone: json['technicianPhone']?.toString(),
       technicianRole: json['technicianRole']?.toString(),
+      customerRating: (json['customerRating'] as num?)?.toDouble(),
+      customerReview: json['customerReview']?.toString(),
+      ratedAt: json['ratedAt'] != null ? DateTime.tryParse(json['ratedAt'].toString()) : null,
       requiresSiteAudit: json['requiresSiteAudit'] == true ||
           json['siteAudit'] == true ||
           (json['auditStatus'] != null && json['auditStatus'] != 'none') ||

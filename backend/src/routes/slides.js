@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 const SLIDES_FILE = path.join(__dirname, '../../uploads/slides.json');
 
@@ -149,7 +150,7 @@ router.get('/', (req, res) => {
 });
 
 // GET /api/v1/slides/admin - List all slides for admin panel
-router.get('/admin', (req, res) => {
+router.get('/admin', authenticate, requireAdmin, (req, res) => {
   try {
     const slides = readSlides();
     const sorted = [...slides].sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -166,7 +167,7 @@ router.get('/admin', (req, res) => {
 });
 
 // POST /api/v1/slides/admin - Create a new slide
-router.post('/admin', (req, res) => {
+router.post('/admin', authenticate, requireAdmin, (req, res) => {
   try {
     const { title, subtitle, imageUrl, targetRoute, badgeText, order, isActive } = req.body;
 
@@ -208,7 +209,7 @@ router.post('/admin', (req, res) => {
 });
 
 // PUT /api/v1/slides/admin/:id - Update an existing slide
-router.put('/admin/:id', (req, res) => {
+router.put('/admin/:id', authenticate, requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
     const slides = readSlides();
@@ -252,7 +253,7 @@ router.put('/admin/:id', (req, res) => {
 });
 
 // DELETE /api/v1/slides/admin/:id - Delete a slide
-router.delete('/admin/:id', (req, res) => {
+router.delete('/admin/:id', authenticate, requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
     const slides = readSlides();
@@ -281,17 +282,17 @@ router.delete('/admin/:id', (req, res) => {
 });
 
 // Root aliases for convenience (e.g. POST /api/v1/slides)
-router.post('/', (req, res, next) => {
+router.post('/', authenticate, requireAdmin, (req, res, next) => {
   req.url = '/admin';
   router.handle(req, res, next);
 });
 
-router.put('/:id', (req, res, next) => {
+router.put('/:id', authenticate, requireAdmin, (req, res, next) => {
   req.url = `/admin/${req.params.id}`;
   router.handle(req, res, next);
 });
 
-router.delete('/:id', (req, res, next) => {
+router.delete('/:id', authenticate, requireAdmin, (req, res, next) => {
   req.url = `/admin/${req.params.id}`;
   router.handle(req, res, next);
 });

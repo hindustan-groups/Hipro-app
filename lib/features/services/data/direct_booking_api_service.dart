@@ -91,4 +91,23 @@ class DirectBookingApiService {
       rethrow;
     }
   }
+
+  Future<bool> rateBooking({
+    required String bookingId,
+    required double rating,
+    String? review,
+  }) async {
+    try {
+      final response = await apiClient.dio.post(
+        '/direct-bookings/$bookingId/rate',
+        data: {
+          'rating': rating,
+          'review': review ?? '',
+        },
+      );
+      return response.statusCode == 200 && (response.data['success'] == true);
+    } catch (e) {
+      return false;
+    }
+  }
 }

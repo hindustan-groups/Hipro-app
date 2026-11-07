@@ -1,0 +1,331 @@
+[
+  {
+    "id": "ent_ddn_01",
+    "title": "Maldevta Tandem Paragliding Flight",
+    "tagline": "Soar high over the Doon Valley with certified gliders",
+    "city": "Dehradun",
+    "locationDetails": "Maldevta Foothills, 18km from Dehradun Clock Tower",
+    "category": "Air Sports",
+    "rating": 4.9,
+    "reviewsCount": 382,
+    "startingPrice": 3200,
+    "originalPrice": 4200,
+    "discountBadge": "24% OFF",
+    "duration": "20-25 Mins",
+    "groupSize": "1-6 Travelers",
+    "minAge": 12,
+    "difficulty": "Moderate",
+    "imageUrl": "https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80",
+    "gallery": [
+      "https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1516245834210-c4c142787335?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80"
+    ],
+    "inclusions": [
+      "15-20 mins tandem flight with certified pilot",
+      "High-definition GoPro video & aerial photos",
+      "Complete safety harness & helmet",
+      "Pickup from Maldevta Base Camp to take-off point",
+      "First aid & safety briefing"
+    ],
+    "safetyGuidelines": [
+      "Weight limit: 35 kg to 95 kg",
+      "Wear sturdy sneakers and comfortable windbreaker jacket",
+      "Not recommended for people with severe heart conditions or vertigo",
+      "Flights are subject to wind and weather clearance"
+    ],
+    "slots": [
+      "06:30 AM (Sunrise Thermal)",
+      "09:00 AM (Morning Breeze)",
+      "11:30 AM (Midday Flight)",
+      "03:30 PM (Sunset Soar)"
+    ],
+    "reportingPoint": "Maldevta Adventure Base Camp, Raipur Road, Dehradun, Uttarakhand - 248008",
+    "isFeatured": true,
+    "isActive": true,
+    "createdAt": "2026-10-24T10:53:31.350Z",
+    "categoryId": "cat_air_sports",
+    "vendorId": "v_adv_01",
+    "vendorName": "Captain Arvind Negi",
+    "vendorBusiness": "Himalayan Sky Gliders & Air Safari",
+    "vendorPhone": "+91 98290 88801"
+  },
+  {
+    "id": "ent_jsm_01",
+    "title": "Sam Sand Dunes Safari & Dune Bashing",
+    "tagline": "High-octane 4x4 Thar ride with sunset camel trek & cultural night",
+    "city": "Jaisalmer",
+    "locationDetails": "Sam Sand Dunes, Thar Desert, Jaisalmer",
+    "category": "Desert Safari",
+    "rating": 4.9,
+    "reviewsCount": 641,
+    "startingPrice": 2499,
+    "originalPrice": 3500,
+    "discountBadge": "28% OFF",
+    "duration": "4-5 Hours",
+    "groupSize": "1-12 Travelers",
+    "minAge": 5,
+    "difficulty": "Easy",
+    "imageUrl": "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80",
+    "gallery": [
+      "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1547234935-80c7145ec969?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80"
+    ],
+    "inclusions": [
+      "30 Mins high adrenaline 4x4 dune bashing",
+      "Sunset camel safari across golden dunes",
+      "Traditional Rajasthani folk dance & fire show",
+      "Evening tea, snacks, and royal buffet dinner at luxury desert camp"
+    ],
+    "safetyGuidelines": [
+      "Fasten seatbelts during 4x4 dune bashing",
+      "Carry sunglasses and a scarf for dust protection",
+      "Keep hydrated during the desert excursion"
+    ],
+    "slots": [
+      "03:30 PM (Sunset Dune Bashing)",
+      "04:30 PM (Safari & Camp Evening Combo)"
+    ],
+    "reportingPoint": "Hipro Desert Camp Milestone, Sam Sand Dunes Road, Jaisalmer, Rajasthan - 345001",
+    "isFeatured": true,
+    "isActive": true,
+    "createdAt": "2026-10-24T10:53:31.350Z",
+    "categoryId": "cat_desert_safari",
+    "vendorId": "v_adv_02",
+    "vendorName": "Fateh Singh Bhati",
+    "vendorBusiness": "Thar Royal Desert Safari & Camps",
+    "vendorPhone": "+91 94141 77702"
+  },
+  {
+    "id": "ent_rsk_bungee",
+    "title": "Mohan Chatti 83m Bungee Jump",
+    "tagline": "India’s highest fixed cantilever bungee jump over the Hall river valley",
+    "city": "Rishikesh",
+    "locationDetails": "Mohan Chatti, Jump Zone, Rishikesh, Uttarakhand",
+    "category": "Adventure",
+    "rating": 4.9,
+    "reviewsCount": 885,
+    "startingPrice": 3700,
+    "originalPrice": 4500,
+    "discountBadge": "18% OFF",
+    "duration": "1.5 Hours Experience",
+    "groupSize": "Individual Jumpers",
+    "minAge": 12,
+    "difficulty": "Extreme Adrenaline",
+    "imageUrl": "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80",
+    "gallery": [
+      "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1530866495561-507c9faab2ed?auto=format&fit=crop&w=800&q=80"
+    ],
+    "inclusions": [
+      "83m Cantilever Bungee Jump designed by SANZ (New Zealand)",
+      "Jump badge and Dare to Jump certificate",
+      "Experienced jump masters with safety tether inspection",
+      "Safety harness & recovery team at river bed"
+    ],
+    "safetyGuidelines": [
+      "Weight range: 40 kg to 110 kg strictly enforced",
+      "Not allowed for people with high BP, heart conditions, or back injuries",
+      "Wear comfortable clothing and closed trainers/shoes"
+    ],
+    "slots": [
+      "09:30 AM (Morning Dare)",
+      "11:30 AM (Valley Jump)",
+      "01:30 PM (Afternoon Leap)",
+      "03:30 PM (Sunset Thrill)"
+    ],
+    "reportingPoint": "Mohan Chatti Jump Base, Rishikesh, Uttarakhand - 249304",
+    "isFeatured": true,
+    "isActive": true,
+    "createdAt": "2026-10-24T10:53:31.350Z",
+    "categoryId": "cat_adventure",
+    "vendorId": "v_adv_03",
+    "vendorName": "Rakesh Rawat",
+    "vendorBusiness": "Ganga White Water Adventure Club",
+    "vendorPhone": "+91 98370 66603"
+  },
+  {
+    "id": "ent_jsm_02",
+    "title": "Desert Paramotoring & Parashoot Sky Ride",
+    "tagline": "Fly 500-1000 ft above the Thar golden desert with powered trike parashoot",
+    "city": "Jaisalmer",
+    "locationDetails": "Kanoi Air Strip, Sam Road, Jaisalmer",
+    "category": "Air Sports",
+    "rating": 4.8,
+    "reviewsCount": 224,
+    "startingPrice": 2999,
+    "originalPrice": 3999,
+    "discountBadge": "25% OFF",
+    "duration": "15 Mins",
+    "groupSize": "1 Traveler (Tandem)",
+    "minAge": 10,
+    "difficulty": "Easy",
+    "imageUrl": "https://images.unsplash.com/photo-1519074069444-1ba4ea16e604?auto=format&fit=crop&w=800&q=80",
+    "gallery": [
+      "https://images.unsplash.com/photo-1519074069444-1ba4ea16e604?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80"
+    ],
+    "inclusions": [
+      "10-12 Mins powered paramotor flight",
+      "Tandem flight with commercial rated pilot",
+      "GoPro video recording & aerial snapshot",
+      "Flight certificate and safety goggles"
+    ],
+    "safetyGuidelines": [
+      "Maximum body weight 90 kg",
+      "Comfortable clothing and closed shoes required",
+      "Weather-dependent activity"
+    ],
+    "slots": [
+      "06:45 AM (Golden Hour Sunrise)",
+      "08:30 AM (Morning Desert Flight)",
+      "04:45 PM (Sunset Horizon Flight)"
+    ],
+    "reportingPoint": "Kanoi Aero Ground, Near Sam Village, Jaisalmer, Rajasthan",
+    "isFeatured": true,
+    "isActive": true,
+    "createdAt": "2026-10-24T10:53:31.350Z",
+    "categoryId": "cat_air_sports",
+    "vendorId": "v_adv_02",
+    "vendorName": "Fateh Singh Bhati",
+    "vendorBusiness": "Thar Royal Desert Safari & Camps",
+    "vendorPhone": "+91 94141 77702"
+  },
+  {
+    "id": "ent_rsk_01",
+    "title": "Shivpuri to Marine Drive Ganga Rafting",
+    "tagline": "Conquer Grade III & IV rapids (Roller Coaster, Golf Course, Clubhouse)",
+    "city": "Rishikesh",
+    "locationDetails": "Shivpuri Base, Badrinath National Highway, Rishikesh",
+    "category": "Water Sports",
+    "rating": 4.9,
+    "reviewsCount": 712,
+    "startingPrice": 1199,
+    "originalPrice": 1699,
+    "discountBadge": "29% OFF",
+    "duration": "3.5 Hours",
+    "groupSize": "6-8 per raft",
+    "minAge": 14,
+    "difficulty": "Challenging",
+    "imageUrl": "https://images.unsplash.com/photo-1530866495561-507c9faab2ed?auto=format&fit=crop&w=800&q=80",
+    "gallery": [
+      "https://images.unsplash.com/photo-1530866495561-507c9faab2ed?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80"
+    ],
+    "inclusions": [
+      "16 KM river rafting stretch",
+      "Certified river guides & rescue kayaker",
+      "Grade 5 PFD life jacket, helmet, paddle",
+      "Cliff jumping & body surfing stop with lifejackets"
+    ],
+    "safetyGuidelines": [
+      "Basic swimming is helpful but life jackets make you fully float",
+      "No loose footwear (wear strap sandals or water shoes)",
+      "Dry bag provided on raft for basic essentials"
+    ],
+    "slots": [
+      "08:00 AM (Early River Slot)",
+      "11:00 AM (Midday Adventure)",
+      "02:00 PM (Afternoon Rapid Rush)"
+    ],
+    "reportingPoint": "Tapovan Adventure Center, Laxman Jhula Road, Rishikesh, Uttarakhand - 249192",
+    "isFeatured": true,
+    "isActive": true,
+    "createdAt": "2026-10-24T10:53:31.350Z",
+    "categoryId": "cat_water_sports",
+    "vendorId": "v_adv_03",
+    "vendorName": "Rakesh Rawat",
+    "vendorBusiness": "Ganga White Water Adventure Club",
+    "vendorPhone": "+91 98370 66603"
+  },
+  {
+    "id": "ent_ddn_02",
+    "title": "Dehradun Valley Hot Air Balloon Flight",
+    "tagline": "Float serenely over Doon tea gardens, Shivalik ridges, and pine hills",
+    "city": "Dehradun",
+    "locationDetails": "Sahastradhara Helipad Grounds, Dehradun",
+    "category": "Air Sports",
+    "rating": 4.8,
+    "reviewsCount": 147,
+    "startingPrice": 8500,
+    "originalPrice": 11000,
+    "discountBadge": "22% OFF",
+    "duration": "60 Mins",
+    "groupSize": "2-8 Travelers",
+    "minAge": 8,
+    "difficulty": "Easy",
+    "imageUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+    "gallery": [
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80"
+    ],
+    "inclusions": [
+      "45 to 60 minutes sunrise flight",
+      "Pilot safety briefing & orientation",
+      "Post-flight toast & breakfast box",
+      "Flight completion certificate"
+    ],
+    "safetyGuidelines": [
+      "Pregnant women and children under 8 are not permitted",
+      "Flights operate strictly subject to wind speeds below 12 km/h"
+    ],
+    "slots": [
+      "05:45 AM (Sunrise Calm Wind Slot)"
+    ],
+    "reportingPoint": "Sahastradhara Airfield Grounds, Dehradun, Uttarakhand",
+    "isFeatured": false,
+    "isActive": true,
+    "createdAt": "2026-10-24T10:53:31.350Z",
+    "categoryId": "cat_air_sports",
+    "vendorId": "v_adv_01",
+    "vendorName": "Captain Arvind Negi",
+    "vendorBusiness": "Himalayan Sky Gliders & Air Safari",
+    "vendorPhone": "+91 98290 88801"
+  },
+  {
+    "id": "ent_jsm_03",
+    "title": "Thar Sunset Quad Biking (ATV)",
+    "tagline": "Take control of 500cc Polaris ATVs on untamed desert dunes",
+    "city": "Jaisalmer",
+    "locationDetails": "Sam Sand Dunes Track 4, Jaisalmer",
+    "category": "Adventure",
+    "rating": 4.7,
+    "reviewsCount": 310,
+    "startingPrice": 1799,
+    "originalPrice": 2400,
+    "discountBadge": "25% OFF",
+    "duration": "30 Mins",
+    "groupSize": "1 Rider per ATV",
+    "minAge": 16,
+    "difficulty": "Moderate",
+    "imageUrl": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80",
+    "gallery": [
+      "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80"
+    ],
+    "inclusions": [
+      "30 Mins ATV ride on exclusive sand track",
+      "Polaris 500cc automatic Quad Bike",
+      "Motocross helmet, goggles, and chest guard",
+      "Lead marshal guidance"
+    ],
+    "safetyGuidelines": [
+      "Follow instructor signals strictly",
+      "Do not attempt high-speed jumps on unapproved dunes"
+    ],
+    "slots": [
+      "07:30 AM",
+      "09:00 AM",
+      "04:00 PM",
+      "05:30 PM (Sunset Run)"
+    ],
+    "reportingPoint": "Sam ATV Track Station, Near Desert National Park Boundary, Jaisalmer",
+    "isFeatured": false,
+    "isActive": true,
+    "createdAt": "2026-10-24T10:53:31.350Z",
+    "categoryId": "cat_adventure",
+    "vendorId": "v_adv_02",
+    "vendorName": "Fateh Singh Bhati",
+    "vendorBusiness": "Thar Royal Desert Safari & Camps",
+    "vendorPhone": "+91 94141 77702"
+  }
+]

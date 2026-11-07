@@ -1,20 +1,25 @@
 const jwt = require('jsonwebtoken');
 const prisma = require('../prisma');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_here';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('⛔ FATAL: JWT_SECRET environment variable is not set. Socket authentication will fail.');
+}
 
 /**
  * Socket.IO Real-Time Chat & Support Handoff Handler
  */
 function initializeChatSocket(io) {
-  // Authentication middleware for socket connections
+  // Strict authentication middleware for all socket connections
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
       if (!token) {
-        // Allow unauthenticated connection for legacy/public listeners if needed
-        socket.user = null;
-        return next();
+        return next(new Error('Authentication required for real-time connection (Bearer token missing)'));
+      }
+
+      if (!JWT_SECRET) {
+        return next(new Error('Server configuration error: JWT_SECRET missing'));
       }
 
       const decoded = jwt.verify(token, JWT_SECRET);
@@ -24,60 +29,71 @@ function initializeChatSocket(io) {
         return next(new Error('Invalid socket authentication token payload'));
       }
 
-      // Check if user is an agent
+      // Check if user is an active agent or admin
       const agent = await prisma.supportAgent.findUnique({
         where: { userId }
       });
 
       socket.user = {
         id: userId,
-        role: agent?.isActive ? 'AGENT' : (decoded.role || 'CUSTOMER'),
-        agentId: agent?.id || null
+        role: agent?.isActive ? 'AGENT' : (decoded.role || 'CUSTOMER').toUpperCase(),
+        agentId: agent?.id || null,
+        vendorId: decoded.vendorId || (decoded.role === 'VENDOR' ? userId : null)
       };
 
       next();
     } catch (err) {
-      console.warn('[Socket Auth Warning]:', err.message);
-      // Still allow connection as guest/observer
-      socket.user = null;
-      next();
+      console.warn('[Socket Auth Error]:', err.message);
+      return next(new Error('Unauthorized socket connection: Invalid or expired token'));
     }
   });
 
   io.on('connection', (socket) => {
-    const userId = socket.user?.id || 'guest';
-    const userRole = socket.user?.role || 'GUEST';
+    const userId = socket.user?.id;
+    const userRole = socket.user?.role || 'CUSTOMER';
 
-    // Auto-join agents room for live escalation alerts
-    if (['AGENT', 'ADMIN'].includes(userRole)) {
+    // Auto-join personal user room for private directed updates
+    if (userId) {
+      socket.join(`user_${userId}`);
+    }
+
+    // Auto-join staff / admin rooms for authorized staff only
+    if (['AGENT', 'ADMIN', 'SUPER_ADMIN'].includes(userRole)) {
+      socket.join('admin');
+      socket.join('admin_room');
       socket.join('support:agents');
     }
 
-    // Join conversation room with authorization check
+    if (userRole === 'VENDOR' && socket.user?.vendorId) {
+      socket.join(`vendor_${socket.user.vendorId}`);
+    }
+
+    // Join conversation room with strict authorization check
     socket.on('conversation:join', async (conversationId, callback) => {
       try {
         if (!conversationId || typeof conversationId !== 'string') {
           return callback && callback({ success: false, message: 'Invalid conversation ID' });
         }
 
-        // If authenticated, check access rights
-        if (socket.user) {
-          const conversation = await prisma.supportConversation.findUnique({
-            where: { id: conversationId },
-            include: { assignedAgent: true }
-          });
+        if (!socket.user) {
+          return callback && callback({ success: false, message: 'Authentication required' });
+        }
 
-          if (!conversation) {
-            return callback && callback({ success: false, message: 'Conversation not found' });
-          }
+        const conversation = await prisma.supportConversation.findUnique({
+          where: { id: conversationId },
+          include: { assignedAgent: true }
+        });
 
-          const isOwner = conversation.customerId === socket.user.id;
-          const isAssigned = conversation.assignedAgent?.userId === socket.user.id;
-          const isStaff = ['AGENT', 'ADMIN'].includes(socket.user.role);
+        if (!conversation) {
+          return callback && callback({ success: false, message: 'Conversation not found' });
+        }
 
-          if (!isOwner && !isAssigned && !isStaff) {
-            return callback && callback({ success: false, message: 'Access denied to this conversation' });
-          }
+        const isOwner = conversation.customerId === socket.user.id;
+        const isAssigned = conversation.assignedAgent?.userId === socket.user.id;
+        const isStaff = ['AGENT', 'ADMIN', 'SUPER_ADMIN'].includes(socket.user.role);
+
+        if (!isOwner && !isAssigned && !isStaff) {
+          return callback && callback({ success: false, message: 'Access denied to this conversation' });
         }
 
         socket.join(`conversation:${conversationId}`);
@@ -106,9 +122,12 @@ function initializeChatSocket(io) {
       }
     });
 
-    // Legacy thread join backward-compatibility
-    socket.on('join_thread', (threadId) => {
-      if (threadId) {
+    // Authorized thread join
+    socket.on('join_thread', async (threadId) => {
+      if (!threadId || !socket.user) return;
+      const isStaff = ['AGENT', 'ADMIN', 'SUPER_ADMIN'].includes(socket.user.role);
+      const isUserThread = threadId.includes(socket.user.id);
+      if (isStaff || isUserThread || threadId === 'thread_general') {
         socket.join(`thread_${threadId}`);
       }
     });
@@ -120,8 +139,13 @@ function initializeChatSocket(io) {
     });
 
     socket.on('join_admin_room', () => {
-      socket.join('admin');
-      socket.join('support:agents');
+      if (socket.user && (socket.user.role === 'ADMIN' || socket.user.role === 'SUPER_ADMIN')) {
+        socket.join('admin');
+        socket.join('admin_room');
+        socket.join('support:agents');
+      } else {
+        socket.emit('error', { message: 'Unauthorized: Admin access required to join admin room' });
+      }
     });
 
     socket.on('disconnect', () => {

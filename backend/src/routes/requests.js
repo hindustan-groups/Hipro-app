@@ -3,9 +3,15 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../prisma');
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_here';
+const { authenticate, requireAdmin, optionalAuth } = require('../middleware/auth');
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('⛔ FATAL: JWT_SECRET environment variable is not set. Request auth will fail.');
+}
 
 function authenticateUser(req, res, next) {
   try {
@@ -61,17 +67,50 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+// Strict whitelist for uploaded inspection media
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'application/pdf',
+  'video/mp4',
+  'video/quicktime'
+]);
+
+const ALLOWED_EXTS = new Set([
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.heic',
+  '.pdf',
+  '.mp4',
+  '.mov'
+]);
+
+const fileFilter = (req, file, cb) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  const mime = (file.mimetype || '').toLowerCase();
+  if (ALLOWED_EXTS.has(ext) && ALLOWED_MIME_TYPES.has(mime)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`File upload rejected: Unsupported file type ${ext} (${mime}). Only images, videos, and PDFs are permitted.`));
+  }
+};
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `damage_${Date.now()}_${Math.floor(Math.random() * 10000)}${ext}`);
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    cb(null, `damage_${Date.now()}_${crypto.randomBytes(6).toString('hex')}${ext}`);
   }
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }
+  fileFilter,
+  limits: { fileSize: 15 * 1024 * 1024 }
 });
 
 // POST /api/v1/requests - Create a service request
@@ -121,11 +160,14 @@ router.post('/', authenticateUser,
       });
 
       if (!user) {
+        const randomSecret = crypto.randomBytes(32).toString('hex');
+        const securePasswordHash = await bcrypt.hash(randomSecret, 10);
         user = await prisma.user.create({
           data: {
             name: name || "Customer App User",
             phoneNumber: phone,
-            password: "demopassword"
+            password: securePasswordHash,
+            authProvider: 'phone'
           },
           select: {
             id: true,
@@ -219,10 +261,35 @@ router.post('/', authenticateUser,
         addressline: addressline || req.body.address || 'Site Address'
       },
       include: {
-        user: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phoneNumber: true,
+            photoUrl: true
+          }
+        },
         quotations: true
       }
     });
+
+    // Real-Time Socket Broadcast: Notify Admin Panel safely without broadcasting customer credentials
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.to('admin_room').emit('new_request', {
+          id: newRequest.id,
+          requestNumber: newRequest.requestNumber,
+          servicecode: newRequest.servicecode,
+          city: newRequest.city,
+          created_at: newRequest.created_at
+        });
+        io.emit('stats_updated');
+      }
+    } catch (sockErr) {
+      console.warn('Socket broadcast warning:', sockErr.message);
+    }
 
     res.status(201).json({
       success: true,
@@ -286,24 +353,74 @@ router.patch('/phone', requireAuth, async (req, res) => {
     });
   }
 })
-// GET /api/v1/requests - Get all requests with quotations and user info (filtered for logged in user, or all for admin)
-router.get('/', authenticateUser, async (req, res) => {
+// GET /api/v1/requests - Get service requests (Strictly scoped by authenticated role)
+router.get('/', authenticate, async (req, res) => {
   try {
     const { phone, userId } = req.query;
     const where = {};
-    const targetUserId = req.userId || userId;
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+    const isVendor = req.user.role === 'VENDOR';
 
-    if (targetUserId) {
-      where.userId = targetUserId;
-    } else if (phone) {
-      where.user = { phoneNumber: phone };
+    if (isAdmin) {
+      if (userId) where.userId = userId;
+      else if (phone) where.user = { phoneNumber: phone };
+    } else if (isVendor) {
+      // Vendors only see requests assigned to them
+      where.assignedVendorId = req.user.vendorId || req.user.id;
+    } else {
+      // Customers strictly see their own requests
+      where.userId = req.user.id;
     }
 
     const requests = await prisma.serviceRequest.findMany({
       where,
       include: {
         quotations: true,
-        user: true
+        vendor: true,
+        vendorQuotes: {
+          include: {
+            vendor: {
+              select: {
+                id: true,
+                name: true,
+                businessName: true,
+                phone: true,
+                rating: true,
+                capacity: true,
+                currentJobCount: true
+              }
+            }
+          },
+          orderBy: { quotePrice: 'asc' }
+        },
+        sharedVendors: {
+          include: {
+            vendor: {
+              select: {
+                id: true,
+                name: true,
+                businessName: true,
+                phone: true,
+                rating: true,
+                specialization: true,
+                city: true,
+                capacity: true,
+                currentJobCount: true,
+                maxConcurrentJobs: true
+              }
+            }
+          },
+          orderBy: { sharedAt: 'desc' }
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phoneNumber: true,
+            photoUrl: true
+          }
+        }
       },
       orderBy: { created_at: 'desc' }
     });
@@ -314,34 +431,89 @@ router.get('/', authenticateUser, async (req, res) => {
   }
 });
 
-// GET /api/v1/requests/:id - Single request
-router.get('/:id', async (req, res) => {
+// GET /api/v1/requests/:id - Single request (Protected by ownership/role)
+router.get('/:id', authenticate, async (req, res) => {
   try {
-    const request = await prisma.serviceRequest.findUnique({
-      where: { id: req.params.id },
+    const request = await prisma.serviceRequest.findFirst({
+      where: {
+        OR: [{ id: req.params.id }, { requestNumber: req.params.id }]
+      },
       include: {
         quotations: true,
-        user: true
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phoneNumber: true,
+            photoUrl: true
+          }
+        }
       }
     });
     if (!request) return res.status(404).json({ success: false, message: 'Request not found' });
+
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+    const isOwner = req.user.id === request.userId;
+    const isAssignedVendor = req.user.role === 'VENDOR' && (
+      req.user.vendorId === request.assignedVendorId || req.user.id === request.assignedVendorId
+    );
+
+    if (!isAdmin && !isOwner && !isAssignedVendor) {
+      return res.status(403).json({ success: false, message: 'Forbidden: You do not have access to this request' });
+    }
+
     res.json({ success: true, data: request });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// PATCH /api/v1/requests/:id/status - Update request status
-router.patch('/:id/status', async (req, res) => {
+// PATCH /api/v1/requests/:id/status - Update request status (Authorized)
+router.patch('/:id/status', authenticate, async (req, res) => {
   try {
     const { status } = req.body;
     if (!status) {
       return res.status(400).json({ success: false, message: 'Status is required' });
     }
+
+    const request = await prisma.serviceRequest.findFirst({
+      where: {
+        OR: [{ id: req.params.id }, { requestNumber: req.params.id }]
+      }
+    });
+    if (!request) return res.status(404).json({ success: false, message: 'Request not found' });
+
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+    const isOwner = req.user.id === request.userId;
+    const isAssignedVendor = req.user.role === 'VENDOR' && (
+      req.user.vendorId === request.assignedVendorId || req.user.id === request.assignedVendorId
+    );
+
+    if (!isAdmin && !isOwner && !isAssignedVendor) {
+      return res.status(403).json({ success: false, message: 'Forbidden: You cannot modify this request' });
+    }
+
+    // Customers can only cancel their own request
+    if (isOwner && !isAdmin && !isAssignedVendor && status !== 'CANCELLED') {
+      return res.status(403).json({ success: false, message: 'Customers are only permitted to cancel requests' });
+    }
+
     const updated = await prisma.serviceRequest.update({
-      where: { id: req.params.id },
+      where: { id: request.id },
       data: { status },
-      include: { quotations: true, user: true }
+      include: {
+        quotations: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phoneNumber: true,
+            photoUrl: true
+          }
+        }
+      }
     });
 
     // Auto-generate notification for the user based on stage advancement
@@ -420,8 +592,8 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
-// PATCH /api/v1/requests/:id/assign - Assign Lead Engineer to Service Request
-router.patch('/:id/assign', async (req, res) => {
+// PATCH /api/v1/requests/:id/assign - Assign Lead Engineer to Service Request (Admin only)
+router.patch('/:id/assign', authenticate, requireAdmin, async (req, res) => {
   try {
     const { technicianName, technicianPhone, technicianRole } = req.body;
     if (!technicianName) {
@@ -445,12 +617,28 @@ router.patch('/:id/assign', async (req, res) => {
         technicianPhone: technicianPhone ? technicianPhone.trim() : null,
         technicianRole: technicianRole ? technicianRole.trim() : 'Lead Inspection Engineer'
       },
-      include: { quotations: true, user: true }
+      include: {
+        quotations: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phoneNumber: true,
+            photoUrl: true
+          }
+        }
+      }
     });
 
     const io = req.app.get('io');
     if (io) {
-      io.emit('request_updated', updated);
+      io.to('admin_room').emit('request_updated', {
+        id: updated.id,
+        requestNumber: updated.requestNumber,
+        technicianName: updated.technicianName,
+        technicianRole: updated.technicianRole
+      });
     }
 
     try {
@@ -477,8 +665,422 @@ router.patch('/:id/assign', async (req, res) => {
   }
 });
 
-// DELETE /api/v1/requests/:id - Delete a request
-router.delete('/:id', async (req, res) => {
+
+// POST /api/v1/requests/:id/share-vendors - Multi-Vendor Request Sharing with Schema-Level Isolation
+router.post('/:id/share-vendors', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { vendorIds, notes, sharedBy } = req.body;
+
+    if (!Array.isArray(vendorIds) || vendorIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Please select at least one vendor to share this request.' });
+    }
+
+    const request = await prisma.serviceRequest.findUnique({ where: { id } });
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Inspection request not found.' });
+    }
+
+    // Upsert share record for each selected vendor
+    const shareResults = [];
+    for (const vId of vendorIds) {
+      const record = await prisma.vendorSharedRequest.upsert({
+        where: {
+          requestId_vendorId: {
+            requestId: id,
+            vendorId: vId
+          }
+        },
+        update: {
+          notes: notes || undefined,
+          sharedBy: sharedBy || 'Super Admin'
+        },
+        create: {
+          requestId: id,
+          vendorId: vId,
+          notes: notes || null,
+          sharedBy: sharedBy || 'Super Admin',
+          status: 'PENDING'
+        },
+        include: { vendor: true }
+      });
+      shareResults.push(record);
+    }
+
+    // Advance status to QUOTE_REQUESTED if currently SUBMITTED or ESTIMATING
+    let newStatus = request.status;
+    if (['SUBMITTED', 'ESTIMATING'].includes((request.status || '').toUpperCase())) {
+      newStatus = 'QUOTE_REQUESTED';
+      await prisma.serviceRequest.update({
+        where: { id },
+        data: { status: 'QUOTE_REQUESTED' }
+      });
+    }
+
+    // Socket real-time dispatch
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.to('admin').emit('request_shared_with_vendors', {
+          requestId: id,
+          requestNumber: request.requestNumber,
+          sharedVendors: shareResults,
+          status: newStatus
+        });
+        io.emit('request_status_updated', {
+          requestId: id,
+          requestNumber: request.requestNumber,
+          status: newStatus
+        });
+        vendorIds.forEach(vId => {
+          io.to(`vendor_${vId}`).emit('new_shared_request', {
+            requestId: id,
+            requestNumber: request.requestNumber,
+            servicecode: request.servicecode
+          });
+        });
+      }
+    } catch (sockErr) {
+      console.error('Socket share dispatch error:', sockErr);
+    }
+
+    res.json({
+      success: true,
+      message: `Inspection request #${request.requestNumber} shared with ${shareResults.length} vendor(s) successfully.`,
+      sharedVendors: shareResults
+    });
+  } catch (error) {
+    console.error('Share vendors error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to share request with vendors' });
+  }
+});
+
+// GET /api/v1/requests/:id/shared-vendors - Fetch all vendors this request was shared with
+router.get('/:id/shared-vendors', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sharedRecords = await prisma.vendorSharedRequest.findMany({
+      where: { requestId: id },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+            phone: true,
+            city: true,
+            specialization: true,
+            rating: true,
+            capacity: true,
+            currentJobCount: true,
+            maxConcurrentJobs: true
+          }
+        }
+      },
+      orderBy: { sharedAt: 'desc' }
+    });
+
+    // Check quotes submitted by these vendors
+    const quotes = await prisma.vendorQuote.findMany({
+      where: { requestId: id }
+    });
+
+    const quoteMap = {};
+    quotes.forEach(q => { quoteMap[q.vendorId] = q; });
+
+    const results = sharedRecords.map(s => ({
+      ...s,
+      quote: quoteMap[s.vendorId] || null
+    }));
+
+    res.json({ success: true, sharedVendors: results });
+  } catch (error) {
+    console.error('Fetch shared vendors error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/v1/requests/:id/vendor-quotes - Fetch and compare all quotations for a request
+router.get('/:id/vendor-quotes', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const quotes = await prisma.vendorQuote.findMany({
+      where: { requestId: id },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+            phone: true,
+            city: true,
+            rating: true,
+            capacity: true,
+            experience: true
+          }
+        }
+      },
+      orderBy: { quotePrice: 'asc' }
+    });
+
+    // Highlight minimum quote
+    const minPrice = quotes.length > 0 ? Math.min(...quotes.map(q => q.quotePrice)) : null;
+    const annotatedQuotes = quotes.map(q => ({
+      ...q,
+      isLowestPrice: q.quotePrice === minPrice
+    }));
+
+    res.json({ success: true, quotes: annotatedQuotes, minPrice });
+  } catch (error) {
+    console.error('Fetch vendor quotes error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PATCH /api/v1/requests/:id/assign-vendor - Admin assigns a vendor to a request (Admin only)
+router.patch('/:id/assign-vendor', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const vendorId = req.body.vendorId || req.body.assignedVendorId;
+    const vendorName = req.body.vendorName || req.body.assignedVendorName;
+    const quotePrice = req.body.quotePrice ?? req.body.assignedQuotePrice;
+    const assignedBy = req.body.assignedBy || 'Super Admin';
+
+    if (!vendorId || !vendorName) {
+      return res.status(400).json({ success: false, message: 'Vendor ID and vendor name are required' });
+    }
+
+    const request = await prisma.serviceRequest.findUnique({ where: { id } });
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Service request not found' });
+    }
+
+    const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
+    if (!vendor) {
+      return res.status(404).json({ success: false, message: 'Vendor not found' });
+    }
+
+    const quoteId = req.body.quoteId;
+
+    // Update the request with vendor assignment
+    const updatedRequest = await prisma.serviceRequest.update({
+      where: { id },
+      data: {
+        vendorId,
+        assignedVendorName: vendorName,
+        assignedQuotePrice: quotePrice ? parseFloat(quotePrice) : null,
+        assignedBy: assignedBy || 'Super Admin',
+        status: 'ASSIGNED'
+      },
+      include: {
+        user: true,
+        vendor: true,
+        quotations: true,
+        vendorQuotes: true,
+        sharedVendors: true
+      }
+    });
+
+    // Accept chosen vendor's quote and reject competing quotes
+    if (quoteId) {
+      await prisma.vendorQuote.update({
+        where: { id: quoteId },
+        data: { status: 'accepted' }
+      });
+      await prisma.vendorQuote.updateMany({
+        where: { requestId: id, id: { not: quoteId } },
+        data: { status: 'rejected' }
+      });
+    } else {
+      await prisma.vendorQuote.updateMany({
+        where: { requestId: id, vendorId },
+        data: { status: 'accepted' }
+      });
+      await prisma.vendorQuote.updateMany({
+        where: { requestId: id, vendorId: { not: vendorId } },
+        data: { status: 'rejected' }
+      });
+    }
+
+    // Update VendorSharedRequest statuses
+    await prisma.vendorSharedRequest.updateMany({
+      where: { requestId: id, vendorId },
+      data: { status: 'ASSIGNED' }
+    });
+    await prisma.vendorSharedRequest.updateMany({
+      where: { requestId: id, vendorId: { not: vendorId } },
+      data: { status: 'CLOSED' }
+    });
+
+    // Increment vendor active job count
+    await prisma.vendor.update({
+      where: { id: vendorId },
+      data: { currentJobCount: { increment: 1 } }
+    });
+
+    // Notify via socket
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.to('admin').emit('vendor_assigned', {
+          requestId: id,
+          requestNumber: request.requestNumber,
+          vendorId,
+          vendorName: vendor.name,
+          businessName: vendor.businessName,
+          assignedQuotePrice: quotePrice ? parseFloat(quotePrice) : null,
+          assignedBy: assignedBy || 'Super Admin'
+        });
+
+        io.emit('request_status_updated', {
+          requestId: id,
+          requestNumber: request.requestNumber,
+          status: 'ASSIGNED',
+          vendorName: vendor.name,
+          businessName: vendor.businessName
+        });
+      }
+    } catch (notifErr) {
+      console.error('Failed to dispatch assignment notification:', notifErr);
+    }
+
+    res.json({ success: true, message: 'Vendor assigned successfully', request: updatedRequest });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PATCH /api/v1/requests/:id/share-vendor - Admin shares an inspection request with a vendor
+// The vendor receives only limited, non-sensitive details: images/video, square feet and problem description.
+router.patch('/:id/share-vendor', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { vendorId, vendorName, quotePrice, assignedBy, notes } = req.body;
+
+    if (!vendorId || !vendorName) {
+      return res.status(400).json({ success: false, message: 'Vendor ID and vendor name are required' });
+    }
+
+    const request = await prisma.serviceRequest.findUnique({ where: { id } });
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Inspection request not found' });
+    }
+
+    const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
+    if (!vendor) {
+      return res.status(404).json({ success: false, message: 'Vendor not found' });
+    }
+
+    // Multi-city guard: vendor must belong to the same city as the request
+    if (request.cityId && vendor.cityId && request.cityId !== vendor.cityId) {
+      return res.status(403).json({
+        success: false,
+        message: `Vendor is registered in ${vendor.city}, but this request belongs to ${request.city || 'another city'}. Cross-city assignment is not allowed.`
+      });
+    }
+
+    // Capacity guard: vendor must not be at full concurrent job limit
+    const isAtCapacity = vendor.currentJobCount >= (vendor.maxConcurrentJobs || 5);
+    if (isAtCapacity) {
+      return res.status(409).json({
+        success: false,
+        message: `Vendor ${vendor.name} is at full capacity (${vendor.currentJobCount}/${vendor.maxConcurrentJobs} jobs). Choose another vendor.`
+      });
+    }
+
+    // Share the request with the vendor for bidding (Upsert VendorSharedRequest)
+    // IMPORTANT: Customer contact/address and technician details are intentionally NOT shared.
+    // Do NOT set vendorId or assignedVendorName on the serviceRequest, because sharing
+    // an inquiry is strictly an invitation to quote, NOT awarding the job!
+    await prisma.vendorSharedRequest.upsert({
+      where: {
+        requestId_vendorId: {
+          requestId: id,
+          vendorId
+        }
+      },
+      update: {
+        notes: notes || undefined,
+        sharedBy: assignedBy || 'Super Admin'
+      },
+      create: {
+        requestId: id,
+        vendorId,
+        notes: notes || null,
+        sharedBy: assignedBy || 'Super Admin',
+        status: 'PENDING'
+      }
+    });
+
+    // Advance status to QUOTE_REQUESTED if currently SUBMITTED or ESTIMATING
+    let nextStatus = request.status;
+    if (['SUBMITTED', 'ESTIMATING'].includes((request.status || '').toUpperCase())) {
+      nextStatus = 'QUOTE_REQUESTED';
+    }
+
+    const updatedRequest = await prisma.serviceRequest.update({
+      where: { id },
+      data: {
+        status: nextStatus
+      },
+      include: {
+        vendor: true,
+        vendorQuotes: true,
+        sharedVendors: true
+      }
+    });
+
+    // Notify admin room and broadcast status update
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.to('admin').emit('request_shared_with_vendor', {
+          requestId: id,
+          requestNumber: request.requestNumber,
+          vendorId,
+          vendorName: vendor.name,
+          businessName: vendor.businessName,
+          capacity: vendor.capacity,
+          assignedBy: assignedBy || 'Super Admin',
+          status: 'QUOTE_REQUESTED',
+        });
+        io.emit('request_status_updated', {
+          requestId: id,
+          requestNumber: request.requestNumber,
+          status: 'QUOTE_REQUESTED',
+          vendorName: vendor.name,
+          businessName: vendor.businessName,
+        });
+      }
+      const { addNotification } = require('./notifications');
+      await addNotification({
+        title: 'Request Shared with Vendor',
+        description: `Inspection request #${request.requestNumber} shared with ${vendor.name} (${vendor.businessName}) - Capacity: ${vendor.capacity}.`,
+        type: 'ASSIGNMENT',
+        referenceId: request.id,
+        requestId: request.id,
+        projectName: request.servicecode || 'Service Request',
+        location: request.addressline || request.location || 'Site Location',
+        unread: true,
+        timestamp: new Date().toISOString()
+      }, io);
+    } catch (notifErr) {
+      console.error('Failed to dispatch share notification:', notifErr);
+    }
+
+    res.json({
+      success: true,
+      message: 'Inspection request shared with vendor successfully',
+      request: updatedRequest
+    });
+  } catch (error) {
+    console.error('Share vendor error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to share request with vendor' });
+  }
+});
+
+// DELETE /api/v1/requests/:id - Delete a request (Admin only)
+router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     await prisma.serviceRequest.delete({
       where: { id: req.params.id }
@@ -508,6 +1110,15 @@ const updateRequestHandler = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Inspection request not found'
+      });
+    }
+
+    const isAdmin = req.user && (req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN');
+    const isOwner = req.user && (req.user.id === existing.userId);
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: You cannot modify this inspection request'
       });
     }
 
@@ -589,7 +1200,15 @@ const updateRequestHandler = async (req, res) => {
       where: { id: existing.id },
       data: updateData,
       include: {
-        user: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phoneNumber: true,
+            photoUrl: true
+          }
+        },
         quotations: true
       }
     });
@@ -608,7 +1227,167 @@ const updateRequestHandler = async (req, res) => {
   }
 };
 
-router.put('/:id', upload.array('damageImages', 10), updateRequestHandler);
-router.patch('/:id', upload.array('damageImages', 10), updateRequestHandler);
+router.put('/:id', authenticate, upload.array('damageImages', 10), updateRequestHandler);
+router.patch('/:id', authenticate, upload.array('damageImages', 10), updateRequestHandler);
+
+// ==========================================
+// POST /api/v1/requests/:id/rate
+// Customer rates completed service request & vendor
+// ==========================================
+router.post('/:id/rate', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rating, review } = req.body;
+
+    const numRating = parseFloat(rating);
+    if (isNaN(numRating) || numRating < 1 || numRating > 5) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid rating between 1 and 5 stars' });
+    }
+
+    const request = await prisma.serviceRequest.findUnique({
+      where: { id },
+      include: {
+        user: true,
+        vendor: true,
+        vendorQuotes: true
+      }
+    });
+
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Service request not found' });
+    }
+
+    // Must be COMPLETED or WORK_DONE
+    if (request.status !== 'COMPLETED' && request.status !== 'WORK_DONE') {
+      return res.status(400).json({
+        success: false,
+        message: 'Rating can only be submitted after the service has been completed'
+      });
+    }
+
+    // Ownership check (admin can bypass)
+    const isAdmin = req.user && (req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN');
+    if (!isAdmin && req.user && request.userId && request.userId !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'You are not authorized to rate this request' });
+    }
+
+    const customerName = req.user?.name || request.user?.name || request.userName || 'Valued Customer';
+    const customerPhone = req.user?.phone || req.user?.phoneNumber || request.user?.phone || request.user?.phoneNumber || request.userPhone || null;
+
+    // Resolve assigned Vendor
+    let vendor = null;
+    if (request.vendorId) {
+      vendor = await prisma.vendor.findUnique({ where: { id: request.vendorId } }).catch(() => null);
+    }
+    if (!vendor && request.assignedVendorName) {
+      vendor = await prisma.vendor.findFirst({
+        where: {
+          OR: [
+            { name: { equals: request.assignedVendorName, mode: 'insensitive' } },
+            { businessName: { equals: request.assignedVendorName, mode: 'insensitive' } }
+          ]
+        }
+      }).catch(() => null);
+    }
+    if (!vendor && request.vendorQuotes && request.vendorQuotes.length > 0) {
+      const awardedQuote = request.vendorQuotes.find(q => q.status === 'ACCEPTED' || q.status === 'AWARDED');
+      if (awardedQuote?.vendorId) {
+        vendor = await prisma.vendor.findUnique({ where: { id: awardedQuote.vendorId } }).catch(() => null);
+      }
+    }
+
+    let vendorRatingRecord = null;
+    if (vendor) {
+      // Check if rating already exists
+      const existingVendorRating = await prisma.vendorRating.findFirst({
+        where: {
+          vendorId: vendor.id,
+          bookingId: request.id
+        }
+      });
+
+      if (existingVendorRating) {
+        vendorRatingRecord = await prisma.vendorRating.update({
+          where: { id: existingVendorRating.id },
+          data: {
+            rating: numRating,
+            review: review ? String(review).trim() : null,
+            customerName,
+            customerPhone
+          }
+        });
+      } else {
+        vendorRatingRecord = await prisma.vendorRating.create({
+          data: {
+            vendorId: vendor.id,
+            userId: req.user?.id || request.userId || null,
+            customerName,
+            customerPhone,
+            rating: numRating,
+            review: review ? String(review).trim() : null,
+            serviceType: 'SERVICE_REQUEST',
+            bookingId: request.id,
+            bookingNumber: request.id
+          }
+        });
+      }
+
+      // Recalculate dynamic average rating and ratingsCount
+      const allRatings = await prisma.vendorRating.findMany({
+        where: { vendorId: vendor.id },
+        select: { rating: true }
+      });
+
+      const avg = allRatings.length > 0
+        ? Number((allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length).toFixed(1))
+        : numRating;
+
+      await prisma.vendor.update({
+        where: { id: vendor.id },
+        data: {
+          rating: avg,
+          ratingsCount: allRatings.length
+        }
+      });
+    }
+
+    // Update ServiceRequest record
+    const updatedRequest = await prisma.serviceRequest.update({
+      where: { id: request.id },
+      data: {
+        customerRating: numRating,
+        customerReview: review ? String(review).trim() : null,
+        ratedAt: new Date()
+      },
+      include: {
+        user: true,
+        vendor: true,
+        quotations: true
+      }
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('request_updated', updatedRequest);
+      if (vendor) {
+        io.emit('vendor_rating_updated', {
+          vendorId: vendor.id,
+          rating: numRating,
+          review: review || null
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Thank you for your rating and review!',
+      request: updatedRequest,
+      vendorRating: vendorRatingRecord
+    });
+  } catch (error) {
+    console.error('Error rating service request:', error);
+    res.status(500).json({ success: false, message: error.message || 'Internal server error' });
+  }
+});
 
 module.exports = router;

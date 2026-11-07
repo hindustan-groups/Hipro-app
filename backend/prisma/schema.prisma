@@ -50,6 +50,7 @@ model user {
     phoneNumber    String?          @unique
     email          String?          @unique
     password       String?
+    role           String           @default("USER") // USER, ADMIN, VENDOR
     googleId       String?          @unique
     photoUrl       String?
     authProvider   String?          @default("local")
@@ -105,7 +106,22 @@ model ServiceRequest {
     technicianPhone  String?
     technicianRole   String?
 
+    // Vendor Assignment (Multi-panel vendor system)
+    vendorId           String?
+    cityId             String?      // City this request belongs to (multi-city routing)
+    vendor             Vendor?      @relation("VendorAssignedJobs", fields: [vendorId], references: [id], onDelete: SetNull)
+    assignedVendorName String?
+    assignedQuotePrice Float?
+    assignedBy         String?
+
     quotations       Quotation[]
+    vendorQuotes     VendorQuote[]
+    sharedVendors    VendorSharedRequest[]
+
+    // Customer Service Rating & Review
+    customerRating   Float?      // Customer star rating (1 to 5) after service completion
+    customerReview   String?     // Customer review feedback
+    ratedAt          DateTime?   // Timestamp when customer rated
 
     created_at       DateTime     @default(now())  
     updated_at       DateTime     @default(now()) @updatedAt
@@ -191,6 +207,11 @@ model DirectBooking {
     refundReason         String?
     refundArn            String?
     refundedAt           DateTime?
+
+    // Customer Service Rating & Review
+    customerRating       Float?      // Customer star rating (1 to 5) after service completion
+    customerReview       String?     // Customer review feedback
+    ratedAt              DateTime?   // Timestamp when customer rated
 
     created_at           DateTime    @default(now())
     updated_at           DateTime    @default(now()) @updatedAt
@@ -345,4 +366,138 @@ model SupportKnowledge {
     updatedAt DateTime @updatedAt
 
     @@index([isActive])
+}
+
+// ==========================================
+// SUPER ADMIN & SYSTEM CREDENTIALS
+// ==========================================
+
+model Admin {
+    id         String   @id @default(uuid())
+    name       String   @default("Super Administrator")
+    email      String   @unique
+    password   String   // Hashed / verified password
+    role       String   @default("ADMIN") // ADMIN, SUPER_ADMIN
+    phone      String?
+    isActive   Boolean  @default(true)
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    @@index([email])
+}
+
+// ==========================================
+// VENDOR MANAGEMENT SYSTEM
+// Local contractors and adventure operators
+// ==========================================
+
+enum VendorCapacity {
+    SMALL
+    MEDIUM
+    LARGE
+}
+
+model Vendor {
+    id              String   @id @default(uuid())
+    name            String
+    businessName    String
+    phone           String   @unique
+    email           String?   @unique
+    password        String?  // Optional vendor password
+    passcode        String?  // 6-digit security PIN (hashed)
+    city            String
+    cityId          String?  // Links vendor to a specific city for multi-city routing
+    category        String   @default("Services") // "Services" | "Adventure"
+    specialization  String   // e.g. "Waterproofing", "Civil Construction", "Painting", "Paragliding"
+    experience      String   // e.g. "8 Years"
+    status          String   @default("active") // active, inactive, busy
+    capacity        VendorCapacity @default(SMALL) // Work capability: SMALL | MEDIUM | LARGE
+    maxConcurrentJobs Int      @default(5)        // Max active jobs vendor can handle at once
+    currentJobCount   Int        @default(0)      // Current active assigned jobs
+    rating          Float    @default(0.0)
+    ratingsCount    Int      @default(0)
+    minCharge       Float    @default(0.0)
+    imageUrl        String?
+
+    // Document Verification Fields
+    aadhaarNumber     String?   // Aadhaar number
+    aadhaarUrl        String?   // Uploaded Aadhaar document URL
+    panNumber         String?   // PAN number
+    panUrl            String?   // Uploaded PAN document URL
+    bankPassbookUrl   String?   // Uploaded bank passbook URL
+    documentsVerified Boolean   @default(false) // Admin verification status
+
+    created_at      DateTime @default(now())
+    updated_at      DateTime @updatedAt
+
+    vendorQuotes    VendorQuote[]
+    assignedJobs    ServiceRequest[] @relation("VendorAssignedJobs")
+    sharedRequests  VendorSharedRequest[]
+    ratings         VendorRating[]
+
+    @@index([category])
+    @@index([city])
+    @@index([specialization])
+    @@index([status])
+    @@index([documentsVerified])
+}
+
+// Vendor Quotations - quotes submitted by vendors for customer requests
+model VendorQuote {
+    id               String   @id @default(uuid())
+    requestId        String
+    request          ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+    vendorId         String
+    vendor           Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+    vendorName       String
+    vendorBusiness   String?
+    quotePrice       Float
+    notes            String?
+    estimatedTimeline String  @default("1-2 Working Days")
+    status           String   @default("submitted") // submitted, accepted, rejected, assigned
+    submittedBy      String?
+    createdAt        DateTime @default(now())
+
+    @@index([requestId])
+    @@index([vendorId])
+    @@index([status])
+}
+
+
+// VendorSharedRequest - Binds customer inspection requests to explicitly selected vendors
+// Strictly enforces data isolation to prevent cross-vendor data breaching
+model VendorSharedRequest {
+    id          String         @id @default(uuid())
+    requestId   String
+    request     ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+    vendorId    String
+    vendor      Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+    sharedAt    DateTime       @default(now())
+    sharedBy    String?        @default("Super Admin")
+    notes       String?        // Admin instructions / dispatch notes
+    status      String         @default("PENDING") // PENDING, QUOTED, DECLINED, ASSIGNED
+
+    @@unique([requestId, vendorId])
+    @@index([requestId])
+    @@index([vendorId])
+    @@index([status])
+}
+
+// Vendor Ratings & Customer Reviews
+model VendorRating {
+    id            String         @id @default(uuid())
+    vendorId      String
+    vendor        Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+    userId        String?
+    customerName  String
+    customerPhone String?
+    rating        Float          // 1.0 to 5.0
+    review        String?
+    serviceType   String         // "DIRECT_BOOKING" | "SERVICE_REQUEST"
+    bookingId     String?        // ID of DirectBooking or ServiceRequest
+    bookingNumber String?        // e.g. HIP-1001 or REQ-1793881172546
+    created_at    DateTime       @default(now())
+
+    @@index([vendorId])
+    @@index([bookingId])
 }

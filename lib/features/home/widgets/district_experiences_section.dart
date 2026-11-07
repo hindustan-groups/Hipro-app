@@ -323,6 +323,27 @@ class _DistrictExperiencesSectionState extends State<DistrictExperiencesSection>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF1F2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            exp.category.toUpperCase(),
+                            style: const TextStyle(
+                              color: Color(0xFFE11D48),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
                     Text(
                       exp.title,
                       maxLines: 1,

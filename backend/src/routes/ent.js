@@ -2,10 +2,20 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const axios = require('axios');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 // File paths for persistence
-const uploadsDir = path.join(__dirname, '../../uploads');
+const uploadsDir = path.join(__dirname, '../data/ent');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+['ent_experiences.json', 'ent_categories.json', 'ent_bookings.json', 'ent_reviews.json'].forEach(f => {
+  const oldP = path.join(__dirname, '../../uploads', f);
+  const newP = path.join(uploadsDir, f);
+  if (fs.existsSync(oldP) && !fs.existsSync(newP)) { try { fs.copyFileSync(oldP, newP); fs.unlinkSync(oldP); } catch(e){} }
+});
 const ENT_DATA_FILE = path.join(uploadsDir, 'ent_experiences.json');
+const ENT_CATEGORIES_FILE = path.join(uploadsDir, 'ent_categories.json');
 const ENT_BOOKINGS_FILE = path.join(uploadsDir, 'ent_bookings.json');
 const ENT_REVIEWS_FILE = path.join(uploadsDir, 'ent_reviews.json');
 
@@ -13,6 +23,70 @@ const ENT_REVIEWS_FILE = path.join(uploadsDir, 'ent_reviews.json');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
+// Initial Curated ENT Dynamic Categories
+const DEFAULT_ENT_CATEGORIES = [
+  {
+    id: 'cat_air_sports',
+    name: 'Air Sports',
+    slug: 'air-sports',
+    tagline: 'Paragliding, Paramotor & Skydiving',
+    icon: 'paragliding',
+    color: '#0284C7',
+    imageUrl: 'https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80',
+    displayOrder: 1,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'cat_desert_safari',
+    name: 'Desert Safari',
+    slug: 'desert-safari',
+    tagline: 'Dune Bashing, Camel Ride & Desert Camps',
+    icon: 'wb_sunny',
+    color: '#D97706',
+    imageUrl: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
+    displayOrder: 2,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'cat_water_sports',
+    name: 'Water Sports',
+    slug: 'water-sports',
+    tagline: 'River Rafting, Kayaking & Cliff Jumps',
+    icon: 'water',
+    color: '#0D9488',
+    imageUrl: 'https://images.unsplash.com/photo-1530866495561-507c9faab2ed?auto=format&fit=crop&w=800&q=80',
+    displayOrder: 3,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'cat_adventure',
+    name: 'Adventure',
+    slug: 'adventure',
+    tagline: 'Bungee Jumping, Trekking & Ziplining',
+    icon: 'terrain',
+    color: '#E11D48',
+    imageUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
+    displayOrder: 4,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'cat_sightseeing',
+    name: 'Sightseeing',
+    slug: 'sightseeing',
+    tagline: 'Scenic Mountain & Heritage Excursions',
+    icon: 'explore',
+    color: '#7C3AED',
+    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+    displayOrder: 5,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+];
 
 // Initial Curated ENT Items (Entertainment / Adventure Outings)
 const DEFAULT_ENT_ITEMS = [
@@ -22,6 +96,7 @@ const DEFAULT_ENT_ITEMS = [
     tagline: 'Soar high over the Doon Valley with certified gliders',
     city: 'Dehradun',
     locationDetails: 'Maldevta Foothills, 18km from Dehradun Clock Tower',
+    categoryId: 'cat_air_sports',
     category: 'Air Sports',
     rating: 4.9,
     reviewsCount: 382,
@@ -68,6 +143,7 @@ const DEFAULT_ENT_ITEMS = [
     tagline: 'High-octane 4x4 Thar ride with sunset camel trek & cultural night',
     city: 'Jaisalmer',
     locationDetails: 'Sam Sand Dunes, Thar Desert, Jaisalmer',
+    categoryId: 'cat_desert_safari',
     category: 'Desert Safari',
     rating: 4.9,
     reviewsCount: 641,
@@ -110,6 +186,7 @@ const DEFAULT_ENT_ITEMS = [
     tagline: 'India’s highest fixed cantilever bungee jump over the Hall river valley',
     city: 'Rishikesh',
     locationDetails: 'Mohan Chatti, Jump Zone, Rishikesh, Uttarakhand',
+    categoryId: 'cat_adventure',
     category: 'Adventure',
     rating: 4.9,
     reviewsCount: 885,
@@ -153,6 +230,7 @@ const DEFAULT_ENT_ITEMS = [
     tagline: 'Fly 500-1000 ft above the Thar golden desert with powered trike parashoot',
     city: 'Jaisalmer',
     locationDetails: 'Kanoi Air Strip, Sam Road, Jaisalmer',
+    categoryId: 'cat_air_sports',
     category: 'Air Sports',
     rating: 4.8,
     reviewsCount: 224,
@@ -195,6 +273,7 @@ const DEFAULT_ENT_ITEMS = [
     tagline: 'Conquer Grade III & IV rapids (Roller Coaster, Golf Course, Clubhouse)',
     city: 'Rishikesh',
     locationDetails: 'Shivpuri Base, Badrinath National Highway, Rishikesh',
+    categoryId: 'cat_water_sports',
     category: 'Water Sports',
     rating: 4.9,
     reviewsCount: 712,
@@ -237,6 +316,7 @@ const DEFAULT_ENT_ITEMS = [
     tagline: 'Float serenely over Doon tea gardens, Shivalik ridges, and pine hills',
     city: 'Dehradun',
     locationDetails: 'Sahastradhara Helipad Grounds, Dehradun',
+    categoryId: 'cat_air_sports',
     category: 'Air Sports',
     rating: 4.8,
     reviewsCount: 147,
@@ -275,7 +355,8 @@ const DEFAULT_ENT_ITEMS = [
     tagline: 'Take control of 500cc Polaris ATVs on untamed desert dunes',
     city: 'Jaisalmer',
     locationDetails: 'Sam Sand Dunes Track 4, Jaisalmer',
-    category: 'Adventure',
+    categoryId: 'cat_desert_safari',
+    category: 'Desert Safari',
     rating: 4.7,
     reviewsCount: 310,
     startingPrice: 1799,
@@ -341,18 +422,88 @@ const DEFAULT_REVIEWS = [
 ];
 
 // --- Helpers for Persistence ---
-function loadEntItems() {
+function loadCategories() {
   try {
-    if (fs.existsSync(ENT_DATA_FILE)) {
-      const raw = fs.readFileSync(ENT_DATA_FILE, 'utf8');
+    if (fs.existsSync(ENT_CATEGORIES_FILE)) {
+      const raw = fs.readFileSync(ENT_CATEGORIES_FILE, 'utf8');
       const data = JSON.parse(raw);
       if (Array.isArray(data) && data.length > 0) return data;
     }
   } catch (err) {
-    console.error('Error reading ent_experiences.json:', err.message);
+    console.error('Error reading ent_categories.json:', err.message);
   }
-  saveEntItems(DEFAULT_ENT_ITEMS);
-  return DEFAULT_ENT_ITEMS;
+  saveCategories(DEFAULT_ENT_CATEGORIES);
+  return DEFAULT_ENT_CATEGORIES;
+}
+
+function saveCategories(categories) {
+  try {
+    fs.writeFileSync(ENT_CATEGORIES_FILE, JSON.stringify(categories, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Error writing ent_categories.json:', err.message);
+  }
+}
+
+function loadEntItems() {
+  try {
+    let items = null;
+    if (fs.existsSync(ENT_DATA_FILE)) {
+      const raw = fs.readFileSync(ENT_DATA_FILE, 'utf8');
+      const data = JSON.parse(raw);
+      if (Array.isArray(data) && data.length > 0) items = data;
+    }
+    if (!items) {
+      items = DEFAULT_ENT_ITEMS;
+      saveEntItems(items);
+    }
+
+    // Ensure every sport/experience is formally linked to categoryId and category
+    const categories = loadCategories();
+    let updated = false;
+    items.forEach((item) => {
+      if (!item.categoryId && item.category) {
+        const found = categories.find(
+          (c) => c.name.toLowerCase() === item.category.toLowerCase()
+        );
+        item.categoryId = found
+          ? found.id
+          : `cat_${item.category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+        updated = true;
+      } else if (item.categoryId && !item.category) {
+        const found = categories.find(
+          (c) => c.id === item.categoryId || c.slug === item.categoryId
+        );
+        item.category = found ? found.name : 'Adventure';
+        updated = true;
+      }
+      if (!item.vendorId) {
+        if ((item.city || '').toLowerCase() === 'dehradun') {
+          item.vendorId = 'v_adv_01';
+          item.vendorName = 'Captain Arvind Negi';
+          item.vendorBusiness = 'Himalayan Sky Gliders & Air Safari';
+          item.vendorPhone = '+91 98290 88801';
+        } else if ((item.city || '').toLowerCase() === 'jaisalmer') {
+          item.vendorId = 'v_adv_02';
+          item.vendorName = 'Fateh Singh Bhati';
+          item.vendorBusiness = 'Thar Royal Desert Safari & Camps';
+          item.vendorPhone = '+91 94141 77702';
+        } else {
+          item.vendorId = 'v_adv_03';
+          item.vendorName = 'Rakesh Rawat';
+          item.vendorBusiness = 'Ganga White Water Adventure Club';
+          item.vendorPhone = '+91 98370 66603';
+        }
+        updated = true;
+      }
+    });
+    if (updated) {
+      saveEntItems(items);
+    }
+    return items;
+  } catch (err) {
+    console.error('Error reading ent_experiences.json:', err.message);
+    return DEFAULT_ENT_ITEMS;
+  }
 }
 
 function saveEntItems(data) {
@@ -368,12 +519,77 @@ function loadBookings() {
     if (fs.existsSync(ENT_BOOKINGS_FILE)) {
       const raw = fs.readFileSync(ENT_BOOKINGS_FILE, 'utf8');
       const data = JSON.parse(raw);
-      if (Array.isArray(data)) return data;
+      if (Array.isArray(data) && data.length > 0) return data;
     }
   } catch (err) {
     console.error('Error reading ent_bookings.json:', err.message);
   }
-  return [];
+  const defaultBookings = [
+    {
+      id: 'booking_adv_01',
+      bookingCode: 'ENT-SKY-821',
+      entId: 'ent_ddn_01',
+      experienceId: 'ent_ddn_01',
+      experienceTitle: 'Maldevta Tandem Paragliding Flight',
+      title: 'Maldevta Tandem Paragliding Flight',
+      city: 'Dehradun',
+      category: 'Air Sports',
+      imageUrl: 'https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80',
+      reportingPoint: 'Maldevta Adventure Base Camp, Raipur Road, Dehradun',
+      vendorId: 'v_adv_01',
+      vendorName: 'Captain Arvind Negi',
+      vendorBusiness: 'Himalayan Sky Gliders & Air Safari',
+      vendorPhone: '+91 98290 88801',
+      userId: 'user_101',
+      travelerName: 'Amit Sharma',
+      travelerPhone: '+91 94628 77757',
+      travelDate: '16 Nov 2026',
+      timeSlot: '09:00 AM (Morning Breeze)',
+      guestsCount: 2,
+      unitPrice: 3200,
+      baseAmount: 6400,
+      taxGST: 320,
+      totalAmount: 6720,
+      currency: 'INR',
+      notes: 'Please arrange GoPro 4K recording.',
+      status: 'CONFIRMED',
+      paymentStatus: 'PAID',
+      createdAt: new Date(Date.now() - 3600000).toISOString(),
+    },
+    {
+      id: 'booking_adv_02',
+      bookingCode: 'ENT-DES-419',
+      entId: 'ent_jsm_01',
+      experienceId: 'ent_jsm_01',
+      experienceTitle: 'Sam Sand Dunes Safari & Dune Bashing',
+      title: 'Sam Sand Dunes Safari & Dune Bashing',
+      city: 'Jaisalmer',
+      category: 'Desert Safari',
+      imageUrl: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
+      reportingPoint: 'Hipro Desert Camp Milestone, Sam Sand Dunes Road, Jaisalmer',
+      vendorId: 'v_adv_02',
+      vendorName: 'Fateh Singh Bhati',
+      vendorBusiness: 'Thar Royal Desert Safari & Camps',
+      vendorPhone: '+91 94141 77702',
+      userId: 'user_102',
+      travelerName: 'Pooja Rawat',
+      travelerPhone: '+91 98290 33344',
+      travelDate: '18 Nov 2026',
+      timeSlot: '04:30 PM (Safari & Camp Evening Combo)',
+      guestsCount: 4,
+      unitPrice: 2499,
+      baseAmount: 9996,
+      taxGST: 500,
+      totalAmount: 10496,
+      currency: 'INR',
+      notes: 'Vegetarian dinner for 4 people.',
+      status: 'CONFIRMED',
+      paymentStatus: 'PAID',
+      createdAt: new Date(Date.now() - 7200000).toISOString(),
+    }
+  ];
+  saveBookings(defaultBookings);
+  return defaultBookings;
 }
 
 function saveBookings(bookings) {
@@ -416,16 +632,22 @@ loadReviews();
 // -------------------------------------------------------------
 const getEntListHandler = (req, res) => {
   try {
-    const { city, category, search, featured, minPrice, maxPrice, sortBy } = req.query;
+    const { city, category, categoryId, search, featured, minPrice, maxPrice, sortBy } = req.query;
     let list = loadEntItems().filter((item) => item.isActive !== false);
 
     if (city && city.toLowerCase() !== 'all') {
       list = list.filter((item) => item.city.toLowerCase() === city.toLowerCase());
     }
 
+    if (categoryId && categoryId.toLowerCase() !== 'all') {
+      list = list.filter((item) => item.categoryId && item.categoryId.toLowerCase() === categoryId.toLowerCase());
+    }
+
     if (category && category.toLowerCase() !== 'all') {
       list = list.filter(
-        (item) => item.category.toLowerCase() === category.toLowerCase()
+        (item) =>
+          (item.category && item.category.toLowerCase() === category.toLowerCase()) ||
+          (item.categoryId && item.categoryId.toLowerCase() === category.toLowerCase())
       );
     }
 
@@ -505,11 +727,189 @@ router.get('/cities', (req, res) => {
 
 router.get('/categories', (req, res) => {
   try {
-    const list = loadEntItems();
-    const catSet = new Set(list.filter((e) => e.isActive !== false).map((e) => e.category));
-    const categories = ['All', ...Array.from(catSet)];
+    const categories = loadCategories().filter((c) => c.isActive !== false);
+    const items = loadEntItems().filter((e) => e.isActive !== false);
 
-    res.json({ success: true, categories });
+    // Dynamic count per category
+    const categoriesWithCount = categories.map((cat) => {
+      const count = items.filter(
+        (item) =>
+          (item.categoryId && item.categoryId.toLowerCase() === cat.id.toLowerCase()) ||
+          (item.category && item.category.toLowerCase() === cat.name.toLowerCase())
+      ).length;
+      return {
+        ...cat,
+        activitiesCount: count,
+        count: count,
+      };
+    });
+
+    // Backwards-compatible simple string list
+    const categoryNames = ['All', ...categories.map((c) => c.name)];
+
+    res.json({
+      success: true,
+      categories: categoryNames,
+      data: categoriesWithCount,
+      items: categoriesWithCount,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Dynamic Category: Create
+router.post('/categories', authenticate, requireAdmin, (req, res) => {
+  try {
+    const { name, tagline, icon, color, imageUrl } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'Category name is required' });
+    }
+
+    const categories = loadCategories();
+    const cleanName = name.trim();
+    const slug = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const id = `cat_${slug || Date.now().toString(36)}`;
+
+    // Check if category already exists
+    const existing = categories.find(
+      (c) => c.id === id || c.name.toLowerCase() === cleanName.toLowerCase()
+    );
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'Category with this name already exists' });
+    }
+
+    const newCategory = {
+      id,
+      name: cleanName,
+      slug,
+      tagline: tagline ? tagline.trim() : `Exciting ${cleanName} adventures and experiences`,
+      icon: icon || 'terrain',
+      color: color || '#E11D48',
+      imageUrl: imageUrl || 'https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80',
+      displayOrder: categories.length + 1,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    categories.push(newCategory);
+    saveCategories(categories);
+
+    res.status(201).json({
+      success: true,
+      message: 'Category created successfully',
+      data: { ...newCategory, activitiesCount: 0, count: 0 },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Dynamic Category: Update
+router.put('/categories/:id', authenticate, requireAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, tagline, icon, color, imageUrl, isActive, displayOrder } = req.body;
+    const categories = loadCategories();
+    const idx = categories.findIndex((c) => c.id === id || c.slug === id);
+
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: 'Category not found' });
+    }
+
+    const oldName = categories[idx].name;
+    const updated = {
+      ...categories[idx],
+      ...(name && { name: name.trim() }),
+      ...(tagline !== undefined && { tagline: tagline.trim() }),
+      ...(icon !== undefined && { icon }),
+      ...(color !== undefined && { color }),
+      ...(imageUrl !== undefined && { imageUrl }),
+      ...(isActive !== undefined && { isActive }),
+      ...(displayOrder !== undefined && { displayOrder: Number(displayOrder) }),
+      updatedAt: new Date().toISOString(),
+    };
+
+    categories[idx] = updated;
+    saveCategories(categories);
+
+    // If category name was renamed, update all linked experiences
+    if (name && name.trim() !== oldName) {
+      const items = loadEntItems();
+      let changed = false;
+      items.forEach((item) => {
+        if (item.categoryId === id || (item.category && item.category.toLowerCase() === oldName.toLowerCase())) {
+          item.category = name.trim();
+          item.categoryId = id;
+          changed = true;
+        }
+      });
+      if (changed) saveEntItems(items);
+    }
+
+    res.json({
+      success: true,
+      message: 'Category updated successfully',
+      data: updated,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Dynamic Category: Delete
+router.delete('/categories/:id', authenticate, requireAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    let categories = loadCategories();
+    const category = categories.find((c) => c.id === id || c.slug === id);
+
+    if (!category) {
+      return res.status(404).json({ success: false, message: 'Category not found' });
+    }
+
+    categories = categories.filter((c) => c.id !== category.id);
+    saveCategories(categories);
+
+    res.json({
+      success: true,
+      message: 'Category removed successfully',
+      id: category.id,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Dynamic Category: Get linked experiences
+router.get('/categories/:id/experiences', (req, res) => {
+  try {
+    const { id } = req.params;
+    const categories = loadCategories();
+    const cat = categories.find(
+      (c) => c.id === id || c.slug === id || c.name.toLowerCase() === id.toLowerCase()
+    );
+
+    const items = loadEntItems().filter((item) => {
+      if (item.isActive === false) return false;
+      if (cat) {
+        return (
+          item.categoryId === cat.id ||
+          (item.category && item.category.toLowerCase() === cat.name.toLowerCase())
+        );
+      }
+      return (
+        item.categoryId === id ||
+        (item.category && item.category.toLowerCase() === id.toLowerCase())
+      );
+    });
+
+    res.json({
+      success: true,
+      category: cat || { id, name: id },
+      count: items.length,
+      data: items,
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -518,19 +918,22 @@ router.get('/categories', (req, res) => {
 // -------------------------------------------------------------
 // 3. Bookings: /bookings , /my-bookings/:userId , /bookings/:bookingCode
 // -------------------------------------------------------------
-router.post('/bookings', (req, res) => {
+router.post('/bookings', authenticate, async (req, res) => {
   try {
     const {
       experienceId,
       entId,
-      userId,
       travelerName,
       travelerPhone,
       date,
       timeSlot,
       guestsCount = 1,
       notes,
+      razorpayPaymentId,
+      razorpayOrderId,
+      razorpaySignature,
     } = req.body;
+    const userId = req.user.id;
 
     const targetId = entId || experienceId;
 
@@ -555,6 +958,71 @@ router.post('/bookings', (req, res) => {
     const taxes = Math.round(baseAmount * 0.05); // 5% GST
     const totalAmount = baseAmount + taxes;
 
+    // Mandatory payment verification for ENT bookings
+    const rzKey = process.env.RAZORPAY_KEY_ID;
+    const rzSecret = process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_SECRET;
+
+    if (!razorpayPaymentId || !razorpayOrderId || !razorpaySignature) {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment verification required: razorpayPaymentId, razorpayOrderId, and razorpaySignature are mandatory for ENT bookings',
+      });
+    }
+
+    if (rzSecret) {
+      const hmac = crypto.createHmac('sha256', rzSecret);
+      hmac.update(`${razorpayOrderId}|${razorpayPaymentId}`);
+      const digest = hmac.digest('hex');
+      if (digest !== razorpaySignature) {
+        return res.status(400).json({
+          success: false,
+          message: 'Payment signature verification failed. ENT booking cannot be confirmed.',
+        });
+      }
+    }
+
+    if (rzKey && rzSecret) {
+      try {
+        const auth = Buffer.from(`${rzKey}:${rzSecret}`).toString('base64');
+        const paymentRes = await axios.get(
+          `https://api.razorpay.com/v1/payments/${razorpayPaymentId}`,
+          {
+            headers: {
+              Authorization: `Basic ${auth}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 10000,
+          }
+        );
+        const paymentData = paymentRes.data;
+        if (paymentData.status !== 'captured') {
+          return res.status(400).json({
+            success: false,
+            message: `Payment is not captured (status: ${paymentData.status}). Booking rejected.`,
+          });
+        }
+        if (paymentData.order_id && paymentData.order_id !== razorpayOrderId) {
+          return res.status(400).json({
+            success: false,
+            message: 'Payment order_id mismatch.',
+          });
+        }
+        const paidAmount = paymentData.amount / 100;
+        if (Math.abs(paidAmount - totalAmount) > 1) {
+          return res.status(400).json({
+            success: false,
+            message: `Payment amount mismatch: expected ₹${totalAmount}, got ₹${paidAmount}`,
+          });
+        }
+      } catch (rzErr) {
+        console.error('ENT payment verification API error:', rzErr.response?.data || rzErr.message);
+        return res.status(400).json({
+          success: false,
+          message: 'Unable to verify payment with payment gateway. Booking creation rejected.',
+        });
+      }
+    }
+
     // Generate unique ENT booking reference
     const bookingCode = `ENT-${Date.now().toString(36).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
 
@@ -569,6 +1037,10 @@ router.post('/bookings', (req, res) => {
       category: ent.category,
       imageUrl: ent.imageUrl,
       reportingPoint: ent.reportingPoint,
+      vendorId: ent.vendorId || 'v_adv_01',
+      vendorName: ent.vendorName || 'Captain Arvind Negi',
+      vendorBusiness: ent.vendorBusiness || 'Himalayan Sky Gliders & Air Safari',
+      vendorPhone: ent.vendorPhone || '+91 98290 88801',
       userId: userId || 'guest_user',
       travelerName,
       travelerPhone,
@@ -581,6 +1053,8 @@ router.post('/bookings', (req, res) => {
       totalAmount,
       currency: 'INR',
       notes: notes || '',
+      razorpayPaymentId,
+      razorpayOrderId,
       status: 'CONFIRMED',
       paymentStatus: 'PAID',
       createdAt: new Date().toISOString(),
@@ -590,13 +1064,21 @@ router.post('/bookings', (req, res) => {
     bookings.unshift(newBooking);
     saveBookings(bookings);
 
-    // If socket.io is active, notify admin in real-time (targeted to admin room only)
+    // If socket.io is active, notify admin, user, and vendor in real-time
     const io = req.app.get('io');
     if (io) {
-      io.to('admin').emit('new_ent_booking', {
+      io.to('admin_room').emit('new_ent_booking', {
         message: `New ENT adventure booked: ${ent.title} in ${ent.city}`,
         booking: newBooking,
       });
+      if (newBooking.userId) {
+        io.to(`user_${newBooking.userId}`).emit('new_ent_booking', {
+          booking: newBooking,
+        });
+      }
+      if (newBooking.vendorId) {
+        io.to(`vendor_${newBooking.vendorId}`).emit('vendor_adventure_booking', newBooking);
+      }
     }
 
     res.status(201).json({
@@ -613,23 +1095,30 @@ router.post('/bookings', (req, res) => {
   }
 });
 
-router.get('/my-bookings/:userId', (req, res) => {
+router.get('/my-bookings/:userId', authenticate, (req, res) => {
   try {
     const { userId } = req.params;
-    const { phone } = req.query;
+    const isAdmin = req.user.role === 'ADMIN';
+    const isOwner = req.user.id === userId || (req.user.phone && req.user.phone === userId);
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: You cannot access bookings of another user',
+      });
+    }
+
     const bookings = loadBookings();
     const cleanId = String(userId || '').trim().toLowerCase();
-    const cleanPhone = String(phone || '').trim();
 
     const userBookings = bookings.filter((b) => {
       const bUser = String(b.userId || '').trim().toLowerCase();
       const bPhone = String(b.travelerPhone || '').trim();
 
-      if (cleanPhone && bPhone === cleanPhone) return true;
-      if (cleanId === 'guest_user') {
-        return !b.userId || b.userId === 'guest_user' || (cleanPhone && bPhone === cleanPhone);
+      if (isAdmin) {
+        return bUser === cleanId || bPhone === cleanId;
       }
-      return bUser === cleanId || (cleanId.length >= 10 && bPhone === cleanId) || (cleanPhone && bPhone === cleanPhone);
+      return bUser === req.user.id || (req.user.phone && bPhone === req.user.phone);
     });
 
     res.json({
@@ -646,7 +1135,7 @@ router.get('/my-bookings/:userId', (req, res) => {
   }
 });
 
-router.get('/bookings/:bookingCode', (req, res) => {
+router.get('/bookings/:bookingCode', authenticate, (req, res) => {
   try {
     const { bookingCode } = req.params;
     const bookings = loadBookings();
@@ -658,13 +1147,21 @@ router.get('/bookings/:bookingCode', (req, res) => {
       return res.status(404).json({ success: false, message: 'ENT booking not found' });
     }
 
+    const isAdmin = req.user.role === 'ADMIN';
+    const isOwner = booking.userId === req.user.id || (req.user.phone && booking.travelerPhone === req.user.phone);
+    const isVendor = req.user.role === 'VENDOR' && booking.vendorId === req.user.vendorId;
+
+    if (!isAdmin && !isOwner && !isVendor) {
+      return res.status(403).json({ success: false, message: 'Forbidden: You cannot view this booking' });
+    }
+
     res.json({ success: true, booking });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-router.patch('/bookings/:id/cancel', (req, res) => {
+router.patch('/bookings/:id/cancel', authenticate, (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
@@ -675,6 +1172,14 @@ router.patch('/bookings/:id/cancel', (req, res) => {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
+    const booking = bookings[idx];
+    const isAdmin = req.user.role === 'ADMIN';
+    const isOwner = booking.userId === req.user.id || (req.user.phone && booking.travelerPhone === req.user.phone);
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ success: false, message: 'Forbidden: You cannot cancel this booking' });
+    }
+
     bookings[idx].status = 'CANCELLED';
     bookings[idx].cancelReason = reason || 'Cancelled by user';
     bookings[idx].refundStatus = 'INITIATED';
@@ -683,10 +1188,16 @@ router.patch('/bookings/:id/cancel', (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.to('admin').emit('ent_booking_updated', {
+      io.to('admin_room').emit('ent_booking_updated', {
         action: 'CANCELLED',
         booking: bookings[idx],
       });
+      if (booking.userId) {
+        io.to(`user_${booking.userId}`).emit('ent_booking_updated', {
+          action: 'CANCELLED',
+          booking: bookings[idx],
+        });
+      }
     }
 
     res.json({
@@ -699,7 +1210,7 @@ router.patch('/bookings/:id/cancel', (req, res) => {
   }
 });
 
-router.patch('/bookings/:id/reschedule', (req, res) => {
+router.patch('/bookings/:id/reschedule', authenticate, (req, res) => {
   try {
     const { id } = req.params;
     const { date, timeSlot } = req.body;
@@ -713,6 +1224,14 @@ router.patch('/bookings/:id/reschedule', (req, res) => {
 
     if (idx === -1) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    const booking = bookings[idx];
+    const isAdmin = req.user.role === 'ADMIN';
+    const isOwner = booking.userId === req.user.id || (req.user.phone && booking.travelerPhone === req.user.phone);
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ success: false, message: 'Forbidden: You cannot reschedule this booking' });
     }
 
     bookings[idx].travelDate = date;
@@ -733,7 +1252,7 @@ router.patch('/bookings/:id/reschedule', (req, res) => {
 // -------------------------------------------------------------
 // 4. Admin Management & Stats: /admin/bookings , /admin/stats
 // -------------------------------------------------------------
-router.get('/admin/bookings', (req, res) => {
+router.get('/admin/bookings', authenticate, requireAdmin, (req, res) => {
   try {
     const { status, city } = req.query;
     let bookings = loadBookings();
@@ -752,7 +1271,40 @@ router.get('/admin/bookings', (req, res) => {
   }
 });
 
-router.patch('/admin/bookings/:id/status', (req, res) => {
+// GET /api/v1/ent/vendor/bookings - Specific to an adventure vendor
+router.get('/vendor/bookings', authenticate, (req, res) => {
+  try {
+    const { status, search } = req.query;
+    let targetVendorId = req.query.vendorId;
+    if (req.user.role === 'VENDOR') {
+      targetVendorId = req.user.vendorId || req.user.id;
+    } else if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Forbidden: Access restricted to vendors and admins' });
+    }
+    let bookings = loadBookings();
+    if (targetVendorId && targetVendorId !== 'ALL') {
+      bookings = bookings.filter((b) => b.vendorId === targetVendorId);
+    }
+    if (status && status !== 'All') {
+      bookings = bookings.filter((b) => (b.status || '').toUpperCase() === status.toUpperCase());
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      bookings = bookings.filter(
+        (b) =>
+          (b.travelerName || '').toLowerCase().includes(q) ||
+          (b.travelerPhone || '').includes(q) ||
+          (b.experienceTitle || '').toLowerCase().includes(q) ||
+          (b.bookingCode || '').toLowerCase().includes(q)
+      );
+    }
+    res.json({ success: true, total: bookings.length, bookings });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.patch('/admin/bookings/:id/status', authenticate, requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -769,7 +1321,7 @@ router.patch('/admin/bookings/:id/status', (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.to('admin').emit('ent_booking_updated', {
+      io.to('admin_room').emit('ent_booking_updated', {
         action: 'STATUS_UPDATED',
         status,
         booking: bookings[idx],
@@ -786,7 +1338,7 @@ router.patch('/admin/bookings/:id/status', (req, res) => {
   }
 });
 
-router.get('/admin/stats', (req, res) => {
+router.get('/admin/stats', authenticate, requireAdmin, (req, res) => {
   try {
     const items = loadEntItems();
     const bookings = loadBookings();
@@ -842,6 +1394,7 @@ const createEntHandler = (req, res) => {
       tagline,
       city,
       locationDetails,
+      categoryId,
       category,
       startingPrice,
       originalPrice,
@@ -866,6 +1419,29 @@ const createEntHandler = (req, res) => {
       });
     }
 
+    const categories = loadCategories();
+    let finalCategoryId = categoryId;
+    let finalCategoryName = category;
+
+    if (finalCategoryId) {
+      const match = categories.find((c) => c.id === finalCategoryId || c.slug === finalCategoryId);
+      if (match) {
+        finalCategoryName = match.name;
+        finalCategoryId = match.id;
+      }
+    } else if (finalCategoryName) {
+      const match = categories.find((c) => c.name.toLowerCase() === finalCategoryName.toLowerCase());
+      if (match) {
+        finalCategoryId = match.id;
+        finalCategoryName = match.name;
+      } else {
+        finalCategoryId = `cat_${finalCategoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      }
+    } else {
+      finalCategoryId = 'cat_adventure';
+      finalCategoryName = 'Adventure';
+    }
+
     const items = loadEntItems();
     const prefix = city.substring(0, 3).toLowerCase();
     const newId = `ent_${prefix}_${Date.now().toString(36)}`;
@@ -876,7 +1452,8 @@ const createEntHandler = (req, res) => {
       tagline: tagline || '',
       city: city.trim(),
       locationDetails: locationDetails || `${city}, India`,
-      category: category || 'Adventure',
+      categoryId: finalCategoryId,
+      category: finalCategoryName,
       rating: 5.0,
       reviewsCount: 1,
       startingPrice: Number(startingPrice),
@@ -892,6 +1469,10 @@ const createEntHandler = (req, res) => {
       safetyGuidelines: Array.isArray(safetyGuidelines) ? safetyGuidelines : ['Follow safety instructions'],
       slots: Array.isArray(slots) && slots.length > 0 ? slots : ['09:00 AM', '02:00 PM', '04:30 PM'],
       reportingPoint: reportingPoint || `${city} Adventure Base`,
+      vendorId: req.body.vendorId || 'v_adv_01',
+      vendorName: req.body.vendorName || 'Captain Arvind Negi',
+      vendorBusiness: req.body.vendorBusiness || 'Himalayan Sky Gliders & Air Safari',
+      vendorPhone: req.body.vendorPhone || '+91 98290 88801',
       isFeatured: !!isFeatured,
       isActive: true,
       createdAt: new Date().toISOString(),
@@ -914,9 +1495,9 @@ const createEntHandler = (req, res) => {
   }
 };
 
-router.post('/', createEntHandler);
-router.post('/items', createEntHandler);
-router.post('/experiences', createEntHandler);
+router.post('/', authenticate, requireAdmin, createEntHandler);
+router.post('/items', authenticate, requireAdmin, createEntHandler);
+router.post('/experiences', authenticate, requireAdmin, createEntHandler);
 
 // -------------------------------------------------------------
 // 6. Single ENT Item Details: GET /:id or /experiences/:id
@@ -969,10 +1550,30 @@ const updateEntHandler = (req, res) => {
       return res.status(404).json({ success: false, message: 'ENT item not found' });
     }
 
+    const categories = loadCategories();
+    let finalCategoryId = req.body.categoryId || items[idx].categoryId;
+    let finalCategoryName = req.body.category || items[idx].category;
+
+    if (req.body.categoryId && req.body.categoryId !== items[idx].categoryId) {
+      const match = categories.find((c) => c.id === req.body.categoryId || c.slug === req.body.categoryId);
+      if (match) {
+        finalCategoryName = match.name;
+        finalCategoryId = match.id;
+      }
+    } else if (req.body.category && req.body.category !== items[idx].category) {
+      const match = categories.find((c) => c.name.toLowerCase() === req.body.category.toLowerCase());
+      if (match) {
+        finalCategoryId = match.id;
+        finalCategoryName = match.name;
+      }
+    }
+
     const updated = {
       ...items[idx],
       ...req.body,
       id: items[idx].id,
+      categoryId: finalCategoryId,
+      category: finalCategoryName,
       updatedAt: new Date().toISOString(),
     };
 
@@ -989,8 +1590,8 @@ const updateEntHandler = (req, res) => {
   }
 };
 
-router.put('/experiences/:id', updateEntHandler);
-router.put('/:id', updateEntHandler);
+router.put('/experiences/:id', authenticate, requireAdmin, updateEntHandler);
+router.put('/:id', authenticate, requireAdmin, updateEntHandler);
 
 // -------------------------------------------------------------
 // 8. Delete / Deactivate ENT Item: DELETE /:id or /experiences/:id
@@ -1026,8 +1627,8 @@ const deleteEntHandler = (req, res) => {
   }
 };
 
-router.delete('/experiences/:id', deleteEntHandler);
-router.delete('/:id', deleteEntHandler);
+router.delete('/experiences/:id', authenticate, requireAdmin, deleteEntHandler);
+router.delete('/:id', authenticate, requireAdmin, deleteEntHandler);
 
 // -------------------------------------------------------------
 // 9. Toggle Active/Featured: PATCH /:id/toggle
@@ -1058,8 +1659,8 @@ const toggleEntHandler = (req, res) => {
   }
 };
 
-router.patch('/experiences/:id/toggle', toggleEntHandler);
-router.patch('/:id/toggle', toggleEntHandler);
+router.patch('/experiences/:id/toggle', authenticate, requireAdmin, toggleEntHandler);
+router.patch('/:id/toggle', authenticate, requireAdmin, toggleEntHandler);
 
 // -------------------------------------------------------------
 // 10. Reviews & Ratings: GET & POST /:id/reviews
@@ -1130,7 +1731,7 @@ const addEntReviewHandler = (req, res) => {
 router.get('/experiences/:id/reviews', getEntReviewsHandler);
 router.get('/:id/reviews', getEntReviewsHandler);
 
-router.post('/experiences/:id/reviews', addEntReviewHandler);
-router.post('/:id/reviews', addEntReviewHandler);
+router.post('/experiences/:id/reviews', authenticate, addEntReviewHandler);
+router.post('/:id/reviews', authenticate, addEntReviewHandler);
 
 module.exports = router;

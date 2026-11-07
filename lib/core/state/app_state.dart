@@ -400,6 +400,27 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<bool> rateDirectBooking({
+    required String bookingId,
+    required double rating,
+    String? review,
+  }) async {
+    try {
+      final success = await _directBookingApi.rateBooking(
+        bookingId: bookingId,
+        rating: rating,
+        review: review,
+      );
+      if (success) {
+        await fetchDirectBookings();
+      }
+      return success;
+    } catch (e) {
+      debugPrint('Rate direct booking error: $e');
+      return false;
+    }
+  }
+
   // Add new damage inspection request
   Future<ServiceRequestModel> submitRequest({
     required String categoryId,

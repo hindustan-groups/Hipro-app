@@ -10,6 +10,9 @@ import '../../quotations/screens/quotation_details_screen.dart';
 import '../../quotations/screens/quotation_screen.dart';
 import '../models/request_model.dart';
 import 'edit_request_screen.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/widgets/review_modal_sheet.dart';
+import '../data/inspection_api_service.dart';
 
 class RequestDetailsScreen extends StatefulWidget {
   final ServiceRequestModel request;
@@ -27,6 +30,43 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
   void initState() {
     super.initState();
     _request = widget.request;
+  }
+
+  void _openRatingSheet() {
+    ReviewModalSheet.show(
+      context,
+      itemName: _request.subServiceName.isNotEmpty ? _request.subServiceName : _request.categoryName,
+      hintText: 'Share your experience regarding workmanship, timeline and handover...',
+      onSubmit: ({
+        required String reviewerName,
+        required int rating,
+        required String comment,
+      }) async {
+        final success = await InspectionApiService(ApiClient()).rateRequest(
+          requestId: _request.id,
+          rating: rating.toDouble(),
+          review: comment,
+        );
+        if (success && mounted) {
+          setState(() {
+            _request = _request.copyWith(
+              customerRating: rating.toDouble(),
+              customerReview: comment,
+              ratedAt: DateTime.now(),
+            );
+          });
+        }
+        return success;
+      },
+      onSuccess: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Thank you! Your rating and feedback have been stored for the contractor.'),
+            backgroundColor: Color(0xFF047857),
+          ),
+        );
+      },
+    );
   }
 
   QuotationModel? _findMatchingQuotation() {
@@ -435,6 +475,104 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                 ),
               ),
               const SizedBox(height: 12),
+            ],
+
+            // Completed Service Rating Banner
+            if (_request.status == RequestStatus.completed) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 22),
+                            const SizedBox(width: 8),
+                            Text(
+                              _request.customerRating != null
+                                  ? 'Your Rating: ${_request.customerRating!.toStringAsFixed(1)} / 5.0'
+                                  : 'Service Completed & Handed Over',
+                              style: const TextStyle(
+                                color: Color(0xFF92400E),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_request.customerRating != null)
+                          Row(
+                            children: List.generate(
+                              5,
+                              (i) => Icon(
+                                Icons.star_rounded,
+                                size: 16,
+                                color: i < (_request.customerRating ?? 0).round()
+                                    ? const Color(0xFFF59E0B)
+                                    : const Color(0xFFD1D5DB),
+                              ),
+                            ),
+                          )
+                        else
+                          ElevatedButton.icon(
+                            onPressed: _openRatingSheet,
+                            icon: const Icon(Icons.star_rounded, size: 15),
+                            label: const Text('Rate Now'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD97706),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (_request.customerReview != null && _request.customerReview!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '"${_request.customerReview!}"',
+                          style: const TextStyle(
+                            color: Color(0xFF78350F),
+                            fontSize: 12.5,
+                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 6),
+                    Text(
+                      _request.customerRating != null
+                          ? '✓ Verified review stored in contractor profile'
+                          : 'Please share your feedback to help us maintain verified quality standards.',
+                      style: const TextStyle(
+                        color: Color(0xFFB45309),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
             ],
 
             // Damage & Issue Description Card
@@ -971,6 +1109,33 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                 ),
               ),
               const SizedBox(width: 10),
+              // Rate Service button if completed
+              if (_request.status == RequestStatus.completed) ...[
+                ElevatedButton.icon(
+                  onPressed: _openRatingSheet,
+                  icon: const Icon(Icons.star_rounded, size: 18, color: Color(0xFFD97706)),
+                  label: Text(
+                    _request.customerRating != null
+                        ? '${_request.customerRating!.toStringAsFixed(1)} ★'
+                        : 'Rate Service',
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFEF3C7),
+                    foregroundColor: const Color(0xFF92400E),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: const BorderSide(color: Color(0xFFFDE68A)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+              ],
               // Edit button
               OutlinedButton.icon(
                 onPressed: _openEdit,

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../data/ent_api_service.dart';
+import '../models/adventure_category_model.dart';
 import '../models/experience_model.dart';
 import '../widgets/experience_booking_sheet.dart';
 import 'experience_details_screen.dart';
@@ -18,63 +19,37 @@ class _AdventureCategoriesScreenState extends State<AdventureCategoriesScreen> {
   String _selectedCategory = 'Air Sports';
   String _selectedCity = 'All';
   List<ExperienceItem> _backendExperiences = [];
+  List<AdventureCategory> _dynamicCategories = AdventureCategory.defaultCategories;
   bool _isLoading = false;
-
-  final List<Map<String, dynamic>> _categoryData = [
-    {
-      'title': 'Air Sports',
-      'icon': Icons.paragliding_rounded,
-      'color': const Color(0xFF0284C7),
-      'count': '6 Activities',
-      'tagline': 'Paragliding, Paramotor & Skydiving',
-    },
-    {
-      'title': 'Desert Safari',
-      'icon': Icons.wb_sunny_rounded,
-      'color': const Color(0xFFD97706),
-      'count': '4 Activities',
-      'tagline': 'Dune Bashing, Camel Ride & Desert Camps',
-    },
-    {
-      'title': 'Water Sports',
-      'icon': Icons.water_rounded,
-      'color': const Color(0xFF0D9488),
-      'count': '8 Activities',
-      'tagline': 'River Rafting, Kayaking & Cliff Jumps',
-    },
-    {
-      'title': 'Adventure',
-      'icon': Icons.terrain_rounded,
-      'color': const Color(0xFFE11D48),
-      'count': '10 Activities',
-      'tagline': 'Trekking, Rock Climbing & Ziplining',
-    },
-    {
-      'title': 'Sightseeing',
-      'icon': Icons.explore_rounded,
-      'color': const Color(0xFF7C3AED),
-      'count': '5 Activities',
-      'tagline': 'Scenic Mountain & River Excursions',
-    },
-  ];
 
   @override
   void initState() {
     super.initState();
-    _fetchExperiences();
+    _fetchData();
   }
 
-  Future<void> _fetchExperiences() async {
+  Future<void> _fetchData() async {
     setState(() => _isLoading = true);
     try {
-      final list = await EntApiService().fetchExperiences();
-      if (mounted && list.isNotEmpty) {
+      final results = await Future.wait([
+        EntApiService().fetchExperiences(),
+        EntApiService().fetchDynamicCategories(),
+      ]);
+      if (mounted) {
+        final experiences = results[0] as List<ExperienceItem>;
+        final categories = results[1] as List<AdventureCategory>;
         setState(() {
-          _backendExperiences = list;
+          if (experiences.isNotEmpty) _backendExperiences = experiences;
+          if (categories.isNotEmpty) {
+            _dynamicCategories = categories;
+            if (!categories.any((c) => c.name.toLowerCase() == _selectedCategory.toLowerCase())) {
+              _selectedCategory = categories.first.name;
+            }
+          }
         });
       }
     } catch (_) {
-      // Fallback to mock data
+      // Fallback to defaults
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -88,9 +63,11 @@ class _AdventureCategoriesScreenState extends State<AdventureCategoriesScreen> {
     return all.where((e) {
       final matchesCategory = _selectedCategory == 'All' ||
           e.category.toLowerCase() == _selectedCategory.toLowerCase() ||
-          (_selectedCategory == 'Adventure' &&
-              (e.category.toLowerCase().contains('trek') ||
-                  e.category.toLowerCase().contains('adventure')));
+          e.categoryId.toLowerCase() == _selectedCategory.toLowerCase() ||
+          _dynamicCategories.any((dc) =>
+              dc.name.toLowerCase() == _selectedCategory.toLowerCase() &&
+              (dc.id.toLowerCase() == e.categoryId.toLowerCase() ||
+                  dc.slug.toLowerCase() == e.categoryId.toLowerCase()));
       final matchesCity =
           _selectedCity == 'All' || e.city.toLowerCase() == _selectedCity.toLowerCase();
       return matchesCategory && matchesCity;
@@ -148,17 +125,17 @@ class _AdventureCategoriesScreenState extends State<AdventureCategoriesScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _categoryData.length,
+                itemCount: _dynamicCategories.length,
                 separatorBuilder: (context, index) => const SizedBox(width: 8),
                 itemBuilder: (context, i) {
-                  final cat = _categoryData[i];
-                  final isSelected = cat['title'] == _selectedCategory;
-                  final Color catColor = cat['color'] as Color;
+                  final cat = _dynamicCategories[i];
+                  final isSelected = cat.name.toLowerCase() == _selectedCategory.toLowerCase();
+                  final Color catColor = cat.color;
 
                   return InkWell(
                     onTap: () {
                       setState(() {
-                        _selectedCategory = cat['title'] as String;
+                        _selectedCategory = cat.name;
                       });
                     },
                     borderRadius: BorderRadius.circular(24),
@@ -184,13 +161,13 @@ class _AdventureCategoriesScreenState extends State<AdventureCategoriesScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            cat['icon'] as IconData,
+                            cat.iconData,
                             size: 18,
                             color: isSelected ? Colors.white : const Color(0xFF475569),
                           ),
                           const SizedBox(width: 7),
                           Text(
-                            cat['title'] as String,
+                            cat.name,
                             style: TextStyle(
                               color: isSelected ? Colors.white : const Color(0xFF334155),
                               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/widgets/chat_sheet.dart';
+import '../../../core/widgets/review_modal_sheet.dart';
 import '../../../main.dart';
 import '../models/direct_booking_model.dart';
 
@@ -31,6 +32,38 @@ class _MyDirectBookingsScreenState extends State<MyDirectBookingsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       appState.fetchDirectBookings();
     });
+  }
+
+  void _openRatingSheet(DirectBookingModel booking) {
+    ReviewModalSheet.show(
+      context,
+      itemName: booking.subServiceName.isNotEmpty
+          ? booking.subServiceName
+          : booking.serviceName,
+      hintText:
+          'Share your experience regarding service quality, behavior and timeliness...',
+      onSubmit: ({
+        required String reviewerName,
+        required int rating,
+        required String comment,
+      }) async {
+        final success = await appState.rateDirectBooking(
+          bookingId: booking.id,
+          rating: rating.toDouble(),
+          review: comment,
+        );
+        return success;
+      },
+      onSuccess: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Thank you! Your rating and feedback have been stored for the contractor.'),
+            backgroundColor: Color(0xFF047857),
+          ),
+        );
+      },
+    );
   }
 
   String _formatDate(String dateStr) {
@@ -771,6 +804,72 @@ class _MyDirectBookingsScreenState extends State<MyDirectBookingsScreen> {
               else if (!isCancelled && !isCompleted)
                 _buildUnassignedPersonBanner(booking),
 
+              // Completed Service Rating Banner
+              if (isCompleted && booking.customerRating != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7).withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.star_rounded,
+                                  size: 20, color: Color(0xFFD97706)),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Your Rating: ${booking.customerRating!.toStringAsFixed(1)} / 5.0',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF92400E),
+                                ),
+                              ),
+                            ],
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _openRatingSheet(booking);
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text('Edit Rating',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFFD97706))),
+                          ),
+                        ],
+                      ),
+                      if (booking.customerReview != null &&
+                          booking.customerReview!.trim().isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          '"${booking.customerReview!}"',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            color: Color(0xFF78350F),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 16),
 
               // Booking Details Container
@@ -901,6 +1000,26 @@ class _MyDirectBookingsScreenState extends State<MyDirectBookingsScreen> {
                         label: const Text('Reschedule'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1864E8),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                  ] else if (isCompleted) ...[
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _openRatingSheet(booking);
+                        },
+                        icon: const Icon(Icons.star_rounded, size: 18),
+                        label: Text(booking.customerRating != null
+                            ? 'Edit Rating (${booking.customerRating!.toStringAsFixed(1)} ★)'
+                            : 'Rate Service'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF59E0B),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1239,6 +1358,53 @@ class _MyDirectBookingsScreenState extends State<MyDirectBookingsScreen> {
                                                           fontSize: 12, fontWeight: FontWeight.w700)),
                                                 ),
                                                 const SizedBox(width: 2),
+                                              ] else if (isCompleted) ...[
+                                                if (booking.customerRating != null) ...[
+                                                  InkWell(
+                                                    onTap: () => _openRatingSheet(booking),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    child: Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(0xFFFEF3C7),
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        border: Border.all(color: const Color(0xFFFDE68A)),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          const Icon(Icons.star_rounded, size: 14, color: Color(0xFFD97706)),
+                                                          const SizedBox(width: 3),
+                                                          Text(
+                                                            ' ★',
+                                                            style: const TextStyle(
+                                                              fontSize: 11,
+                                                              fontWeight: FontWeight.w800,
+                                                              color: Color(0xFF92400E),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ] else ...[
+                                                  ElevatedButton.icon(
+                                                    onPressed: () => _openRatingSheet(booking),
+                                                    icon: const Icon(Icons.star_rounded, size: 13),
+                                                    label: const Text('Rate'),
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: const Color(0xFFF59E0B),
+                                                      foregroundColor: Colors.white,
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                      minimumSize: Size.zero,
+                                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                      visualDensity: VisualDensity.compact,
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                      textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                                                    ),
+                                                  ),
+                                                ],
+                                                const SizedBox(width: 4),
                                               ],
                                               IconButton(
                                                 constraints: const BoxConstraints(),

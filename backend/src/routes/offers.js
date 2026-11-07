@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 const OFFERS_FILE = path.join(__dirname, '../../uploads/offers.json');
 
@@ -321,7 +322,7 @@ router.get('/', (req, res) => {
 });
 
 // GET /api/v1/offers/admin - Admin endpoint for all offers
-router.get('/admin', (req, res) => {
+router.get('/admin', authenticate, requireAdmin, (req, res) => {
   try {
     const offers = readOffers();
     return res.json({
@@ -335,7 +336,7 @@ router.get('/admin', (req, res) => {
 });
 
 // POST /api/v1/offers - Create new offer
-router.post(['/', '/admin'], (req, res) => {
+router.post(['/', '/admin'], authenticate, requireAdmin, (req, res) => {
   try {
     const {
       title,
@@ -390,7 +391,7 @@ router.post(['/', '/admin'], (req, res) => {
 });
 
 // PUT /api/v1/offers/:id - Update offer
-router.put(['/:id', '/admin/:id'], (req, res) => {
+router.put(['/:id', '/admin/:id'], authenticate, requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
     const offers = readOffers();
@@ -425,7 +426,7 @@ router.put(['/:id', '/admin/:id'], (req, res) => {
 });
 
 // DELETE /api/v1/offers/:id - Delete offer
-router.delete(['/:id', '/admin/:id'], (req, res) => {
+router.delete(['/:id', '/admin/:id'], authenticate, requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
     let offers = readOffers();

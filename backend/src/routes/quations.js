@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../prisma');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_here';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('⛔ FATAL: JWT_SECRET environment variable is not set. Quotation auth will fail.');
+}
 
 function authenticateUser(req, res, next) {
   try {
@@ -26,28 +30,32 @@ function authenticateUser(req, res, next) {
   }
 }
 
-// GET /api/v1/quotations - List quotations (filtered for logged in user, or all for admin)
-router.get('/', authenticateUser, async (req, res) => {
+// GET /api/v1/quotations - List quotations (Strictly scoped by authenticated user/role)
+router.get('/', authenticate, async (req, res) => {
   try {
     const { phone, userId } = req.query;
     const where = {};
-    const targetUserId = req.userId || userId;
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+    const isVendor = req.user.role === 'VENDOR';
 
-    if (targetUserId && phone) {
-      where.request = {
-        OR: [
-          { userId: targetUserId },
-          { user: { phoneNumber: phone } }
-        ]
-      };
-    } else if (targetUserId) {
-      where.request = {
-        userId: targetUserId
-      };
-    } else if (phone) {
-      where.request = {
-        user: { phoneNumber: phone }
-      };
+    if (isAdmin) {
+      if (userId && phone) {
+        where.request = {
+          OR: [
+            { userId },
+            { user: { phoneNumber: phone } }
+          ]
+        };
+      } else if (userId) {
+        where.request = { userId };
+      } else if (phone) {
+        where.request = { user: { phoneNumber: phone } };
+      }
+    } else if (isVendor) {
+      where.request = { assignedVendorId: req.user.vendorId || req.user.id };
+    } else {
+      // Customer: strictly see own quotations only
+      where.request = { userId: req.user.id };
     }
 
     const quotes = await prisma.quotation.findMany({
@@ -55,7 +63,15 @@ router.get('/', authenticateUser, async (req, res) => {
       include: {
         request: {
           include: {
-            user: true
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phoneNumber: true,
+                photoUrl: true
+              }
+            }
           }
         }
       },
@@ -71,8 +87,8 @@ router.get('/', authenticateUser, async (req, res) => {
   }
 });
 
-// GET /api/v1/quotations/:id
-router.get('/:id', async (req, res) => {
+// GET /api/v1/quotations/:id - Single quotation (Protected by ownership/role)
+router.get('/:id', authenticate, async (req, res) => {
   try {
     const quote = await prisma.quotation.findFirst({
       where: {
@@ -84,7 +100,15 @@ router.get('/:id', async (req, res) => {
       include: {
         request: {
           include: {
-            user: true
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phoneNumber: true,
+                photoUrl: true
+              }
+            }
           }
         }
       }
@@ -92,6 +116,17 @@ router.get('/:id', async (req, res) => {
     if (!quote) {
       return res.status(404).json({ success: false, message: 'Quote Not Found' });
     }
+
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+    const isOwner = quote.request && quote.request.userId === req.user.id;
+    const isAssignedVendor = req.user.role === 'VENDOR' && quote.request && (
+      req.user.vendorId === quote.request.assignedVendorId || req.user.id === quote.request.assignedVendorId
+    );
+
+    if (!isAdmin && !isOwner && !isAssignedVendor) {
+      return res.status(403).json({ success: false, message: 'Forbidden: Access to this quotation is denied' });
+    }
+
     res.json({ success: true, data: quote });
   } catch (error) {
     res.status(500).json({
@@ -101,8 +136,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/v1/quotations/:id
-router.delete('/:id', async (req, res) => {
+// DELETE /api/v1/quotations/:id (Admin only)
+router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     await prisma.quotation.delete({
       where: { id: req.params.id }
@@ -116,8 +151,8 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// PATCH /api/v1/quotations/:id - Admin adjusts advance payment amount/percentage or terms
-router.patch('/:id', async (req, res) => {
+// PATCH /api/v1/quotations/:id - Admin adjusts advance payment amount/percentage or terms (Admin only)
+router.patch('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     const { advancePercentage, advanceAmount, termsAndConditions, estimatedTimeline, grandtotal } = req.body;
     const existing = await prisma.quotation.findFirst({
@@ -166,13 +201,22 @@ router.patch('/:id', async (req, res) => {
     try {
       const io = req.app.get('io');
       if (io) {
-        io.emit('quotation_updated', {
+        io.to('admin_room').emit('quotation_updated', {
           id: updated.id,
           quoteNumber: updated.quoteNumber,
           advancePercentage: finalAdvPct,
           advanceAmount: finalAdvAmount,
           grandtotal: updated.grandtotal
         });
+        if (updated.request && updated.request.userId) {
+          io.to(`user_${updated.request.userId}`).emit('quotation_updated', {
+            id: updated.id,
+            quoteNumber: updated.quoteNumber,
+            advancePercentage: finalAdvPct,
+            advanceAmount: finalAdvAmount,
+            grandtotal: updated.grandtotal
+          });
+        }
       }
     } catch (_) {}
 
@@ -187,25 +231,48 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
+// Helper: Verify quotation decision authorization
+async function verifyQuoteDecisionAuth(quoteId, user) {
+  const quote = await prisma.quotation.findFirst({
+    where: {
+      OR: [{ id: quoteId }, { quoteNumber: quoteId }]
+    },
+    include: { request: true }
+  });
+  if (!quote) return { error: { status: 404, message: 'Quotation not found' } };
+
+  const isAdmin = user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN');
+  const isOwner = user && quote.request && (user.id === quote.request.userId);
+
+  if (!isAdmin && !isOwner) {
+    return { error: { status: 403, message: 'Forbidden: You cannot accept or reject this quotation' } };
+  }
+  return { quote };
+}
+
 // POST /api/v1/quotations/:id/decision - User accepts or rejects quotation
-router.post('/:id/decision', async (req, res) => {
+router.post('/:id/decision', authenticate, async (req, res) => {
   try {
     const { decision } = req.body;
-    if (!decision) {
-      return res.status(400).json({ success: false, message: 'Decision is required' });
+    if (!decision || (decision !== 'ACCEPTED' && decision !== 'REJECTED')) {
+      return res.status(400).json({ success: false, message: 'Decision must be ACCEPTED or REJECTED' });
     }
+
+    const { quote: existing, error } = await verifyQuoteDecisionAuth(req.params.id, req.user);
+    if (error) return res.status(error.status).json({ success: false, message: error.message });
+
     const quote = await prisma.quotation.update({
-      where: { id: req.params.id },
-      data: {
-        status: decision === 'ACCEPTED' ? 'ACCEPTED' : 'REJECTED'
-      },
+      where: { id: existing.id },
+      data: { status: decision },
       include: { request: true }
     });
 
-    await prisma.serviceRequest.update({
-      where: { id: quote.requestId },
-      data: { status: decision === 'ACCEPTED' ? 'ACCEPTED' : 'REJECTED' }
-    });
+    if (quote.requestId) {
+      await prisma.serviceRequest.update({
+        where: { id: quote.requestId },
+        data: { status: decision }
+      });
+    }
 
     res.json({ success: true, message: `Quotation ${decision}`, data: quote });
   } catch (error) {
@@ -217,10 +284,13 @@ router.post('/:id/decision', async (req, res) => {
 });
 
 // POST /api/v1/quotations/:id/accept - Alias for accepting quotation
-router.post('/:id/accept', async (req, res) => {
+router.post('/:id/accept', authenticate, async (req, res) => {
   try {
+    const { quote: existing, error } = await verifyQuoteDecisionAuth(req.params.id, req.user);
+    if (error) return res.status(error.status).json({ success: false, message: error.message });
+
     const quote = await prisma.quotation.update({
-      where: { id: req.params.id },
+      where: { id: existing.id },
       data: { status: 'ACCEPTED' },
       include: { request: true }
     });
@@ -237,10 +307,13 @@ router.post('/:id/accept', async (req, res) => {
 });
 
 // POST /api/v1/quotations/:id/reject - Alias for rejecting quotation
-router.post('/:id/reject', async (req, res) => {
+router.post('/:id/reject', authenticate, async (req, res) => {
   try {
+    const { quote: existing, error } = await verifyQuoteDecisionAuth(req.params.id, req.user);
+    if (error) return res.status(error.status).json({ success: false, message: error.message });
+
     const quote = await prisma.quotation.update({
-      where: { id: req.params.id },
+      where: { id: existing.id },
       data: { status: 'REJECTED' },
       include: { request: true }
     });
@@ -257,7 +330,8 @@ router.post('/:id/reject', async (req, res) => {
 });
 
 // POST /api/v1/quotations - Admin creates and sends quotation to customer
-router.post('/', async (req, res) => {
+// POST /api/v1/quotations - Create official quotation (Admin only)
+router.post('/', authenticate, requireAdmin, async (req, res) => {
   try {
     const {
       requestId,

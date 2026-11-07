@@ -6,6 +6,7 @@ class ExperienceItem {
   final String tagline;
   final String city;
   final String locationDetails;
+  final String categoryId;
   final String category;
   final double rating;
   final int reviewsCount;
@@ -26,6 +27,7 @@ class ExperienceItem {
     required this.tagline,
     required this.city,
     required this.locationDetails,
+    this.categoryId = '',
     required this.category,
     required this.rating,
     required this.reviewsCount,
@@ -48,6 +50,7 @@ class ExperienceItem {
       tagline: json['tagline'] ?? '',
       city: json['city'] ?? '',
       locationDetails: json['locationDetails'] ?? '',
+      categoryId: json['categoryId'] ?? json['category_id'] ?? '',
       category: json['category'] ?? '',
       rating: (json['rating'] is num) ? (json['rating'] as num).toDouble() : 4.8,
       reviewsCount: json['reviewsCount'] ?? 100,
@@ -75,6 +78,7 @@ class ExperienceItem {
           tagline: 'High-altitude glide over lush Doon hills with GoPro 4K recording',
           city: 'Dehradun',
           locationDetails: 'Maldevta Adventure Point, Dehradun, Uttarakhand',
+          categoryId: 'cat_air_sports',
           category: 'Air Sports',
           rating: 4.9,
           reviewsCount: 384,
@@ -117,6 +121,7 @@ class ExperienceItem {
           tagline: 'Thrilling 4x4 Thar ride, sunset camel trek & Rajasthani cultural gala',
           city: 'Jaisalmer',
           locationDetails: 'Sam Sand Dunes, Thar Desert, Jaisalmer, Rajasthan',
+          categoryId: 'cat_desert_safari',
           category: 'Desert Safari',
           rating: 4.8,
           reviewsCount: 520,
@@ -156,6 +161,7 @@ class ExperienceItem {
           tagline: 'India’s highest cantilever bungee jump over river Hall valley with SANZ certified masters',
           city: 'Rishikesh',
           locationDetails: 'Mohan Chatti, Jump Zone, Rishikesh, Uttarakhand',
+          categoryId: 'cat_adventure',
           category: 'Adventure',
           rating: 4.9,
           reviewsCount: 780,
@@ -194,6 +200,7 @@ class ExperienceItem {
           tagline: 'Fly 1000 ft above the golden sand ocean on a powered motorized parashoot glider',
           city: 'Jaisalmer',
           locationDetails: 'Desert National Park Road, Sam, Jaisalmer',
+          categoryId: 'cat_air_sports',
           category: 'Air Sports',
           rating: 4.9,
           reviewsCount: 215,
@@ -232,6 +239,7 @@ class ExperienceItem {
           tagline: 'Conquer thrilling Grade III+ rapids like Roller Coaster & Golf Course',
           city: 'Rishikesh',
           locationDetails: 'Shivpuri Base to NIM Beach, Rishikesh',
+          categoryId: 'cat_water_sports',
           category: 'Water Sports',
           rating: 4.9,
           reviewsCount: 940,
@@ -270,6 +278,7 @@ class ExperienceItem {
           tagline: 'Spectacular 360-degree panoramic flight over the Himalayan foothills',
           city: 'Dehradun',
           locationDetails: 'Sahastradhara Valley, Dehradun',
+          categoryId: 'cat_air_sports',
           category: 'Air Sports',
           rating: 5.0,
           reviewsCount: 130,
@@ -306,6 +315,7 @@ class ExperienceItem {
           tagline: 'Take control of a 700cc monster ATV across open rolling desert terrain',
           city: 'Jaisalmer',
           locationDetails: 'Kuldhara Desert Trail, Jaisalmer',
+          categoryId: 'cat_desert_safari',
           category: 'Desert Safari',
           rating: 4.8,
           reviewsCount: 310,

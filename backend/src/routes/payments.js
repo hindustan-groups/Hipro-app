@@ -4,6 +4,7 @@ const axios = require('axios');
 const crypto = require('crypto');
 const prisma = require('../prisma');
 const { addNotification } = require('./notifications');
+const { authenticate } = require('../middleware/auth');
 
 // ==========================================
 // 1. GET /api/v1/payments/quotation-summary/:id
@@ -83,7 +84,7 @@ router.get('/quotation-summary/:id', async (req, res) => {
 // 2. POST /api/v1/payments/create-order
 // Payment amount is strictly computed on the backend side from DB records
 // ==========================================
-router.post('/create-order', async (req, res) => {
+router.post('/create-order', authenticate, async (req, res) => {
   try {
     const {
       quotationId,
@@ -92,8 +93,7 @@ router.post('/create-order', async (req, res) => {
       paymentOption, // 'advance' or 'full'
       customerName,
       customerPhone,
-      customerEmail,
-      amount // optional fallback only if no entity ID is provided
+      customerEmail
     } = req.body;
 
     let payableAmount = 0;
@@ -123,6 +123,16 @@ router.post('/create-order', async (req, res) => {
         });
       }
 
+      // Verify caller ownership
+      const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+      const isOwner = quote.request && (quote.request.userId === req.user.id);
+      if (!isAdmin && !isOwner) {
+        return res.status(403).json({
+          success: false,
+          message: 'Forbidden: You cannot create payment orders for another user\'s quotation'
+        });
+      }
+
       const grandTotal = parseFloat(quote.grandtotal || 0);
       const advancePercentage = quote.advancePercentage ? parseFloat(quote.advancePercentage) : 50.0;
       let advanceAmount = quote.advanceAmount ? parseFloat(quote.advanceAmount) : null;
@@ -142,9 +152,21 @@ router.post('/create-order', async (req, res) => {
       const booking = await prisma.directBooking.findUnique({
         where: { bookingNumber }
       });
-      if (booking) {
-        payableAmount = parseFloat(booking.onlinePaidAmount || booking.visitingCharge || 199.0);
+      if (!booking) {
+        return res.status(404).json({ success: false, message: 'Direct booking not found' });
       }
+
+      // Verify caller ownership
+      const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+      const isOwner = booking.userId === req.user.id;
+      if (!isAdmin && !isOwner) {
+        return res.status(403).json({
+          success: false,
+          message: 'Forbidden: You cannot create payment orders for another user\'s booking'
+        });
+      }
+
+      payableAmount = parseFloat(booking.onlinePaidAmount || booking.visitingCharge || 199.0);
     }
     // 3. Backend calculates amount from SubService record
     else if (subServiceId) {
@@ -168,10 +190,11 @@ router.post('/create-order', async (req, res) => {
         }
         payableAmount = base + extra;
       }
-    }
-    // 4. Fallback if no entity specified
-    else if (amount) {
-      payableAmount = parseFloat(amount);
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid quotationId, bookingNumber, or subServiceId is required to generate a payment order.'
+      });
     }
 
     // 5. Apply coupon discount if provided
@@ -207,8 +230,14 @@ router.post('/create-order', async (req, res) => {
       });
     }
 
-    const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_Tpmg07aMyYH1Oc';
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || 'aYNsVt5iYhkXFI01M2IBzoKQ';
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keyId || !keySecret) {
+      return res.status(500).json({
+        success: false,
+        message: 'Payment gateway is not configured on the server. Please check environment configuration.'
+      });
+    }
     const amountInPaise = Math.round(payableAmount * 100);
     const receipt = `rcpt_${Date.now().toString().slice(-8)}`;
 
@@ -252,7 +281,7 @@ router.post('/create-order', async (req, res) => {
       }
     }
 
-    // Fallback order ID for testing if gateway API call failed or timed out
+    // Fallback order ID if gateway API call failed or timed out
     if (!orderId) {
       orderId = `order_test_${Date.now()}`;
     }
@@ -288,9 +317,9 @@ router.post('/create-order', async (req, res) => {
 
 // ==========================================
 // 3. POST /api/v1/payments/verify
-// Cryptographically verify Razorpay Payment Signature & update DB
+// Cryptographically verify Razorpay Payment Signature, Amount & Status
 // ==========================================
-router.post('/verify', async (req, res) => {
+router.post('/verify', authenticate, async (req, res) => {
   try {
     const {
       razorpay_order_id,
@@ -301,38 +330,124 @@ router.post('/verify', async (req, res) => {
       paymentOption
     } = req.body;
 
-    if (!razorpay_payment_id) {
+    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
       return res.status(400).json({
         success: false,
-        message: 'Payment ID is required for verification'
+        message: 'Payment verification failed: Missing required Razorpay credentials (order ID, payment ID, or signature).'
       });
     }
 
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    let isValid = true;
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    if (!keySecret) {
+      console.error('RAZORPAY_KEY_SECRET is not configured on server');
+      return res.status(500).json({
+        success: false,
+        message: 'Payment verification failed: Payment gateway not properly configured on server.'
+      });
+    }
 
-    // Cryptographic signature check if signature & secret are available
-    if (razorpay_order_id && razorpay_signature && keySecret) {
+    // 1. Cryptographic HMAC-SHA256 signature verification (Strict, timing-safe compare)
+    let isValid = false;
+    try {
       const generatedSignature = crypto
         .createHmac('sha256', keySecret)
         .update(`${razorpay_order_id}|${razorpay_payment_id}`)
         .digest('hex');
 
-      isValid = generatedSignature === razorpay_signature;
+      const expectedBuffer = Buffer.from(generatedSignature, 'utf8');
+      const receivedBuffer = Buffer.from(razorpay_signature, 'utf8');
+
+      if (expectedBuffer.length === receivedBuffer.length) {
+        isValid = crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+      }
+    } catch (sigErr) {
+      console.error('Signature computation error:', sigErr);
+      isValid = false;
     }
 
     if (!isValid) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid Razorpay payment signature'
+        message: 'Invalid Razorpay payment signature. Payment cannot be verified.'
       });
     }
 
-    // Update Quotation if present
+    // 2. Authoritative Verification with Razorpay API (Check capture status and order binding)
+    let rzPaymentData = null;
+    if (keyId && keySecret) {
+      try {
+        const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+        const rzRes = await axios.get(
+          `https://api.razorpay.com/v1/payments/${razorpay_payment_id}`,
+          {
+            headers: {
+              Authorization: `Basic ${auth}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 8000
+          }
+        );
+        rzPaymentData = rzRes.data;
+
+        if (rzPaymentData) {
+          if (rzPaymentData.status !== 'captured' && rzPaymentData.status !== 'authorized') {
+            return res.status(400).json({
+              success: false,
+              message: `Payment not completed. Current Razorpay status: ${rzPaymentData.status}`
+            });
+          }
+          if (rzPaymentData.order_id && rzPaymentData.order_id !== razorpay_order_id) {
+            return res.status(400).json({
+              success: false,
+              message: 'Security Alert: Payment does not belong to the supplied order ID.'
+            });
+          }
+        }
+      } catch (rzErr) {
+        console.warn('Razorpay API verification error:', rzErr.response?.data || rzErr.message);
+      }
+    }
+
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+
+    // 3. Update Quotation if present (Idempotent & Authorized)
     if (quotationId) {
       try {
+        const existingQuote = await prisma.quotation.findFirst({
+          where: {
+            OR: [
+              { id: quotationId },
+              { quoteNumber: quotationId }
+            ]
+          },
+          include: { request: { include: { user: true } } }
+        });
+
+        if (!existingQuote) {
+          return res.status(404).json({ success: false, message: 'Quotation not found' });
+        }
+
+        const isOwner = existingQuote.request && (existingQuote.request.userId === req.user.id);
+        if (!isAdmin && !isOwner) {
+          return res.status(403).json({
+            success: false,
+            message: 'Forbidden: You do not have permission to verify payment for this quotation'
+          });
+        }
+
+        if (existingQuote.status === 'ACCEPTED') {
+          return res.json({
+            success: true,
+            verified: true,
+            message: 'Payment has already been verified for this quotation',
+            paymentId: razorpay_payment_id,
+            orderId: razorpay_order_id
+          });
+        }
+
         const quote = await prisma.quotation.update({
-          where: { id: quotationId },
+          where: { id: existingQuote.id },
           data: {
             status: 'ACCEPTED'
           },
@@ -368,9 +483,35 @@ router.post('/verify', async (req, res) => {
       }
     }
 
-    // Update DirectBooking if present
+    // 4. Update DirectBooking if present (Idempotent & Authorized)
     if (bookingNumber) {
       try {
+        const existingBooking = await prisma.directBooking.findUnique({
+          where: { bookingNumber }
+        });
+
+        if (!existingBooking) {
+          return res.status(404).json({ success: false, message: 'Direct booking not found' });
+        }
+
+        const isOwner = existingBooking.userId === req.user.id;
+        if (!isAdmin && !isOwner) {
+          return res.status(403).json({
+            success: false,
+            message: 'Forbidden: You do not have permission to verify payment for this booking'
+          });
+        }
+
+        if (existingBooking.paymentStatus === 'PAID') {
+          return res.json({
+            success: true,
+            verified: true,
+            message: 'Payment has already been verified for this direct booking',
+            paymentId: razorpay_payment_id,
+            orderId: razorpay_order_id
+          });
+        }
+
         await prisma.directBooking.update({
           where: { bookingNumber },
           data: {
