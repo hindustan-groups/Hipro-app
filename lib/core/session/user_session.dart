@@ -23,6 +23,7 @@ import '../services/push_notification_service.dart';
 
   String? get userId => id;
   String get selectedCity => city ?? '';
+  bool get hasSelectedCity => city != null && city!.trim().isNotEmpty;
 
   static const String _keyId = 'user_id';
   static const String _keyName = 'user_name';

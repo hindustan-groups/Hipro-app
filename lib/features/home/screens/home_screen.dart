@@ -76,6 +76,12 @@ class _HomeScreenState extends State<HomeScreen> {
     appState.fetchQuotations();
     appState.fetchNotifications();
     appState.fetchDirectBookings();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!UserSession().hasSelectedCity && mounted) {
+        CitySelectionSheet.show(context);
+      }
+    });
   }
 
   void _onCityChanged() {
@@ -473,7 +479,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       children: [
                                         const TextSpan(text: 'Services in '),
                                         TextSpan(
-                                          text: city,
+                                          text: city.isNotEmpty ? city : 'Select Location',
                                           style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF1864E8)),
                                         ),
                                         const TextSpan(

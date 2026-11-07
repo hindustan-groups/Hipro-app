@@ -1061,7 +1061,7 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                     label: 'Site Address',
                     value: _request.address.isNotEmpty
                         ? _request.address
-                        : 'Main Residence, Bhilwara',
+                        : '—',
                   ),
                 ],
               ),

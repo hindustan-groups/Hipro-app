@@ -164,7 +164,7 @@ class _CitySelectionSheetState extends State<CitySelectionSheet> {
                 controller: _searchController,
                 onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
                 decoration: InputDecoration(
-                  hintText: 'Search Udaipur, Bhilwara...',
+                  hintText: 'Search operational cities...',
                   hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
                   prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF64748B), size: 20),
                   suffixIcon: _searchQuery.isNotEmpty

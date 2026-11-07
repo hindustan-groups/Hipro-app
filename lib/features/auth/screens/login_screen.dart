@@ -5,6 +5,7 @@ import '../../../config/theme/app_colors.dart';
 import '../../../core/session/user_session.dart';
 import '../../../core/widgets/hipro_logo.dart';
 import '../../../main.dart';
+import '../../home/screens/select_location_screen.dart';
 import '../../navigation/main_nav_screen.dart';
 import '../services/google_auth_service.dart';
 import '../services/auth_api_service.dart';
@@ -19,6 +20,12 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final GoogleAuthService _googleAuthService = GoogleAuthService();
   final AuthApiService _authApiService = AuthApiService();
+
+  Widget _getNextScreen() {
+    return UserSession().hasSelectedCity
+        ? const MainNavScreen()
+        : const SelectLocationScreen();
+  }
 
   bool _isSignUp = true;
   bool _isLoading = false;
@@ -164,7 +171,7 @@ MaterialPageRoute(
   builder: (context) => AddPhoneScreen(
     onphoneSaved: () {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const MainNavScreen()),
+        MaterialPageRoute(builder: (context) => _getNextScreen()),
       );
     },
   ),
@@ -174,7 +181,7 @@ MaterialPageRoute(
           }else {
             _showSuccessSnackBar('Welcome, ${account.displayName ?? 'user'} ');
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const MainNavScreen(),)
+              MaterialPageRoute(builder: (context) => _getNextScreen()),
             );
           }
         }
@@ -279,7 +286,7 @@ MaterialPageRoute(
           if (mounted) {
             _showSuccessSnackBar(resData['message']?.toString() ?? 'Account created successfully!');
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const MainNavScreen()),
+              MaterialPageRoute(builder: (context) => _getNextScreen()),
             );
           }
         } else {
@@ -317,7 +324,7 @@ MaterialPageRoute(
           if (mounted) {
             _showSuccessSnackBar('Welcome back!');
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const MainNavScreen()),
+              MaterialPageRoute(builder: (context) => _getNextScreen()),
             );
           }
         } else {

@@ -79,17 +79,17 @@ class _ServicesScreenState extends State<ServicesScreen> {
                 children: [
                   const Icon(Icons.location_on_rounded, size: 12, color: Color(0xFF1864E8)),
                   const SizedBox(width: 2),
-                  ValueListenableBuilder<String>(
-                    valueListenable: UserSession().selectedCityNotifier,
-                    builder: (context, city, _) => Text(
-                      city,
-                      style: const TextStyle(
-                        color: Color(0xFF1864E8),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
+                    ValueListenableBuilder<String>(
+                      valueListenable: UserSession().selectedCityNotifier,
+                      builder: (context, city, _) => Text(
+                        city.isNotEmpty ? city : 'Select Location',
+                        style: const TextStyle(
+                          color: Color(0xFF1864E8),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
                   const Icon(Icons.keyboard_arrow_down_rounded, size: 14, color: Color(0xFF1864E8)),
                 ],
               ),
