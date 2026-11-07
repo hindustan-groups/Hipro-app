@@ -1029,7 +1029,7 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                     label: 'Property Type',
                     value: _request.propertyType.isNotEmpty
                         ? _request.propertyType
-                        : 'Residential Villa',
+                        : '—',
                   ),
                   const Divider(height: 20, color: Color(0xFFF1F5F9)),
                   _buildDetailRow(
@@ -1037,7 +1037,7 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                     label: 'Estimated Area',
                     value: _request.propertySize.isNotEmpty
                         ? _request.propertySize
-                        : '1500 sq ft',
+                        : '—',
                   ),
                   const Divider(height: 20, color: Color(0xFFF1F5F9)),
                   _buildDetailRow(

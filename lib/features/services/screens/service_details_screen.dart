@@ -601,9 +601,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
   Widget _buildSubServiceCard(SubService sub, ServiceItem service) {
     final subImage = (sub.image != null && sub.image!.isNotEmpty)
         ? sub.image!
-        : (service.imageUrl.isNotEmpty
-              ? service.imageUrl
-              : 'https://cdn-icons-png.flaticon.com/512/2830/2830305.png');
+        : service.imageUrl;
 
     return Material(
       color: const Color(0xFFF8FAFC),
@@ -637,27 +635,33 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                       width: 60,
                       height: 60,
                       color: const Color(0xFFE2E8F0),
-                      child: CachedNetworkImage(
-                        imageUrl: subImage,
-                        fit: BoxFit.cover,
-                        filterQuality: FilterQuality.high,
-                        fadeInDuration: const Duration(milliseconds: 100),
-                        fadeOutDuration: const Duration(milliseconds: 100),
-                        placeholder: (_, _) => Shimmer.fromColors(
-                          baseColor: const Color(0xFFE2E8F0),
-                          highlightColor: const Color(0xFFF8FAFC),
-                          child: Container(
-                            width: 60,
-                            height: 60,
-                            color: Colors.white,
-                          ),
-                        ),
-                        errorWidget: (_, _, _) => const Icon(
-                          Icons.construction_rounded,
-                          color: Color.fromARGB(255, 152, 142, 170),
-                          size: 26,
-                        ),
-                      ),
+                      child: subImage.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: subImage,
+                              fit: BoxFit.cover,
+                              filterQuality: FilterQuality.high,
+                              fadeInDuration: const Duration(milliseconds: 100),
+                              fadeOutDuration: const Duration(milliseconds: 100),
+                              placeholder: (_, _) => Shimmer.fromColors(
+                                baseColor: const Color(0xFFE2E8F0),
+                                highlightColor: const Color(0xFFF8FAFC),
+                                child: Container(
+                                  width: 60,
+                                  height: 60,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              errorWidget: (_, _, _) => const Icon(
+                                Icons.construction_rounded,
+                                color: Color.fromARGB(255, 152, 142, 170),
+                                size: 26,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.construction_rounded,
+                              color: Color.fromARGB(255, 152, 142, 170),
+                              size: 26,
+                            ),
                     ),
                   ),
                   const SizedBox(width: 12),

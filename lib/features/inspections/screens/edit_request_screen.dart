@@ -55,7 +55,7 @@ class _EditRequestScreenState extends State<EditRequestScreen> {
     _descriptionController = TextEditingController(text: req.issueDescription);
     _addressController = TextEditingController(text: req.address);
     _propertySizeController = TextEditingController(
-      text: req.propertySize.isNotEmpty ? req.propertySize : '1500 sq ft',
+      text: req.propertySize,
     );
 
     _propertyType = _propertyTypes.contains(req.propertyType)

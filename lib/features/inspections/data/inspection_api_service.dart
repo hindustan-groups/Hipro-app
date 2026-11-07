@@ -43,11 +43,11 @@ class InspectionApiService {
           ? preferredDate
           : DateTime.now().toIso8601String().split('T')[0];
       final timeStr = (preferredTime != null && preferredTime.isNotEmpty)
-          ? preferredTime
-          : 'Morning (09:00 AM - 12:00 PM)';
+          ? preferredTime.trim()
+          : '';
       final sizeStr = (propertySize != null && propertySize.trim().isNotEmpty)
           ? propertySize.trim()
-          : '1500 sq ft';
+          : '';
       final locStr = (location != null && location.trim().isNotEmpty)
           ? location.trim()
           : address;
@@ -61,7 +61,7 @@ class InspectionApiService {
       }
       final name = (customerName != null && customerName.trim().isNotEmpty)
           ? customerName.trim()
-          : (session.name ?? 'Customer App User');
+          : (session.name ?? '').trim();
 
       Response response;
 

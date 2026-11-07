@@ -247,7 +247,7 @@ class _EntMyBookingsScreenState extends State<EntMyBookingsScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Explore paragliding in Dehradun, desert safaris in Jaisalmer, or river rafting in Rishikesh!',
+            'Explore adventure activities and book your next outing!',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
           ),
@@ -280,16 +280,16 @@ class _EntMyBookingsScreenState extends State<EntMyBookingsScreen> {
   }
 
   Widget _buildBookingTicketCard(dynamic b) {
-    final status = (b['status'] ?? 'CONFIRMED').toString().toUpperCase();
+    final status = (b['status'] ?? '').toString().toUpperCase();
     final isConfirmed = status == 'CONFIRMED';
     final isCancelled = status == 'CANCELLED';
 
-    final bookingCode = b['bookingCode'] ?? b['id'] ?? 'ENT-000';
-    final title = b['title'] ?? b['experienceTitle'] ?? 'ENT Adventure Activity';
-    final city = b['city'] ?? 'India';
-    final travelDate = b['travelDate'] ?? b['date'] ?? 'Upcoming';
+    final bookingCode = b['bookingCode'] ?? b['id'] ?? '';
+    final title = b['title'] ?? b['experienceTitle'] ?? '';
+    final city = b['city'] ?? '';
+    final travelDate = b['travelDate'] ?? b['date'] ?? '';
     final timeSlot = b['timeSlot'] ?? '';
-    final guests = b['guestsCount'] ?? 1;
+    final guests = b['guestsCount'] ?? 0;
     final totalAmount = b['totalAmount'] ?? 0;
     final imageUrl = b['imageUrl'] ?? '';
     final reportingPoint = b['reportingPoint'] ?? '';
@@ -336,25 +336,26 @@ class _EntMyBookingsScreenState extends State<EntMyBookingsScreen> {
                     ),
                   ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-                  decoration: BoxDecoration(
-                    color: isCancelled
-                        ? const Color(0xFFFEE2E2)
-                        : (isConfirmed ? const Color(0xFFECFDF5) : const Color(0xFFFFF1F2)),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    status,
-                    style: TextStyle(
+                if (status.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                    decoration: BoxDecoration(
                       color: isCancelled
-                          ? const Color(0xFFDC2626)
-                          : (isConfirmed ? const Color(0xFF059669) : const Color(0xFFE11D48)),
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
+                          ? const Color(0xFFFEE2E2)
+                          : (isConfirmed ? const Color(0xFFECFDF5) : const Color(0xFFFFF1F2)),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      status,
+                      style: TextStyle(
+                        color: isCancelled
+                            ? const Color(0xFFDC2626)
+                            : (isConfirmed ? const Color(0xFF059669) : const Color(0xFFE11D48)),
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

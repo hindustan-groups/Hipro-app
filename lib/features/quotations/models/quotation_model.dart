@@ -30,9 +30,9 @@ class QuotationLineItem {
     final amount = json['amount'] != null ? _toNum(json['amount']) : (qty * rate);
 
     return QuotationLineItem(
-      item: json['item']?.toString() ?? json['description']?.toString() ?? 'Service Scope',
+      item: json['item']?.toString() ?? json['description']?.toString() ?? '',
       qty: qty,
-      unit: json['unit']?.toString() ?? 'Unit',
+      unit: json['unit']?.toString() ?? '',
       rate: rate,
       amount: amount,
     );
@@ -75,8 +75,8 @@ class QuotationModel {
     required this.quoteNumber,
     required this.requestId,
     this.requestNumber = '',
-    this.title = 'Repair & Waterproofing Quotation',
-    this.location = 'Site Address',
+    this.title = '',
+    this.location = '',
     required this.lineItems,
     required this.materialCost,
     required this.laborCost,
@@ -84,7 +84,7 @@ class QuotationModel {
     this.discount = 0,
     required this.taxGst,
     required this.grandTotal,
-    this.advancePercentage = 50.0,
+    this.advancePercentage = 0,
     this.advanceAmount = 0,
     required this.timeline,
     required this.terms,
@@ -106,13 +106,13 @@ class QuotationModel {
         reqObj?['servicecode'] ??
         (rawItems is List && rawItems.isNotEmpty && rawItems[0]['item'] != null
             ? rawItems[0]['item'].toString()
-            : 'Service Quotation');
+            : '');
 
     final parsedLoc =
-        reqObj?['addressline'] ?? reqObj?['location'] ?? 'Bhilwara, Rajasthan';
+        reqObj?['addressline'] ?? reqObj?['location'] ?? '';
 
     final total = _toNum(json['grandtotal'] ?? json['grandTotal'] ?? json['totalAmount']);
-    final advPct = _toNum(json['advancePercentage'], 50.0);
+    final advPct = _toNum(json['advancePercentage'], 0);
     final advAmt = json['advanceAmount'] != null
         ? _toNum(json['advanceAmount'])
         : (total > 0 ? (total * (advPct / 100)).round() : 0);
@@ -139,13 +139,13 @@ class QuotationModel {
       discount: _toNum(json['discount']),
       taxGst: _toNum(json['taxGST']),
       grandTotal: total,
-      advancePercentage: advPct >= 0 ? advPct : 50.0,
+      advancePercentage: advPct >= 0 ? advPct : 0,
       advanceAmount: advAmt >= 0 ? advAmt : (total > 0 ? (total * (advPct / 100)).round() : 0),
-      timeline: json['estimatedTimeline'] ?? json['timeline'] ?? '1-2 Days',
+      timeline: json['estimatedTimeline'] ?? json['timeline'] ?? '',
       terms:
           json['termsAndConditions'] ??
           json['terms'] ??
-          'Standard service scope and payment terms apply.',
+          '',
       status: (json['status'] == 'ACCEPTED' || json['status'] == 'PAID')
           ? QuoteDecision.accepted
           : json['status'] == 'REJECTED'

@@ -50,12 +50,12 @@ class EntApiService {
         final list = (res.data['data'] as List)
             .map((e) => ExperienceItem.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList();
-        if (list.isNotEmpty) return list;
+        return list;
       }
-      return ExperienceItem.mockExperiences;
+      return [];
     } catch (e) {
       debugPrint('[EntApiService] fetchExperiences error: $e');
-      return ExperienceItem.mockExperiences;
+      return [];
     }
   }
 
@@ -83,7 +83,7 @@ class EntApiService {
     } catch (e) {
       debugPrint('[EntApiService] fetchCities error: $e');
     }
-    return ['All', 'Dehradun', 'Jaisalmer', 'Rishikesh'];
+    return [];
   }
 
   /// Fetches distinct categories list
@@ -96,7 +96,7 @@ class EntApiService {
     } catch (e) {
       debugPrint('[EntApiService] fetchCategories error: $e');
     }
-    return ['All', 'Air Sports', 'Desert Safari', 'Water Sports', 'Adventure', 'Sightseeing'];
+    return [];
   }
 
   /// Fetches rich dynamic categories with icons, colors, taglines and sports counts
@@ -114,7 +114,7 @@ class EntApiService {
     } catch (e) {
       debugPrint('[EntApiService] fetchDynamicCategories error: $e');
     }
-    return AdventureCategory.defaultCategories;
+    return [];
   }
 
   /// Creates a booking for an experience
@@ -134,7 +134,7 @@ class EntApiService {
       final user = UserSession();
       final effectiveUserId = (user.phone != null && user.phone!.isNotEmpty)
           ? user.phone!
-          : (user.userId ?? user.email ?? 'guest_user');
+          : (user.userId ?? user.email ?? '');
 
       final payload = {
         'entId': entId,
@@ -168,7 +168,7 @@ class EntApiService {
       final targetUserId = userId ??
           ((user.phone != null && user.phone!.isNotEmpty)
               ? user.phone!
-              : (user.userId ?? user.email ?? 'guest_user'));
+              : (user.userId ?? user.email ?? ''));
       final targetPhone = phone ?? user.phone;
 
       final res = await _client.dio.get(
@@ -196,7 +196,7 @@ class EntApiService {
     try {
       final res = await _client.dio.patch(
         '/ent/bookings/$bookingId/cancel',
-        data: {'reason': reason ?? 'Cancelled by user'},
+        data: {'reason': reason ?? ''},
       );
       return res.statusCode == 200 && (res.data['success'] == true);
     } catch (e) {

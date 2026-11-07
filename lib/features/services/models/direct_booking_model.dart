@@ -79,7 +79,7 @@ class DirectBookingModel {
     this.technicianPhone,
     this.technicianRole,
     this.technicianPhoto,
-    this.technicianRating = 4.9,
+    this.technicianRating = 0,
     this.assignedAt,
     required this.visitingCharge,
     required this.onlinePaidAmount,
@@ -111,16 +111,16 @@ class DirectBookingModel {
       userId: json['userId']?.toString(),
       serviceId: json['serviceId']?.toString() ?? '',
       subServiceId: json['subServiceId']?.toString() ?? '',
-      serviceName: json['serviceName']?.toString() ?? 'Home Service',
-      subServiceName: json['subServiceName']?.toString() ?? 'On-Demand Visit',
+      serviceName: json['serviceName']?.toString() ?? '',
+      subServiceName: json['subServiceName']?.toString() ?? '',
       subServiceDesc: json['subServiceDesc']?.toString(),
       customFieldAnswers: json['customFieldAnswers'] is Map<String, dynamic>
           ? json['customFieldAnswers'] as Map<String, dynamic>
           : null,
-      customerName: json['customerName']?.toString() ?? 'Customer',
+      customerName: json['customerName']?.toString() ?? '',
       customerPhone: json['customerPhone']?.toString() ?? '',
       customerAddress: json['customerAddress']?.toString() ?? '',
-      city: json['city']?.toString() ?? 'Bhilwara',
+      city: json['city']?.toString() ?? '',
       pincode: json['pincode']?.toString(),
       landmark: json['landmark']?.toString(),
       latitude: (json['latitude'] as num?)?.toDouble(),
@@ -130,32 +130,29 @@ class DirectBookingModel {
       technicianId: json['technicianId']?.toString(),
       technicianName: json['technicianName']?.toString(),
       technicianPhone: json['technicianPhone']?.toString(),
-      technicianRole: json['technicianRole']?.toString() ??
-          (json['technicianName'] != null
-              ? 'Certified Service Specialist'
-              : null),
+      technicianRole: json['technicianRole']?.toString(),
       technicianPhoto: json['technicianPhoto']?.toString(),
       technicianRating:
-          (json['technicianRating'] as num?)?.toDouble() ?? 4.9,
+          (json['technicianRating'] as num?)?.toDouble() ?? 0,
       assignedAt: json['assignedAt'] != null
           ? DateTime.tryParse(json['assignedAt'].toString())
           : null,
-      visitingCharge: (json['visitingCharge'] as num?)?.toDouble() ?? 199.0,
-      onlinePaidAmount: (json['onlinePaidAmount'] as num?)?.toDouble() ?? 199.0,
+      visitingCharge: (json['visitingCharge'] as num?)?.toDouble() ?? 0.0,
+      onlinePaidAmount: (json['onlinePaidAmount'] as num?)?.toDouble() ?? 0.0,
       additionalWorkAmount:
           (json['additionalWorkAmount'] as num?)?.toDouble() ?? 0.0,
-      totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 199.0,
-      status: json['status']?.toString().toUpperCase() ?? 'CONFIRMED',
+      totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
+      status: json['status']?.toString().toUpperCase() ?? '',
       paymentStatus:
-          json['paymentStatus']?.toString().toUpperCase() ?? 'PAID',
+          json['paymentStatus']?.toString().toUpperCase() ?? '',
       paymentMethod:
-          json['paymentMethod']?.toString().toUpperCase() ?? 'ONLINE',
+          json['paymentMethod']?.toString().toUpperCase() ?? '',
       razorpayPaymentId: json['razorpayPaymentId']?.toString(),
       notes: json['notes']?.toString(),
       cancelReason: json['cancelReason']?.toString(),
       statusHistory: json['statusHistory'] as List<dynamic>?,
       refundStatus:
-          json['refundStatus']?.toString().toUpperCase() ?? 'NONE',
+          json['refundStatus']?.toString().toUpperCase() ?? '',
       refundAmount: (json['refundAmount'] as num?)?.toDouble() ?? 0.0,
       refundReason: json['refundReason']?.toString(),
       customerRating: (json['customerRating'] as num?)?.toDouble(),

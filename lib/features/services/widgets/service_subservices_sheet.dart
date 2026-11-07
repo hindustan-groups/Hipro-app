@@ -108,7 +108,7 @@ class _ServiceSubservicesSheetState extends State<ServiceSubservicesSheet> {
     if (_currentService.imageUrl.isNotEmpty) {
       return _currentService.imageUrl;
     }
-    return 'https://cdn-icons-png.flaticon.com/512/2830/2830305.png';
+    return '';
   }
 
   @override
@@ -597,32 +597,43 @@ class _ServiceSubservicesSheetState extends State<ServiceSubservicesSheet> {
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
-                  child: CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    fit: BoxFit.cover,
-                    filterQuality: FilterQuality.high,
-                    fadeInDuration: const Duration(milliseconds: 100),
-                    fadeOutDuration: const Duration(milliseconds: 100),
-                    placeholder: (_, _) => Shimmer.fromColors(
-                      baseColor: const Color(0xFFE2E8F0),
-                      highlightColor: const Color(0xFFF8FAFC),
-                      child: Container(
-                        width: 104,
-                        height: 104,
-                        color: Colors.white,
-                      ),
-                    ),
-                    errorWidget: (_, _, _) => Container(
-                      color: const Color(0xFFEFF6FF),
-                      child: const Center(
-                        child: Icon(
-                          Icons.construction_rounded,
-                          color: Color.fromARGB(255, 152, 142, 170),
-                          size: 40,
+                  child: imageUrl.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          filterQuality: FilterQuality.high,
+                          fadeInDuration: const Duration(milliseconds: 100),
+                          fadeOutDuration: const Duration(milliseconds: 100),
+                          placeholder: (_, _) => Shimmer.fromColors(
+                            baseColor: const Color(0xFFE2E8F0),
+                            highlightColor: const Color(0xFFF8FAFC),
+                            child: Container(
+                              width: 104,
+                              height: 104,
+                              color: Colors.white,
+                            ),
+                          ),
+                          errorWidget: (_, _, _) => Container(
+                            color: const Color(0xFFEFF6FF),
+                            child: const Center(
+                              child: Icon(
+                                Icons.construction_rounded,
+                                color: Color.fromARGB(255, 152, 142, 170),
+                                size: 40,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          color: const Color(0xFFEFF6FF),
+                          child: const Center(
+                            child: Icon(
+                              Icons.construction_rounded,
+                              color: Color.fromARGB(255, 152, 142, 170),
+                              size: 40,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(width: 14),

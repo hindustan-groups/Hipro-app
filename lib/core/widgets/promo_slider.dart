@@ -80,6 +80,7 @@ class _PromoSliderState extends State<PromoSlider> {
     }
 
     final route = slide.targetRoute.trim();
+    if (route.isEmpty) return;
     final lower = route.toLowerCase();
 
     if (lower == 'services' || lower == '/services') {

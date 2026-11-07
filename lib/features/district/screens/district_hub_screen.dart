@@ -34,13 +34,13 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   List<ExperienceItem> _backendExperiences = [];
-  List<AdventureCategory> _dynamicCategories = AdventureCategory.defaultCategories;
+  List<AdventureCategory> _dynamicCategories = [];
   List<SlideItem> _slides = [];
   List<OfferItem> _offers = [];
   bool _isLoading = false;
 
-  List<String> _cities = ['All', 'Dehradun', 'Jaisalmer', 'Rishikesh'];
-  List<String> _categories = ['All', 'Air Sports', 'Desert Safari', 'Water Sports', 'Adventure', 'Sightseeing'];
+  List<String> _cities = ['All'];
+  List<String> _categories = ['All'];
 
   @override
   void initState() {
@@ -96,7 +96,7 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
 
       if (mounted) {
         setState(() {
-          if (cities.isNotEmpty) _cities = cities;
+          _cities = ['All', ...cities.where((c) => c.toLowerCase() != 'all')];
           if (dynamicCats.isNotEmpty) {
             _dynamicCategories = dynamicCats;
             _categories = ['All', ...dynamicCats.map((c) => c.name)];
@@ -113,9 +113,7 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
   }
 
   List<ExperienceItem> get _filteredExperiences {
-    final all = _backendExperiences.isNotEmpty
-        ? _backendExperiences
-        : ExperienceItem.mockExperiences;
+    final all = _backendExperiences;
     return all.where((e) {
       final matchesCity = _selectedCity == 'All' || e.city.toLowerCase() == _selectedCity.toLowerCase();
       final matchesCategory = _selectedCategory == 'All' ||
@@ -262,7 +260,7 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
 
             const SizedBox(height: 14),
 
-            // City Filter Pills (Dehradun, Jaisalmer, Rishikesh, All)
+            // City Filter Pills
             Row(
               children: [
                 const Icon(Icons.location_city_rounded, size: 16, color: Color(0xFF64748B)),
@@ -425,7 +423,7 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'Try switching destination to Dehradun or Jaisalmer.',
+                      'Try adjusting your search or filters.',
                       style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
                     ),
                   ],
@@ -519,21 +517,22 @@ class _DistrictHubScreenState extends State<DistrictHubScreen> {
                     ),
                   ),
                   // Badge Chip
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE11D48),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        exp.badge,
-                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
+                  if (exp.badge.isNotEmpty)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE11D48),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          exp.badge,
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
+                        ),
                       ),
                     ),
-                  ),
                   // Duration chip at bottom right
                   Positioned(
                     bottom: 10,

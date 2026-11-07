@@ -45,7 +45,7 @@ class _SubServiceDetailScreenState extends State<SubServiceDetailScreen> {
     if (widget.service.imageUrl.isNotEmpty) {
       return widget.service.imageUrl;
     }
-    return 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80';
+    return '';
   }
 
   @override
@@ -67,35 +67,39 @@ class _SubServiceDetailScreenState extends State<SubServiceDetailScreen> {
                 // Hero Image with Gradient
                 Stack(
                   children: [
-                    CachedNetworkImage(
-                      imageUrl: _heroImageUrl,
-                      width: double.infinity,
-                      height: 280,
-                      fit: BoxFit.cover,
-                      filterQuality: FilterQuality.high,
-                      fadeInDuration: const Duration(milliseconds: 100),
-                      fadeOutDuration: const Duration(milliseconds: 100),
-                      placeholder: (_, _) => Shimmer.fromColors(
-                        baseColor: const Color(0xFF1E293B),
-                        highlightColor: const Color(0xFF334155),
-                        child: Container(
-                          width: double.infinity,
-                          height: 280,
-                          color: const Color(0xFF1E293B),
-                        ),
-                      ),
-                      errorWidget: (_, _, _) => Container(
-                        height: 280,
-                        color: const Color(0xFF1E3A8A),
-                        child: const Center(
-                          child: Icon(
-                            Icons.construction_rounded,
-                            color: Colors.white,
-                            size: 64,
+                    _heroImageUrl.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: _heroImageUrl,
+                            width: double.infinity,
+                            height: 280,
+                            fit: BoxFit.cover,
+                            filterQuality: FilterQuality.high,
+                            fadeInDuration: const Duration(milliseconds: 100),
+                            fadeOutDuration: const Duration(milliseconds: 100),
+                            placeholder: (_, _) => Shimmer.fromColors(
+                              baseColor: const Color(0xFF1E293B),
+                              highlightColor: const Color(0xFF334155),
+                              child: Container(
+                                width: double.infinity,
+                                height: 280,
+                                color: const Color(0xFF1E293B),
+                              ),
+                            ),
+                            errorWidget: (_, _, _) => Container(
+                              height: 280,
+                              color: const Color(0xFF1E3A8A),
+                              child: const Center(
+                                child: Icon(Icons.build_rounded, size: 64, color: Colors.white24),
+                              ),
+                            ),
+                          )
+                        : Container(
+                            height: 280,
+                            color: const Color(0xFF1E3A8A),
+                            child: const Center(
+                              child: Icon(Icons.build_rounded, size: 64, color: Colors.white24),
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
                     Container(
                       height: 280,
                       decoration: BoxDecoration(

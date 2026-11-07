@@ -18,11 +18,11 @@ import '../services/push_notification_service.dart';
   String? phone;
   String? city;
 
-  /// Global reactive notifier for selected city (defaults to 'Udaipur')
-  final ValueNotifier<String> selectedCityNotifier = ValueNotifier<String>('Udaipur');
+  /// Global reactive notifier for selected city
+  final ValueNotifier<String> selectedCityNotifier = ValueNotifier<String>('');
 
   String? get userId => id;
-  String get selectedCity => city ?? 'Udaipur';
+  String get selectedCity => city ?? '';
 
   static const String _keyId = 'user_id';
   static const String _keyName = 'user_name';
@@ -43,7 +43,7 @@ import '../services/push_notification_service.dart';
     instance.token = _prefs?.getString(_keyToken);
     instance.photoUrl = _prefs?.getString(_keyPhoto);
     instance.phone = _prefs?.getString(_keyPhone);
-    instance.city = _prefs?.getString(_keyCity) ?? 'Udaipur';
+    instance.city = _prefs?.getString(_keyCity) ?? '';
     instance.selectedCityNotifier.value = instance.city!;
 
     if (instance.token != null && instance.token!.isNotEmpty) {

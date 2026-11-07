@@ -5,7 +5,7 @@ import '../../features/offers/models/offer_model.dart';
 import '../../features/offers/screens/offers_screen.dart';
 
 /// A reusable Offers & Deals section styled like MakeMyTrip/UrbanCompany.
-/// Displays category tabs ('Trending', 'Adventure', etc.) and a horizontal card list.
+/// Displays category tabs and a horizontal card list.
 ///
 /// Used in both Services (HomeScreen) and Adventures (DistrictHubScreen).
 class OffersSection extends StatefulWidget {
@@ -24,7 +24,7 @@ class OffersSection extends StatefulWidget {
     this.viewAllLabel = 'View All',
     this.onViewAll,
     this.onOfferTap,
-    this.initialTab = 'Trending',
+    this.initialTab = 'All',
     this.section,
   });
 
@@ -65,7 +65,7 @@ class _OffersSectionState extends State<OffersSection> {
   Widget build(BuildContext context) {
     if (widget.offers.isEmpty) return const SizedBox.shrink();
 
-    final Set<String> dynamicCategories = {'Trending'};
+    final Set<String> dynamicCategories = {'All'};
     for (final o in widget.offers) {
       if (o.category.trim().isNotEmpty) {
         dynamicCategories.add(o.category.trim());
@@ -74,7 +74,7 @@ class _OffersSectionState extends State<OffersSection> {
     final offerTabs = dynamicCategories.toList();
 
     final filteredOffers = widget.offers.where((o) {
-      if (_selectedTab == 'Trending') return true;
+      if (_selectedTab == 'All') return true;
       return o.category.toLowerCase() == _selectedTab.toLowerCase();
     }).toList();
 

@@ -16,7 +16,7 @@ class SlideItem {
     required this.imageUrl,
     required this.targetRoute,
     this.badgeText = '',
-    this.section = 'services',
+    this.section = '',
     this.order = 0,
     this.isActive = true,
   });
@@ -37,10 +37,9 @@ class SlideItem {
       subtitle: (json['subtitle'] ?? '').toString(),
       imageUrl: (json['imageUrl'] ?? '').toString(),
       targetRoute:
-          (json['targetRoute'] ?? json['route'] ?? 'create_inspection')
-              .toString(),
+          (json['targetRoute'] ?? json['route'] ?? '').toString(),
       badgeText: (json['badgeText'] ?? json['badge'] ?? '').toString(),
-      section: (json['section'] ?? 'services').toString(),
+      section: (json['section'] ?? '').toString(),
       order: (json['order'] as num?)?.toInt() ?? 0,
       isActive: json['isActive'] == null ? true : (json['isActive'] == true),
     );

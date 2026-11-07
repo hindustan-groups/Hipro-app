@@ -36,7 +36,7 @@ class BannerSlide {
       subtitle: json['subtitle'] as String? ?? '',
       badgeText: json['badgeText'] as String? ?? json['badgetext'] as String? ?? '',
       imageUrl: json['imageUrl'] as String? ?? '',
-      buttonText: json['buttonText'] as String? ?? 'Learn More',
+      buttonText: json['buttonText'] as String? ?? '',
       targetTabIndex: json['targetTabIndex'] as int?,
       actionType: SlideActionType.values.firstWhere(
         (e) => e.name.toLowerCase() == (json['actionType'] as String? ?? '').toLowerCase(),

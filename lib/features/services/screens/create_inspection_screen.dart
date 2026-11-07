@@ -49,17 +49,18 @@ class _CreateInspectionScreenState extends State<CreateInspectionScreen> {
   String? _selectedSubService;
   final TextEditingController _descriptionController = TextEditingController();
   String _propertyType = 'Residential Villa';
-  final TextEditingController _areaController =
-      TextEditingController(text: '1500');
-  final TextEditingController _addressController =
-      TextEditingController(text: 'Plot 42, Subhash Nagar, Bhilwara');
-  final TextEditingController _cityController =
-      TextEditingController(text: 'Bhilwara, Rajasthan');
+  final TextEditingController _areaController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  late final TextEditingController _cityController;
   String _preferredTime = 'Morning (09:00 AM - 12:00 PM)';
 
   @override
   void initState() {
     super.initState();
+    final currentCity = UserSession().selectedCity;
+    _cityController = TextEditingController(
+      text: (currentCity.isNotEmpty && currentCity.toLowerCase() != 'all') ? currentCity : '',
+    );
     if (widget.preselectedService != null) {
       final sName = widget.preselectedService!.name.trim();
       _selectedCategory = sName;
@@ -76,35 +77,6 @@ class _CreateInspectionScreenState extends State<CreateInspectionScreen> {
       }
     }
     _loadBackendServices();
-    _retrieveLostData();
-  }
-
-  Future<void> _retrieveLostData() async {
-    try {
-      final LostDataResponse response = await _picker.retrieveLostData();
-      if (response.isEmpty) return;
-      if (response.file != null) {
-        final file = response.file!;
-        if (response.type == RetrieveType.video) {
-          await _uploadVideoFile(file);
-        } else {
-          await _uploadMultipleImageFiles([file]);
-        }
-      } else if (response.files != null && response.files!.isNotEmpty) {
-        if (response.type == RetrieveType.video) {
-          for (final file in response.files!) {
-            await _uploadVideoFile(file);
-          }
-        } else {
-          await _uploadMultipleImageFiles(response.files!);
-        }
-      }
-      if (response.exception != null) {
-        debugPrint('retrieveLostData exception: ${response.exception}');
-      }
-    } catch (e) {
-      debugPrint('retrieveLostData error: $e');
-    }
   }
 
   Future<void> _loadBackendServices() async {
@@ -118,7 +90,8 @@ class _CreateInspectionScreenState extends State<CreateInspectionScreen> {
         final Map<String, String> tempSubImages = {};
 
         for (var item in list) {
-          final catName = ((item['name'] as String?) ?? 'General').trim();
+          final catName = ((item['name'] as String?) ?? '').trim();
+          if (catName.isEmpty) continue;
           tempCats.add(catName);
           final iconUrl = (item['imageUrl'] ?? item['iconImage'] ?? item['icon'] ?? '').toString().trim();
           tempIcons[catName] = iconUrl;
@@ -129,21 +102,17 @@ class _CreateInspectionScreenState extends State<CreateInspectionScreen> {
             for (var s in rawSubs) {
               final getQuoteEnabled = s['getQuoteEnabled'] != false && s['isActive'] != false;
               if (!getQuoteEnabled) continue;
-              final subTitle = (s['titleEn'] ?? s['name'] ?? 'General Inspection').toString().trim();
+              final subTitle = (s['titleEn'] ?? s['name'] ?? '').toString().trim();
+              if (subTitle.isEmpty) continue;
               subList.add(subTitle);
               final subImg = (s['image'] ?? s['imageUrl'] ?? iconUrl).toString().trim();
               if (subImg.isNotEmpty) {
                 tempSubImages[subTitle] = subImg;
               }
             }
-          } else {
-            subList.add('General Inspection');
-            if (iconUrl.isNotEmpty) {
-              tempSubImages['General Inspection'] = iconUrl;
-            }
           }
 
-          tempSub[catName] = subList.isNotEmpty ? subList : ['General Inspection'];
+          tempSub[catName] = subList;
         }
 
         if (widget.preselectedService != null && widget.preselectedService!.imageUrl.isNotEmpty) {
@@ -178,7 +147,7 @@ class _CreateInspectionScreenState extends State<CreateInspectionScreen> {
               } else {
                 _selectedSubService = (initialSubs != null && initialSubs.isNotEmpty)
                     ? initialSubs.first
-                    : 'General Inspection';
+                    : null;
               }
             } else {
               _selectedSubService = null;
@@ -594,14 +563,10 @@ class _CreateInspectionScreenState extends State<CreateInspectionScreen> {
         final allMedia = [..._uploadPhotoUrls, ..._uploadVideoUrls];
         final sizeText = _areaController.text.trim().isNotEmpty
             ? '${_areaController.text.trim()} sq ft'
-            : '1500 sq ft';
-        final addressText = _addressController.text.trim().isNotEmpty
-            ? _addressController.text.trim()
-            : 'Plot 42, Subhash Nagar';
-        final cityText = _cityController.text.trim().isNotEmpty
-            ? _cityController.text.trim()
-            : 'Bhilwara, Rajasthan';
-        final fullAddress = '$addressText, $cityText';
+            : '';
+        final addressText = _addressController.text.trim();
+        final cityText = _cityController.text.trim();
+        final fullAddress = [addressText, cityText].where((s) => s.isNotEmpty).join(', ');
 Future<bool> showPhonePromptDialog(BuildContext context) async {
   final controller = TextEditingController();
   final formKey = GlobalKey<FormState>();
@@ -699,19 +664,17 @@ Future<bool> showPhonePromptDialog(BuildContext context) async {
           if (!phoneEntered) return;
         }
         final newReq = await appState.submitRequest(
-          categoryId: 'cat_${(_selectedCategory ?? 'general').toLowerCase()}',
-          categoryName: _selectedCategory ?? 'General Service',
-          subServiceName: _selectedSubService ?? 'Site Inspection',
+          categoryId: _selectedCategory != null ? 'cat_${_selectedCategory!.toLowerCase()}' : '',
+          categoryName: _selectedCategory ?? '',
+          subServiceName: _selectedSubService ?? '',
           serviceId: widget.preselectedService?.id,
           subServiceId: widget.preselectedSubService?.id,
-          issueDescription: _descriptionController.text.isNotEmpty
-              ? _descriptionController.text
-              : 'Inspection required for ${_selectedSubService ?? 'service'}.',
+          issueDescription: _descriptionController.text.trim(),
           photos: allMedia,
           propertyType: _propertyType,
           propertySize: sizeText,
           address: fullAddress,
-          location: cityText,
+          location: cityText.isNotEmpty ? cityText : fullAddress,
           preferredDate: DateTime.now().toIso8601String().split('T')[0],
           preferredTime: _preferredTime,
           customerName: UserSession().name,

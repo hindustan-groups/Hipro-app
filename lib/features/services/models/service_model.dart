@@ -260,8 +260,8 @@ class ServiceItem {
     required this.name,
     required this.shortDescription,
     required this.startingPrice,
-    this.rating = 4.8,
-    this.unit = 'visit',
+    this.rating = 0,
+    this.unit = '',
     required this.imageUrl,
     this.includedPoints = const [],
     this.subServices = const [],
@@ -283,9 +283,9 @@ class ServiceItem {
           '',
       startingPrice: (json['startingPrice'] as num?)?.toDouble() ??
           (json['price'] as num?)?.toDouble() ??
-          (parsedSubs.isNotEmpty ? parsedSubs.first.visitingCharge : 199.0),
-      rating: (json['rating'] as num?)?.toDouble() ?? 4.8,
-      unit: json['unit']?.toString() ?? 'visit',
+          (parsedSubs.isNotEmpty ? parsedSubs.first.visitingCharge : 0.0),
+      rating: (json['rating'] as num?)?.toDouble() ?? 0,
+      unit: json['unit']?.toString() ?? '',
       imageUrl: json['iconImage']?.toString() ??
           json['imageUrl']?.toString() ??
           json['icon']?.toString() ??

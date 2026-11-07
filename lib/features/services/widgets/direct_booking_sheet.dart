@@ -289,10 +289,15 @@ class _DirectBookingSheetState extends State<DirectBookingSheet> {
       phone = phone.substring(2);
     }
     if (phone.length < 10) {
-      phone = '9876543210';
+      _showToast('Please enter a valid 10-digit mobile number');
+      return;
     }
-    final name = _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : 'Customer';
-    final email = (session.email != null && session.email!.contains('@')) ? session.email! : 'booking@hipro.in';
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      _showToast('Please enter your name');
+      return;
+    }
+    final email = (session.email != null && session.email!.contains('@')) ? session.email! : '';
 
     setState(() => _isProcessing = true);
 
@@ -334,12 +339,11 @@ class _DirectBookingSheetState extends State<DirectBookingSheet> {
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
-    final paymentId = response.paymentId ?? 'PAY_${DateTime.now().millisecondsSinceEpoch}';
+    final paymentId = response.paymentId ?? '';
     final orderId = response.orderId;
     final signature = response.signature;
 
     try {
-      final session = UserSession();
       final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
 
       final res = await ApiClient().dio.post(
@@ -351,7 +355,7 @@ class _DirectBookingSheetState extends State<DirectBookingSheet> {
           'customerPhone': _phoneController.text.trim(),
           'customerAddress': _addressController.text.trim(),
           'city': _cityController.text.trim(),
-          'pincode': '311001',
+          'pincode': '',
           'landmark': _landmarkController.text.trim(),
           'latitude': _latitude,
           'longitude': _longitude,
@@ -368,7 +372,7 @@ class _DirectBookingSheetState extends State<DirectBookingSheet> {
       if (!mounted) return;
       setState(() => _isProcessing = false);
 
-      String bookingNum = 'HIP-BOOKING';
+      String bookingNum = '';
       if (res.data != null && res.data['booking'] != null) {
         bookingNum = res.data['booking']['bookingNumber'] ?? bookingNum;
       }

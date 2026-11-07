@@ -14,7 +14,7 @@ class DistrictExperiencesSection extends StatefulWidget {
 
 class _DistrictExperiencesSectionState extends State<DistrictExperiencesSection> {
   String _selectedCity = 'All';
-  List<String> _quickCities = ['All', 'Dehradun', 'Jaisalmer', 'Rishikesh'];
+  List<String> _quickCities = ['All'];
   List<ExperienceItem> _backendExperiences = [];
 
   @override
@@ -33,7 +33,7 @@ class _DistrictExperiencesSectionState extends State<DistrictExperiencesSection>
         });
       }
     } catch (_) {
-      // Graceful fallback to built-in curated catalog
+      // Backend unavailable; keep current list.
     }
   }
 
@@ -42,16 +42,14 @@ class _DistrictExperiencesSectionState extends State<DistrictExperiencesSection>
       final list = await EntApiService().fetchCities();
       if (mounted && list.isNotEmpty) {
         setState(() {
-          _quickCities = list;
+          _quickCities = ['All', ...list.where((c) => c.toLowerCase() != 'all')];
         });
       }
     } catch (_) {}
   }
 
   List<ExperienceItem> get _filteredList {
-    final all = _backendExperiences.isNotEmpty
-        ? _backendExperiences
-        : ExperienceItem.mockExperiences;
+    final all = _backendExperiences;
     if (_selectedCity == 'All') return all;
     return all.where((e) => e.city.toLowerCase() == _selectedCity.toLowerCase()).toList();
   }
@@ -139,7 +137,7 @@ class _DistrictExperiencesSectionState extends State<DistrictExperiencesSection>
 
         const SizedBox(height: 3),
         const Text(
-          'Book paragliding in Dehradun, desert safari in Jaisalmer & top outdoor fun',
+          'Discover verified outdoor experiences and activities',
           style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
         ),
 

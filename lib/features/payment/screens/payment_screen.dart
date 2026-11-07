@@ -374,10 +374,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     final email = (session.email != null && session.email!.contains('@'))
         ? session.email!
-        : 'customer@hipro.in';
+        : '';
     final name = (session.name != null && session.name!.trim().isNotEmpty)
         ? session.name!.trim()
-        : 'Customer';
+        : '';
 
     double backendPayableAmount = _payableAmount;
 

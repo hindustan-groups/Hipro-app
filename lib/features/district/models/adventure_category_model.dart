@@ -46,7 +46,7 @@ class AdventureCategory {
       name: json['name'] ?? '',
       slug: json['slug'] ?? '',
       tagline: json['tagline'] ?? '',
-      iconName: json['icon'] ?? 'terrain',
+      iconName: json['icon'] ?? '',
       color: parseColor(json['color']),
       imageUrl: json['imageUrl'] ?? '',
       count: count,
@@ -80,63 +80,5 @@ class AdventureCategory {
         return Icons.local_activity_rounded;
     }
   }
-
-  static List<AdventureCategory> get defaultCategories => const [
-        AdventureCategory(
-          id: 'cat_air_sports',
-          name: 'Air Sports',
-          slug: 'air-sports',
-          tagline: 'Paragliding, Paramotor & Skydiving',
-          iconName: 'paragliding',
-          color: Color(0xFF0284C7),
-          imageUrl:
-              'https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80',
-          count: 3,
-        ),
-        AdventureCategory(
-          id: 'cat_desert_safari',
-          name: 'Desert Safari',
-          slug: 'desert-safari',
-          tagline: 'Dune Bashing, Camel Ride & Desert Camps',
-          iconName: 'wb_sunny',
-          color: Color(0xFFD97706),
-          imageUrl:
-              'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
-          count: 2,
-        ),
-        AdventureCategory(
-          id: 'cat_water_sports',
-          name: 'Water Sports',
-          slug: 'water-sports',
-          tagline: 'River Rafting, Kayaking & Cliff Jumps',
-          iconName: 'water',
-          color: Color(0xFF0D9488),
-          imageUrl:
-              'https://images.unsplash.com/photo-1530866495561-507c9faab2ed?auto=format&fit=crop&w=800&q=80',
-          count: 2,
-        ),
-        AdventureCategory(
-          id: 'cat_adventure',
-          name: 'Adventure',
-          slug: 'adventure',
-          tagline: 'Bungee Jumping, Trekking & Ziplining',
-          iconName: 'terrain',
-          color: Color(0xFFE11D48),
-          imageUrl:
-              'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
-          count: 2,
-        ),
-        AdventureCategory(
-          id: 'cat_sightseeing',
-          name: 'Sightseeing',
-          slug: 'sightseeing',
-          tagline: 'Scenic Mountain & Heritage Excursions',
-          iconName: 'explore',
-          color: Color(0xFF7C3AED),
-          imageUrl:
-              'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-          count: 1,
-        ),
-      ];
 }
 

@@ -23,7 +23,7 @@ class NotificationModel {
     required this.title,
     required this.description,
     this.imageUrl,
-    this.type = 'GENERAL',
+    this.type = '',
     this.referenceId = '',
     this.quoteNumber = '',
     this.requestNumber = '',
@@ -72,10 +72,10 @@ class NotificationModel {
 
     return NotificationModel(
       id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? 'Notification',
+      title: json['title']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
       imageUrl: json['imageUrl']?.toString(),
-      type: json['type']?.toString() ?? 'GENERAL',
+      type: json['type']?.toString() ?? '',
       referenceId: json['referenceId']?.toString() ??
           json['threadId']?.toString() ??
           '',

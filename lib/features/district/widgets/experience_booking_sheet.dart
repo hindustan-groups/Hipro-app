@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
@@ -103,7 +102,7 @@ class _ExperienceBookingSheetState extends State<ExperienceBookingSheet> {
     final session = UserSession();
     final email = (session.email != null && session.email!.contains('@'))
         ? session.email!
-        : 'booking@hipro.in';
+        : '';
 
     _paymentService.openCheckout(
       context: context,
@@ -130,7 +129,7 @@ class _ExperienceBookingSheetState extends State<ExperienceBookingSheet> {
 
   void _finalizeBooking(String name, String phone, String? paymentId) async {
     setState(() => _isBooking = true);
-    String bookingId = 'ENT-${Random().nextInt(900000) + 100000}';
+    String? bookingId;
 
     // Persist to backend
     try {
@@ -145,14 +144,22 @@ class _ExperienceBookingSheetState extends State<ExperienceBookingSheet> {
         couponCode: _appliedCoupon?.code,
         totalAmount: _totalAmount,
       );
-      if (serverBooking != null) {
-        final serverCode = serverBooking['bookingCode'];
-        if (serverCode != null && serverCode.toString().isNotEmpty) {
-          bookingId = serverCode.toString();
-        }
+      final serverCode = serverBooking?['bookingCode'];
+      if (serverCode != null && serverCode.toString().isNotEmpty) {
+        bookingId = serverCode.toString();
       }
-    } catch (_) {
-      // Local fallback ID will be used
+    } catch (_) {}
+
+    if (bookingId == null || bookingId.isEmpty) {
+      if (mounted) {
+        setState(() => _isBooking = false);
+        AppToast.show(
+          context,
+          message: 'Booking could not be confirmed. Please try again.',
+          isError: true,
+        );
+      }
+      return;
     }
 
     final booking = ExperienceBookingModel(
@@ -160,7 +167,7 @@ class _ExperienceBookingSheetState extends State<ExperienceBookingSheet> {
       experienceId: widget.experience.id,
       experienceTitle: widget.experience.title,
       city: widget.experience.city,
-      location: widget.experience.locationDetails,
+      locationDetails: widget.experience.locationDetails,
       selectedDate: DateFormat('EEE, dd MMM yyyy').format(_selectedDate),
       selectedTimeSlot: _selectedSlot,
       guestCount: _guestCount,
@@ -242,7 +249,7 @@ class _ExperienceBookingSheetState extends State<ExperienceBookingSheet> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '📍 ${booking.location}',
+                      '📍 ${booking.locationDetails}',
                       style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
                     ),
                     const Divider(height: 18, color: Color(0xFFE2E8F0)),

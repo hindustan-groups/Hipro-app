@@ -67,6 +67,7 @@ class _OffersScreenState extends State<OffersScreen> {
 
   void _redeemOffer(OfferItem offer) {
     final route = offer.targetRoute.trim().toLowerCase();
+    if (route.isEmpty) return;
     if (route.startsWith('service:')) {
       final sName = offer.targetRoute.substring('service:'.length).trim();
       Navigator.of(context).push(

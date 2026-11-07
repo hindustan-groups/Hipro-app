@@ -708,6 +708,21 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ];
 
+    final matchedItems = <Map<String, dynamic>>[];
+    for (final item in popularItems) {
+      final keyword = item['keyword'] as String;
+      try {
+        final service = allServices.firstWhere(
+          (s) =>
+              s.name.toLowerCase().contains(keyword) ||
+              s.shortDescription.toLowerCase().contains(keyword),
+        );
+        matchedItems.add({...item, 'service': service});
+      } catch (_) {}
+    }
+
+    if (matchedItems.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -751,7 +766,7 @@ class _HomeScreenState extends State<HomeScreen> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: popularItems.length,
+          itemCount: matchedItems.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             mainAxisSpacing: 10,
@@ -759,35 +774,21 @@ class _HomeScreenState extends State<HomeScreen> {
             childAspectRatio: 1.46,
           ),
           itemBuilder: (context, index) {
-            final item = popularItems[index];
+            final item = matchedItems[index];
             final String title = item['title'] as String;
-            final String fullName = item['fullName'] as String;
             final IconData icon = item['icon'] as IconData;
-            final String keyword = item['keyword'] as String;
             final Color bgColor = item['bgColor'] as Color;
             final Color iconColor = item['iconColor'] as Color;
-
-            final matchingService = allServices.firstWhere(
-              (s) =>
-                  s.name.toLowerCase().contains(keyword) ||
-                  s.shortDescription.toLowerCase().contains(keyword),
-              orElse: () => ServiceItem(
-                id: 'pop_$index',
-                name: fullName,
-                shortDescription: 'Professional $fullName service',
-                startingPrice: 0.0,
-                imageUrl: '',
-              ),
-            );
+            final ServiceItem service = item['service'] as ServiceItem;
 
             return _buildPopularServiceCard(
               title: title,
               icon: icon,
-              imageUrl: matchingService.imageUrl,
+              imageUrl: service.imageUrl,
               bgColor: bgColor,
               iconColor: iconColor,
               onTap: () {
-                ServiceSubservicesSheet.show(context, service: matchingService);
+                ServiceSubservicesSheet.show(context, service: service);
               },
             );
           },
@@ -998,37 +999,12 @@ class _HomeScreenState extends State<HomeScreen> {
       } catch (_) {}
     }
 
-    // 3. Fallback to matching Service image from catalog
-    if (matchedImageUrl == null || matchedImageUrl.isEmpty) {
-      try {
-        final serviceMatch = _loadedServices.firstWhere(
-          (s) =>
-              (matchedReq != null &&
-                  (s.id == matchedReq.serviceId ||
-                      s.name.toLowerCase() ==
-                          matchedReq.subServiceName.toLowerCase() ||
-                      s.name.toLowerCase() ==
-                          matchedReq.categoryName.toLowerCase())) ||
-              s.name.toLowerCase() == quote.title.toLowerCase() ||
-              quote.title.toLowerCase().contains(s.name.toLowerCase()) ||
-              s.name.toLowerCase().contains(quote.title.toLowerCase()),
-        );
-        if (serviceMatch.imageUrl.isNotEmpty) {
-          matchedImageUrl = serviceMatch.imageUrl;
-        }
-      } catch (_) {}
-    }
-
     final projectName = quote.title.isNotEmpty
         ? quote.title
-        : (matchedReq != null && matchedReq.subServiceName.isNotEmpty
-            ? matchedReq.subServiceName
-            : 'Waterproofing & Inspection Scope');
+        : (matchedReq != null ? matchedReq.subServiceName : '');
     final locationName = quote.location.isNotEmpty
         ? quote.location
-        : (matchedReq != null && matchedReq.address.isNotEmpty
-            ? matchedReq.address
-            : 'Project Site');
+        : (matchedReq != null ? matchedReq.address : '');
     final formattedAmount = quote.grandTotal.toStringAsFixed(0);
 
     final bool hasValidImage = matchedImageUrl != null &&
@@ -2146,9 +2122,7 @@ class _HomeScreenState extends State<HomeScreen> {
             iconColor = const Color(0xFFDB2777);
           }
 
-          final title = req.categoryName.isNotEmpty
-              ? req.categoryName
-              : 'Inspection Request';
+          final title = req.categoryName;
           final sub = req.requestNumber.isNotEmpty
               ? '${req.requestNumber} • ${req.subServiceName.isNotEmpty ? req.subServiceName : req.propertyType}'
               : (req.subServiceName.isNotEmpty
@@ -2185,7 +2159,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.receipt_long_rounded,
               iconBg: const Color(0xFFEBF2FE),
               iconColor: const Color(0xFF1864E8),
-              title: quote.title.isNotEmpty ? quote.title : 'New Quotation',
+              title: quote.title,
               subtitle:
                   '₹ ${quote.grandTotal.toStringAsFixed(0)} • ${quote.timeline.isNotEmpty ? quote.timeline : quote.quoteNumber}',
               createdAt: quote.createdAt,
@@ -2194,12 +2168,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   MaterialPageRoute(
                     builder: (context) => QuotationDetailsScreen(
                       quotation: quote,
-                      projectName: quote.title.isNotEmpty
-                          ? quote.title
-                          : 'Project Inspection',
-                      location: quote.location.isNotEmpty
-                          ? quote.location
-                          : 'Project Site',
+                      projectName: quote.title,
+                      location: quote.location,
                     ),
                   ),
                 );

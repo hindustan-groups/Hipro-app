@@ -9,8 +9,8 @@ class QuotationDetailsScreen extends StatefulWidget {
   const QuotationDetailsScreen({
     super.key,
     required this.quotation,
-    this.projectName = 'Residential Villa',
-    this.location = 'Bhilwara, Rajasthan',
+    this.projectName = '',
+    this.location = '',
   });
 
   final QuotationModel quotation;

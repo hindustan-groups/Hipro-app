@@ -16,10 +16,11 @@ class AdventureCategoriesScreen extends StatefulWidget {
 }
 
 class _AdventureCategoriesScreenState extends State<AdventureCategoriesScreen> {
-  String _selectedCategory = 'Air Sports';
+  String _selectedCategory = 'All';
   String _selectedCity = 'All';
   List<ExperienceItem> _backendExperiences = [];
-  List<AdventureCategory> _dynamicCategories = AdventureCategory.defaultCategories;
+  List<AdventureCategory> _dynamicCategories = [];
+  List<String> _cities = ['All'];
   bool _isLoading = false;
 
   @override
@@ -34,31 +35,33 @@ class _AdventureCategoriesScreenState extends State<AdventureCategoriesScreen> {
       final results = await Future.wait([
         EntApiService().fetchExperiences(),
         EntApiService().fetchDynamicCategories(),
+        EntApiService().fetchCities(),
       ]);
       if (mounted) {
         final experiences = results[0] as List<ExperienceItem>;
         final categories = results[1] as List<AdventureCategory>;
+        final cities = results[2] as List<String>;
         setState(() {
-          if (experiences.isNotEmpty) _backendExperiences = experiences;
+          _backendExperiences = experiences;
+          _cities = ['All', ...cities.where((c) => c.toLowerCase() != 'all')];
           if (categories.isNotEmpty) {
             _dynamicCategories = categories;
-            if (!categories.any((c) => c.name.toLowerCase() == _selectedCategory.toLowerCase())) {
-              _selectedCategory = categories.first.name;
+            if (_selectedCategory != 'All' &&
+                !categories.any((c) => c.name.toLowerCase() == _selectedCategory.toLowerCase())) {
+              _selectedCategory = 'All';
             }
           }
         });
       }
     } catch (_) {
-      // Fallback to defaults
+      // Backend unavailable; keep current data.
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   List<ExperienceItem> get _itemsForCategory {
-    final all = _backendExperiences.isNotEmpty
-        ? _backendExperiences
-        : ExperienceItem.mockExperiences;
+    final all = _backendExperiences;
 
     return all.where((e) {
       final matchesCategory = _selectedCategory == 'All' ||
@@ -125,10 +128,53 @@ class _AdventureCategoriesScreenState extends State<AdventureCategoriesScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _dynamicCategories.length,
+                itemCount: _dynamicCategories.length + 1,
                 separatorBuilder: (context, index) => const SizedBox(width: 8),
                 itemBuilder: (context, i) {
-                  final cat = _dynamicCategories[i];
+                  if (i == 0) {
+                    final isSelected = _selectedCategory == 'All';
+                    return InkWell(
+                      onTap: () => setState(() => _selectedCategory = 'All'),
+                      borderRadius: BorderRadius.circular(24),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFFE11D48) : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFFE11D48).withValues(alpha: 0.35),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  )
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.grid_view_rounded,
+                              size: 18,
+                              color: isSelected ? Colors.white : const Color(0xFF475569),
+                            ),
+                            const SizedBox(width: 7),
+                            Text(
+                              'All',
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : const Color(0xFF334155),
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  final cat = _dynamicCategories[i - 1];
                   final isSelected = cat.name.toLowerCase() == _selectedCategory.toLowerCase();
                   final Color catColor = cat.color;
 
@@ -201,7 +247,7 @@ class _AdventureCategoriesScreenState extends State<AdventureCategoriesScreen> {
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
-                      children: ['All', 'Dehradun', 'Jaisalmer', 'Rishikesh'].map((city) {
+                      children: _cities.map((city) {
                         final isSel = _selectedCity == city;
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
@@ -359,30 +405,32 @@ class _AdventureCategoriesScreenState extends State<AdventureCategoriesScreen> {
                 Positioned(
                   top: 12,
                   left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFE11D48), Color(0xFFF97316)],
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFE11D48).withValues(alpha: 0.4),
-                          blurRadius: 6,
+                  child: exp.badge.isEmpty
+                      ? const SizedBox.shrink()
+                      : Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFE11D48), Color(0xFFF97316)],
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFE11D48).withValues(alpha: 0.4),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            exp.badge.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    child: Text(
-                      exp.badge.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
                 ),
                 Positioned(
                   top: 12,

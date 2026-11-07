@@ -256,7 +256,7 @@ Future<void> showLocalNotification({
     htmlFormatBigText: false,
     contentTitle: title,
     htmlFormatContentTitle: false,
-    summaryText: summaryText ?? 'Official Update • Tap to Open',
+    summaryText: summaryText ?? '',
     htmlFormatSummaryText: false,
   );
 
@@ -306,8 +306,8 @@ Future<void> showLocalNotification({
     final type = (data['type'] ?? '').toString().toUpperCase();
     final quoteNumber = (data['quoteNumber'] ?? '').toString().trim();
     final quoteId = (data['quoteId'] ?? data['referenceId'] ?? '').toString().trim();
-    final projectName = (data['projectName'] ?? 'Waterproofing & Civil Scope').toString();
-    final location = (data['location'] ?? 'Site Location').toString();
+    final projectName = (data['projectName'] ?? '').toString();
+    final location = (data['location'] ?? '').toString();
 
     if (type == 'QUOTATION' || quoteNumber.isNotEmpty || quoteId.isNotEmpty) {
       // 1. Fetch latest quotations from server so the new quote is present
@@ -361,8 +361,8 @@ Future<void> showLocalNotification({
       ChatSheet.show(
         targetContext,
         threadId: (threadId != null && threadId.isNotEmpty) ? threadId : null,
-        title: data['title']?.toString() ?? '💬 Hipro Support Desk',
-        subtitle: 'Er. Vikram Sharma • Senior Technical Lead',
+        title: data['title']?.toString() ?? '',
+        subtitle: data['subtitle']?.toString() ?? '',
         contextType: (quoteNum != null && quoteNum.isNotEmpty)
             ? 'QUOTATION'
             : ((reqNum != null && reqNum.isNotEmpty) ? 'REQUEST' : 'GENERAL'),

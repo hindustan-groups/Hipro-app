@@ -420,7 +420,7 @@ class _ExperienceDetailsScreenState extends State<ExperienceDetailsScreen> {
                     Column(
                       children: _reviews.map((r) {
                         final rRating = (r['rating'] is num) ? (r['rating'] as num).toInt() : 5;
-                        final rName = r['userName']?.toString() ?? 'Adventurer';
+                        final rName = r['userName']?.toString() ?? '';
                         final rComment = r['comment']?.toString() ?? '';
 
                         return ReviewCard(
