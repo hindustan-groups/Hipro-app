@@ -1,6 +1,22 @@
 {
   "threads": [
     {
+      "id": "thread_vendor_2b6a117f-c947-48b0-9ebc-c4411e5c26db",
+      "customerName": "pkctech",
+      "customerPhone": "94850348545",
+      "contextType": "VENDOR",
+      "contextTag": "pkctech (Partner Desk)",
+      "quoteNumber": "",
+      "requestNumber": "",
+      "bookingNumber": "",
+      "vendorId": "2b6a117f-c947-48b0-9ebc-c4411e5c26db",
+      "lastMessage": "Hello! I am reviewing your request right now.",
+      "lastMessageTime": "2026-11-10T09:22:23.694Z",
+      "unreadCountAdmin": 0,
+      "unreadCountCustomer": 1,
+      "createdAt": "2026-11-10T09:21:23.584Z"
+    },
+    {
       "id": "thread_vendor_v_01",
       "customerName": "pkctech",
       "customerPhone": "94850348545",
@@ -66,6 +82,24 @@
       "senderName": "Er. Vikram Sharma (Admin Desk)",
       "text": "Hello pkctech! Admin desk received your message loud and clear.",
       "createdAt": "2026-11-07T08:31:22.853Z",
+      "isRead": false
+    },
+    {
+      "id": "msg_1794302483584_20",
+      "threadId": "thread_vendor_2b6a117f-c947-48b0-9ebc-c4411e5c26db",
+      "sender": "vendor",
+      "senderName": "pkctech",
+      "text": "hi",
+      "createdAt": "2026-11-10T09:21:23.584Z",
+      "isRead": true
+    },
+    {
+      "id": "msg_1794302543695_580",
+      "threadId": "thread_vendor_2b6a117f-c947-48b0-9ebc-c4411e5c26db",
+      "sender": "admin",
+      "senderName": "Er. Vikram Sharma (Admin Desk)",
+      "text": "Hello! I am reviewing your request right now.",
+      "createdAt": "2026-11-10T09:22:23.694Z",
       "isRead": false
     }
   ]
