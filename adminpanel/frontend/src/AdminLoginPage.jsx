@@ -61,7 +61,7 @@ export default function AdminLoginPage({ onLoginSuccess }) {
       }
     } catch (err) {
       console.error('Admin login network error:', err);
-      setError('Authentication server unreachable. Please verify backend is running on port 6000.');
+      setError('Authentication server unreachable. Please verify backend is running on port 5000.');
     } finally {
       setLoading(false);
     }
