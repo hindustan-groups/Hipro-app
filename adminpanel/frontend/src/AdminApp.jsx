@@ -8218,25 +8218,36 @@ export default function AdminApp({ onSwitchToCustomerApp, onLogout, onSwitchToVe
                                 <div className="flex items-center gap-1"><Calendar className="w-3 h-3" /><span>{requests.find(r => r.id === quoteRequestId)?.preferredDate || 'Flexible'}</span></div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {requests.find(r => r.id === quoteRequestId)?.mediaUrl && Array.isArray(requests.find(r => r.id === quoteRequestId)?.mediaUrl) && requests.find(r => r.id === quoteRequestId)?.mediaUrl.map((img, idx) => {
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {(() => {
                                 const reqItem = requests.find(r => r.id === quoteRequestId);
-                                const mediaList = Array.isArray(reqItem?.mediaUrl) ? reqItem.mediaUrl : [img];
-                                return (
-                                  <img
+                                const mediaList = (Array.isArray(reqItem?.mediaUrl) ? reqItem.mediaUrl : (reqItem?.mediaUrl ? [reqItem.mediaUrl] : [])).filter(Boolean);
+                                return mediaList.map((img, idx) => (
+                                  <div
                                     key={idx}
-                                    src={img}
-                                    alt="Damage"
                                     onClick={() => setActivePhotoModal({
                                       photos: mediaList,
                                       index: idx,
                                       title: `${reqItem?.requestNumber || quoteRequestId} Site Evidence`
                                     })}
-                                    className="w-14 h-14 rounded-lg object-cover border-2 border-brand-200 cursor-pointer hover:border-brand-500 hover:shadow-xs transition-all"
-                                    onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=300&q=80'; }}
-                                  />
-                                );
-                              })}
+                                    className="w-14 h-14 rounded-lg overflow-hidden border-2 border-brand-200 cursor-pointer hover:border-brand-500 hover:shadow-xs transition-all shrink-0 relative bg-slate-100"
+                                  >
+                                    {isVideoMedia(img) ? (
+                                      <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-white">
+                                        <Video className="w-5 h-5 text-primary-400" />
+                                        <span className="text-[9px] font-bold mt-0.5">Video</span>
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={img}
+                                        alt="Damage"
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=300&q=80'; }}
+                                      />
+                                    )}
+                                  </div>
+                                ));
+                              })()}
                             </div>
                           </div>
                         </div>
@@ -14402,13 +14413,20 @@ export default function AdminApp({ onSwitchToCustomerApp, onLogout, onSwitchToVe
                   {Array.isArray(shareModalRequest.mediaUrl) && shareModalRequest.mediaUrl.length > 0 && (
                     <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
                       {shareModalRequest.mediaUrl.slice(0, 3).map((img, idx) => (
-                        <div key={idx} className="relative group overflow-hidden rounded-lg border border-slate-200 shadow-2xs">
-                          <img
-                            src={img}
-                            alt="Damage evidence"
-                            className="w-10 h-10 sm:w-11 sm:h-11 object-cover group-hover:scale-105 transition-transform"
-                            onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=300&q=80'; }}
-                          />
+                        <div key={idx} className="relative group overflow-hidden rounded-lg border border-slate-200 shadow-2xs w-10 h-10 sm:w-11 sm:h-11 bg-slate-100">
+                          {isVideoMedia(img) ? (
+                            <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-white">
+                              <Video className="w-4 h-4 text-primary-400" />
+                              <span className="text-[8px] font-bold leading-none mt-0.5">Video</span>
+                            </div>
+                          ) : (
+                            <img
+                              src={img}
+                              alt="Damage evidence"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=300&q=80'; }}
+                            />
+                          )}
                         </div>
                       ))}
                       {shareModalRequest.mediaUrl.length > 3 && (

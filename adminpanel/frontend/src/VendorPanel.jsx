@@ -1449,19 +1449,34 @@ export default function VendorPanel({ onSwitchToSuperAdmin, onLogout }) {
                           <div className="pt-2">
                             <span className="text-[11px] font-semibold text-slate-500 block mb-1">Inspection Photos:</span>
                             <div className="flex gap-2 overflow-x-auto pb-1">
-                              {(Array.isArray(selectedBuilderRequest.mediaUrl) ? selectedBuilderRequest.mediaUrl : [selectedBuilderRequest.mediaUrl]).filter(Boolean).map((img, i) => (
-                                <img
-                                  key={i}
-                                  src={img}
-                                  alt="Damage inspection"
-                                  onClick={() => handleOpenPhotos(
-                                    Array.isArray(selectedBuilderRequest.mediaUrl) ? selectedBuilderRequest.mediaUrl : [selectedBuilderRequest.mediaUrl],
-                                    i,
-                                    `${selectedBuilderRequest.requestNumber ? `${selectedBuilderRequest.requestNumber} ` : ''}Site Evidence`
-                                  )}
-                                  className="w-16 h-16 rounded-lg object-cover border border-slate-200 cursor-pointer hover:border-brand-500"
-                                />
-                              ))}
+                              {(Array.isArray(selectedBuilderRequest.mediaUrl) ? selectedBuilderRequest.mediaUrl : [selectedBuilderRequest.mediaUrl]).filter(Boolean).map((img, i) => {
+                                const mediaList = (Array.isArray(selectedBuilderRequest.mediaUrl) ? selectedBuilderRequest.mediaUrl : [selectedBuilderRequest.mediaUrl]).filter(Boolean);
+                                return (
+                                  <div
+                                    key={i}
+                                    onClick={() => handleOpenPhotos(
+                                      mediaList,
+                                      i,
+                                      `${selectedBuilderRequest.requestNumber ? `${selectedBuilderRequest.requestNumber} ` : ''}Site Evidence`
+                                    )}
+                                    className="w-16 h-16 rounded-lg overflow-hidden border border-slate-200 cursor-pointer hover:border-brand-500 shrink-0 relative bg-slate-100"
+                                  >
+                                    {isVideoMedia(img) ? (
+                                      <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-white">
+                                        <Video className="w-5 h-5 text-brand-400" />
+                                        <span className="text-[9px] font-bold mt-0.5">Video</span>
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={img}
+                                        alt="Damage inspection"
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=300&q=80'; }}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
