@@ -795,13 +795,15 @@ export default function VendorPanel({ onSwitchToSuperAdmin, onLogout }) {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <button
-              onClick={() => onSwitchToSuperAdmin ? onSwitchToSuperAdmin() : null}
-              title="Switch to Super Admin"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-all"
-            >
-              <Shield className="w-3.5 h-3.5" />
-            </button>
+            {onSwitchToSuperAdmin && (
+              <button
+                onClick={onSwitchToSuperAdmin}
+                title="Switch to Super Admin"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-all"
+              >
+                <Shield className="w-3.5 h-3.5" />
+              </button>
+            )}
             {onLogout && (
               <button
                 onClick={onLogout}

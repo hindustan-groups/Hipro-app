@@ -53,7 +53,7 @@ export default function AdminLoginPage({ onLoginSuccess }) {
           if (onLoginSuccess) {
             onLoginSuccess('ADMIN', data);
           } else if (typeof window !== 'undefined') {
-            window.location.hash = '#admin';
+            window.location.reload();
           }
         }, 600);
       } else {

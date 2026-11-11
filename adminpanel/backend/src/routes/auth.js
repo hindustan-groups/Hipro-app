@@ -23,6 +23,16 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Strict brute-force protection for Master Admin login: 5 failed attempts per 15 minutes per IP
+const adminAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  skipSuccessfulRequests: true,
+  message: { success: false, message: 'Too many failed master login attempts. Locked for 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Ensure upload directory exists for vendor documents
 const vendorUploadDir = path.join(__dirname, '../uploads/vendor-docs');
 if (!fs.existsSync(vendorUploadDir)) {
@@ -379,7 +389,7 @@ router.patch('/phone', authenticateUser, async (req, res) => {
 // ==========================================
 
 // POST /api/v1/auth/admin/login - Authenticate Super Admin from DB
-router.post('/admin/login', authLimiter, async (req, res) => {
+router.post('/admin/login', adminAuthLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {

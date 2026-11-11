@@ -8,6 +8,7 @@ const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
+app.set('trust proxy', 1); // Trust Render/Vercel reverse proxy so rate limiters use real client IP
 const server = http.createServer(app);
 
 // Allowed origins for CORS — restrict to known frontends

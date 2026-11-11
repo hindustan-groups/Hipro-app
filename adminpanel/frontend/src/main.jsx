@@ -24,6 +24,24 @@ if (typeof window !== 'undefined' && !window.__hipro_fetch_intercepted__) {
   };
 }
 
+// Dedicated Admin Route (isolated from `/` and common `/admin` to prevent brute-force discovery)
+const RAW_ADMIN_ROUTE = (import.meta.env.VITE_ADMIN_ROUTE || '/master-console').trim().toLowerCase();
+const ADMIN_ROUTE = RAW_ADMIN_ROUTE.startsWith('/')
+  ? (RAW_ADMIN_ROUTE.replace(/\/+$/, '') || '/master-console')
+  : `/${RAW_ADMIN_ROUTE.replace(/\/+$/, '')}`;
+
+const isAdminRouteMatch = (pathname, hash, search) => {
+  const cleanPath = (pathname || '/').toLowerCase().replace(/\/+$/, '') || '/';
+  const cleanHash = (hash || '').toLowerCase();
+  const routeSlug = ADMIN_ROUTE.replace(/^\//, '');
+  return (
+    cleanPath === ADMIN_ROUTE ||
+    cleanHash === `#${routeSlug}` ||
+    search.includes(`redirect=${encodeURIComponent(ADMIN_ROUTE)}`) ||
+    search.includes(`redirect=${ADMIN_ROUTE}`)
+  );
+};
+
 function AppRoot() {
   const [authState, setAuthState] = useState(() => {
     if (typeof window === 'undefined') return { isAuthenticated: false, role: null };
@@ -38,26 +56,25 @@ function AppRoot() {
     return { isAuthenticated: false, role: null };
   });
 
-  // Determine portal by URL: /admin (Admin Terminal), /register (Vendor Onboarding), /login or /vendor (Vendor Portal)
+  // Determine portal by URL: `/` -> Vendor Portal (Default), `/register` -> Vendor Onboarding, `/master-console` -> Dedicated Admin Terminal
   const [targetPortal, setTargetPortal] = useState(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
       const search = window.location.search.toLowerCase();
 
-      // If user navigated or was redirected with admin query
-      if (search.includes('redirect=%2fadmin') || search.includes('redirect=/admin')) {
-        try {
-          window.history.replaceState(null, '', '/admin');
-        } catch (e) {}
+      if (isAdminRouteMatch(path, hash, search)) {
+        if (search.includes('redirect=')) {
+          try {
+            window.history.replaceState(null, '', ADMIN_ROUTE);
+          } catch (e) {}
+        }
         return 'admin';
       }
 
       if (path.includes('/register') || hash.includes('register')) return 'register';
-      if (path.includes('/admin') || hash.includes('admin')) return 'admin';
-      if (path.includes('/vendor') || path.includes('/partner') || path.includes('/login')) return 'vendor';
     }
-    return 'admin';
+    return 'vendor';
   });
 
   // Listen for navigation changes (popstate & hashchange)
@@ -67,11 +84,11 @@ function AppRoot() {
       const hash = window.location.hash.toLowerCase();
       const search = window.location.search.toLowerCase();
 
-      if (search.includes('redirect=%2fadmin') || search.includes('redirect=/admin') || path.includes('/admin') || hash.includes('admin')) {
+      if (isAdminRouteMatch(path, hash, search)) {
         setTargetPortal('admin');
       } else if (path.includes('/register') || hash.includes('register')) {
         setTargetPortal('register');
-      } else if (path.includes('/vendor') || path.includes('/partner') || path.includes('/login')) {
+      } else {
         setTargetPortal('vendor');
       }
     };
@@ -84,6 +101,17 @@ function AppRoot() {
     };
   }, []);
 
+  const navigatePortal = (portal) => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (portal === 'register') window.history.pushState(null, '', '/register');
+        else if (portal === 'admin') window.history.pushState(null, '', ADMIN_ROUTE);
+        else window.history.pushState(null, '', '/');
+      } catch (e) {}
+    }
+    setTargetPortal(portal);
+  };
+
   const handleLoginSuccess = (role, data) => {
     setAuthState({
       isAuthenticated: true,
@@ -91,12 +119,16 @@ function AppRoot() {
     });
   };
 
-  const handleLogout = (nextView = 'admin') => {
+  const handleLogout = (nextView = 'vendor') => {
     localStorage.removeItem('hipro_auth_token');
     localStorage.removeItem('hipro_user_role');
     localStorage.removeItem('hipro_user');
     localStorage.removeItem('hipro_vendor');
-    window.location.hash = '';
+    if (typeof window !== 'undefined') {
+      try {
+        window.history.replaceState(null, '', nextView === 'admin' ? ADMIN_ROUTE : '/');
+      } catch (e) {}
+    }
     setAuthState({
       isAuthenticated: false,
       role: null
@@ -104,52 +136,46 @@ function AppRoot() {
     setTargetPortal(nextView);
   };
 
-  // Unauthenticated routing:
-  // 1. /admin URL -> Dedicated Master Admin Terminal (AdminLoginPage)
-  // 2. /register URL -> Dedicated Vendor Onboarding (VendorRegisterPage)
-  // 3. /login or /vendor -> Pure Vendor Login (LoginPage)
-  if (!authState.isAuthenticated) {
-    if (targetPortal === 'admin') {
+  // Dedicated Admin Route (`/master-console`)
+  if (targetPortal === 'admin') {
+    if (!authState.isAuthenticated || authState.role !== 'ADMIN') {
       return <AdminLoginPage onLoginSuccess={handleLoginSuccess} />;
     }
+    return (
+      <AdminApp
+        onSwitchToCustomerApp={() => {
+          window.location.href = '/';
+        }}
+        onSwitchToVendor={() => {
+          handleLogout('vendor');
+        }}
+        onLogout={() => handleLogout('admin')}
+      />
+    );
+  }
+
+  // Root & Vendor Routes (`/`, `/vendor`, `/login`, `/register`)
+  if (!authState.isAuthenticated || authState.role !== 'VENDOR') {
     if (targetPortal === 'register') {
       return (
         <VendorRegisterPage
           onRegisterSuccess={handleLoginSuccess}
-          onSwitchToLogin={() => setTargetPortal('vendor')}
+          onSwitchToLogin={() => navigatePortal('vendor')}
         />
       );
     }
     return (
       <LoginPage
         onLoginSuccess={handleLoginSuccess}
-        onSwitchToRegister={() => setTargetPortal('register')}
+        onSwitchToRegister={() => navigatePortal('register')}
       />
     );
   }
 
   // Authenticated: Render Vendor & Operator Portal
-  if (authState.role === 'VENDOR') {
-    return (
-      <VendorPanel
-        onSwitchToSuperAdmin={() => {
-          handleLogout('admin');
-        }}
-        onLogout={() => handleLogout('vendor')}
-      />
-    );
-  }
-
-  // Authenticated: Render Super Admin Console
   return (
-    <AdminApp
-      onSwitchToCustomerApp={() => {
-        window.location.href = '/';
-      }}
-      onSwitchToVendor={() => {
-        handleLogout('vendor');
-      }}
-      onLogout={() => handleLogout('admin')}
+    <VendorPanel
+      onLogout={() => handleLogout('vendor')}
     />
   );
 }
